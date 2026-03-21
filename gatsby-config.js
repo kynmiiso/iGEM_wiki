@@ -6,7 +6,7 @@ module.exports = {
     title: `iGEM Toronto 2026`,
     description: `iGEM Toronto 2026 Wiki`,
     author: `iGEM Toronto`,
-    siteUrl: `https://igem-toronto.github.io`,
+    siteUrl: `https://github.com/petadex/iGEM_wiki.git`,
   },
   plugins: [
     `gatsby-plugin-styled-components`,
