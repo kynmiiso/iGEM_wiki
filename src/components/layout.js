@@ -6,6 +6,8 @@ import { GlobalStyle } from "../styles/globalStyles.js"
 const nav = [
   { to: "/", label: "Home" },
   { to: "/team/", label: "Team" },
+  { to: "/safety/", label: "Safety" },
+  { to: "/attributions/", label: "Attributions" },
 ]
 
 const WikiLayout = ({ children, pageTitle }) => {
