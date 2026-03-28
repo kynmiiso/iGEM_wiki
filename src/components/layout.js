@@ -270,7 +270,7 @@ const SectionLabel = styled.p`
   font-size: 0.75rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-accent);
+  color: var(--color-text);
   margin-bottom: var(--space-sm);
   font-weight: 600;
 `
