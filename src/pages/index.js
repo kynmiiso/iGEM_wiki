@@ -1,5 +1,6 @@
 import React from "react"
 import styled from "styled-components"
+import { Link } from "gatsby"
 import WikiLayout from "../components/layout.js"
 
 const HomePage = () => (
@@ -41,7 +42,7 @@ const HomePage = () => (
       <h2>How We Are Tackling It</h2>
 
       <SubteamGrid>
-        <SubteamCard>
+        <SubteamCard to="/wet-lab/overview/">
           <CardAccent />
           <CardTitle>Wet Lab</CardTitle>
           <p>
@@ -51,7 +52,7 @@ const HomePage = () => (
           </p>
         </SubteamCard>
 
-        <SubteamCard>
+        <SubteamCard to="/dry-lab/overview/">
           <CardAccent />
           <CardTitle>Dry Lab</CardTitle>
           <p>
@@ -61,7 +62,7 @@ const HomePage = () => (
           </p>
         </SubteamCard>
 
-        <SubteamCard>
+        <SubteamCard to="/hardware/overview/">
           <CardAccent />
           <CardTitle>Hardware</CardTitle>
           <p>
@@ -71,7 +72,7 @@ const HomePage = () => (
           </p>
         </SubteamCard>
 
-        <SubteamCard>
+        <SubteamCard to="/beyond-the-bench/human-practices/">
           <CardAccent />
           <CardTitle>Human Practices &amp; Outreach</CardTitle>
           <p>
@@ -190,13 +191,18 @@ const SubteamGrid = styled.div`
   margin-top: var(--space-lg);
 `
 
-const SubteamCard = styled.div`
+const SubteamCard = styled(Link)`
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: var(--space-lg);
   position: relative;
   overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: border-color 0.2s ease;
 
+  &:hover { border-color: var(--color-accent); }
   p { color: var(--color-muted); font-size: 0.9rem; line-height: 1.65; }
 `
 

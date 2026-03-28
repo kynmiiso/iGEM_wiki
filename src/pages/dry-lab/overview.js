@@ -4,7 +4,7 @@ import WikiLayout from "../../components/layout.js"
 import AtlasMap from "../../components/AtlasMap.js"
 
 const Page = () => (
-  <WikiLayout pageTitle="Overview">
+  <WikiLayout pageTitle="Overview" sectionLabel="Dry Lab">
     <Blurb>
       The Dry Lab performs in-silico discovery, mining large-scale metagenomic
       data to identify and prioritize the most promising PETase candidates from

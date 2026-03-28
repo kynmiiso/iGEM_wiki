@@ -3,7 +3,7 @@ import styled from "styled-components"
 import WikiLayout from "../../components/layout.js"
 
 const Page = () => (
-  <WikiLayout pageTitle="Experimental Overview">
+  <WikiLayout pageTitle="Experimental Overview" sectionLabel="Wet Lab">
     <Blurb>
       The Wet Lab team is developing novel assays to experimentally determine
       plastic-degrading enzyme activity with greater speed and precision than

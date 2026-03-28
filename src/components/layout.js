@@ -44,7 +44,7 @@ const nav = [
   ]},
 ]
 
-const WikiLayout = ({ children, pageTitle }) => {
+const WikiLayout = ({ children, pageTitle, sectionLabel }) => {
   return (
     <>
       <GlobalStyle />
@@ -74,6 +74,7 @@ const WikiLayout = ({ children, pageTitle }) => {
         <Main>
           {pageTitle && (
             <PageHeader>
+              {sectionLabel && <SectionLabel>{sectionLabel}</SectionLabel>}
               <PageTitle>{pageTitle}</PageTitle>
               <Divider />
             </PageHeader>
@@ -263,6 +264,15 @@ const Main = styled.main`
 
 const PageHeader = styled.div`
   margin-bottom: var(--space-xl);
+`
+
+const SectionLabel = styled.p`
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: var(--space-sm);
+  font-weight: 600;
 `
 
 const PageTitle = styled.h1`

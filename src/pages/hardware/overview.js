@@ -3,7 +3,7 @@ import styled from "styled-components"
 import WikiLayout from "../../components/layout.js"
 
 const Page = () => (
-  <WikiLayout pageTitle="Hardware Overview">
+  <WikiLayout pageTitle="Hardware Overview" sectionLabel="Hardware">
     <Blurb>
       The Hardware team builds custom bioreactors that simulate industrial
       recycling conditions, enabling high-throughput enzyme testing across a
