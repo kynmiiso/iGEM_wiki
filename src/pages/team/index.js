@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react"
 import { graphql } from "gatsby"
 import styled, { css } from "styled-components"
-import WikiLayout from "../components/layout.js"
+import WikiLayout from "../../components/layout.js"
 
 const photoSrc = (m) => m.photo || m.imageSrc || ""
 
@@ -19,7 +19,7 @@ const TeamPage = ({ data }) => {
   }, [])
 
   return (
-    <WikiLayout pageTitle="Team">
+    <WikiLayout pageTitle="Meet the Team">
       <Intro>
         Loaded from{" "}
         <code>src/data/team/team.csv</code>, change w Google Sheets (as csv) later
@@ -54,32 +54,13 @@ const TeamPage = ({ data }) => {
                   <CardRole>{m.role}</CardRole>
                   <Links aria-label="Links">
                     {m.linkedIn && (
-                      <a
-                        href={m.linkedIn}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        LinkedIn
-                      </a>
+                      <a href={m.linkedIn} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>LinkedIn</a>
                     )}
                     {m.email && (
-                      <a
-                        href={`mailto:${m.email}`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Email
-                      </a>
+                      <a href={`mailto:${m.email}`} onClick={(e) => e.stopPropagation()}>Email</a>
                     )}
                     {m.website && (
-                      <a
-                        href={m.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Website
-                      </a>
+                      <a href={m.website} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>Website</a>
                     )}
                   </Links>
                 </CardFaceFront>
@@ -102,32 +83,13 @@ const TeamPage = ({ data }) => {
                   <BackBio>{m.description}</BackBio>
                   <Links aria-label="Links">
                     {m.linkedIn && (
-                      <a
-                        href={m.linkedIn}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        LinkedIn
-                      </a>
+                      <a href={m.linkedIn} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>LinkedIn</a>
                     )}
                     {m.email && (
-                      <a
-                        href={`mailto:${m.email}`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Email
-                      </a>
+                      <a href={`mailto:${m.email}`} onClick={(e) => e.stopPropagation()}>Email</a>
                     )}
                     {m.website && (
-                      <a
-                        href={m.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Website
-                      </a>
+                      <a href={m.website} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>Website</a>
                     )}
                   </Links>
                 </CardFaceBack>
@@ -159,130 +121,51 @@ export const query = graphql`
 `
 
 export default TeamPage
-
-export const Head = () => <title>Team — iGEM Toronto 2026</title>
+export const Head = () => <title>Meet the Team — iGEM Toronto 2026</title>
 
 const Intro = styled.p`
   color: var(--color-muted);
   font-size: 0.95rem;
   margin-bottom: var(--space-lg);
   max-width: 42rem;
-
-  code {
-    font-family: var(--font-mono);
-    font-size: 0.85em;
-    color: var(--color-text);
-  }
+  code { font-family: var(--font-mono); font-size: 0.85em; color: var(--color-text); }
 `
-
 const Grid = styled.div`
   display: grid;
   gap: var(--space-md);
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
 `
-
-const FlipShell = styled.div`
-  perspective: 1000px;
-`
-
+const FlipShell = styled.div`perspective: 1000px;`
 const FlipInner = styled.div`
-  position: relative;
-  width: 100%;
-  min-height: 22rem;
-  transform-style: preserve-3d;
-  transition: transform 0.55s ease;
+  position: relative; width: 100%; min-height: 22rem;
+  transform-style: preserve-3d; transition: transform 0.55s ease;
   transform: rotateY(${({ $flipped }) => ($flipped ? 180 : 0)}deg);
 `
-
 const faceButton = css`
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: var(--space-md);
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  border: 1px dashed var(--color-border);
-  border-radius: 4px;
-  background: var(--color-bg);
-  overflow-y: auto;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-
-  &:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-  }
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  width: 100%; height: 100%; margin: 0; padding: var(--space-md);
+  text-align: left; font: inherit; color: inherit; cursor: pointer;
+  border: 1px dashed var(--color-border); border-radius: 4px;
+  background: var(--color-bg); overflow-y: auto;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  &:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 `
-
-const CardFaceFront = styled.div`
-  ${faceButton}
-`
-
-const CardFaceBack = styled.div`
-  ${faceButton}
-  transform: rotateY(180deg);
-`
-
+const CardFaceFront = styled.div`${faceButton}`
+const CardFaceBack = styled.div`${faceButton} transform: rotateY(180deg);`
 const Thumb = styled.img`
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 2px;
-  margin-bottom: var(--space-sm);
-  flex-shrink: 0;
+  width: 100%; aspect-ratio: 1; object-fit: cover;
+  border-radius: 2px; margin-bottom: var(--space-sm); flex-shrink: 0;
 `
-
 const ThumbPlaceholder = styled.div`
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 2px;
+  width: 100%; aspect-ratio: 1; border-radius: 2px;
   margin-bottom: var(--space-sm);
-  background: color-mix(in srgb, var(--color-border) 35%, transparent);
-  flex-shrink: 0;
+  background: color-mix(in srgb, var(--color-border) 35%, transparent); flex-shrink: 0;
 `
-
-const CardName = styled.div`
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  margin-bottom: var(--space-xs);
-`
-
-const CardRole = styled.div`
-  color: var(--color-muted);
-  font-size: 0.9rem;
-  margin-bottom: var(--space-sm);
-`
-
-const BackName = styled.h2`
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 400;
-  margin-bottom: var(--space-md);
-`
-
-const BackBio = styled.p`
-  flex: 1;
-  margin-bottom: var(--space-md);
-  white-space: pre-wrap;
-  font-size: 0.9rem;
-  line-height: 1.55;
-`
-
+const CardName = styled.div`font-family: var(--font-display); font-size: 1.15rem; margin-bottom: var(--space-xs);`
+const CardRole = styled.div`color: var(--color-muted); font-size: 0.9rem; margin-bottom: var(--space-sm);`
+const BackName = styled.h2`font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; margin-bottom: var(--space-md);`
+const BackBio = styled.p`flex: 1; margin-bottom: var(--space-md); white-space: pre-wrap; font-size: 0.9rem; line-height: 1.55;`
 const Links = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  font-size: 0.85rem;
-  margin-top: auto;
-
-  a {
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
+  display: flex; flex-wrap: wrap; gap: var(--space-sm); font-size: 0.85rem; margin-top: auto;
+  a { text-decoration: underline; text-underline-offset: 2px; }
 `
