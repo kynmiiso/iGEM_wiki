@@ -44,77 +44,85 @@ const nav = [
   ]},
 ]
 
-const WikiLayout = ({ children, pageTitle, sectionLabel }) => {
+const WikiLayout = ({ children, pageTitle, sectionLabel, hideSiteChrome = false }) => {
   return (
     <>
       <GlobalStyle />
 
       <SiteWrapper>
 
-        <TopBar>
-          <NavInner>
-            <LogoPlaceholder to="/" aria-label="iGEM Toronto 2026 — Home">
-              <LogoBox>LOGO</LogoBox>
-            </LogoPlaceholder>
-            <Nav aria-label="Wiki sections">
-              {nav.slice(1).map(({ label, children }) => (
-                <NavItem key={label}>
-                  <NavParent>{label}</NavParent>
-                  <Dropdown>
-                    {children.map(({ to, label: childLabel }) => (
-                      <DropdownLink key={to} to={to}>{childLabel}</DropdownLink>
-                    ))}
-                  </Dropdown>
-                </NavItem>
-              ))}
-            </Nav>
-          </NavInner>
-        </TopBar>
+        {!hideSiteChrome && (
+          <TopBar>
+            <NavInner>
+              <LogoPlaceholder to="/" aria-label="iGEM Toronto 2026 — Home">
+                <LogoBox>LOGO</LogoBox>
+              </LogoPlaceholder>
+              <Nav aria-label="Wiki sections">
+                {nav.slice(1).map(({ label, children }) => (
+                  <NavItem key={label}>
+                    <NavParent>{label}</NavParent>
+                    <Dropdown>
+                      {children.map(({ to, label: childLabel }) => (
+                        <DropdownLink key={to} to={to}>{childLabel}</DropdownLink>
+                      ))}
+                    </Dropdown>
+                  </NavItem>
+                ))}
+              </Nav>
+            </NavInner>
+          </TopBar>
+        )}
 
-        <Main>
-          {pageTitle && (
-            <PageHeader>
-              {sectionLabel && <SectionLabel>{sectionLabel}</SectionLabel>}
-              <PageTitle>{pageTitle}</PageTitle>
-              <Divider />
-            </PageHeader>
-          )}
-          {children}
-        </Main>
+        {hideSiteChrome ? (
+          <MainFullBleed>{children}</MainFullBleed>
+        ) : (
+          <Main>
+            {pageTitle && (
+              <PageHeader>
+                {sectionLabel && <SectionLabel>{sectionLabel}</SectionLabel>}
+                <PageTitle>{pageTitle}</PageTitle>
+                <Divider />
+              </PageHeader>
+            )}
+            {children}
+          </Main>
+        )}
 
-        <Footer>
-          <FooterInner>
-            <FooterTop>
-              <FooterIntro>
-                <FooterBrand>iGEM Toronto</FooterBrand>
-                <FooterButton href="https://igem.skule.ca/" target="_blank" rel="noopener noreferrer">
-                  Visit iGEM Toronto
-                </FooterButton>
-              </FooterIntro>
-              <FooterSponsorSlot>
-                <SponsorCarousel />
-              </FooterSponsorSlot>
-              <FooterConnect aria-label="Contact and social" style={{ marginTop: "2.7rem" }}>
-                <ConnectLink href="https://www.instagram.com/igemtoronto" target="_blank" rel="noopener noreferrer">
-                  Instagram
-                </ConnectLink>
-                <ConnectLink href="mailto:igem@g.skule.ca">igem@g.skule.ca</ConnectLink>
-              </FooterConnect>
-            </FooterTop>
+        {!hideSiteChrome && (
+          <Footer>
+            <FooterInner>
+              <FooterTop>
+                <FooterIntro>
+                  <FooterBrand>iGEM Toronto</FooterBrand>
+                  <FooterButton href="https://igem.skule.ca/" target="_blank" rel="noopener noreferrer">
+                    Visit iGEM Toronto
+                  </FooterButton>
+                </FooterIntro>
+                <FooterSponsorSlot>
+                  <SponsorCarousel />
+                </FooterSponsorSlot>
+                <FooterConnect aria-label="Contact and social" style={{ marginTop: "2.7rem" }}>
+                  <ConnectLink href="https://www.instagram.com/igemtoronto" target="_blank" rel="noopener noreferrer">
+                    Instagram
+                  </ConnectLink>
+                  <ConnectLink href="mailto:igem@g.skule.ca">igem@g.skule.ca</ConnectLink>
+                </FooterConnect>
+              </FooterTop>
 
-            <FooterRule />
+              <FooterRule />
 
-            <FooterMeta>
-              <MetaLink href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">
-                This work is licensed under CC BY 4.0
-              </MetaLink>
-              <MetaSep aria-hidden>·</MetaSep>
-              <MetaLink href="https://gitlab.com" target="_blank" rel="noopener noreferrer">
-                Source on GitLab
-              </MetaLink>
-            </FooterMeta>
-          </FooterInner>
-        </Footer>
+              <FooterMeta>
+                <MetaLink href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">
+                  This work is licensed under CC BY 4.0
+                </MetaLink>
+                <MetaSep aria-hidden>·</MetaSep>
+                <MetaLink href="https://gitlab.com" target="_blank" rel="noopener noreferrer">
+                  Source on GitLab
+                </MetaLink>
+              </FooterMeta>
+            </FooterInner>
+          </Footer>
+        )}
 
       </SiteWrapper>
     </>
@@ -169,19 +177,6 @@ const Nav = styled.nav`
   align-items: center;
   gap: var(--space-md) var(--space-lg);
   font-size: 0.9rem;
-`
-
-const NavLink = styled(Link)`
-  color: var(--color-muted);
-  text-decoration: none;
-  font-size: 0.9rem;
-
-  &:hover,
-  &:focus-visible {
-    color: var(--color-text);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
 `
 
 const NavItem = styled.div`
@@ -260,6 +255,20 @@ const Main = styled.main`
   width: 100%;
   margin: 0 auto;
   padding: var(--space-xl) var(--page-padding);
+`
+
+/** Full-bleed main for prototype routes (no wiki chrome). */
+const MainFullBleed = styled.main`
+  /* Do not flex-grow: parent is min-height:100vh column; growing here creates a tall empty
+     flex slot while content can look “pushed” to the bottom of the viewport. */
+  flex: none;
+  align-self: stretch;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  overflow: visible;
 `
 
 const PageHeader = styled.div`

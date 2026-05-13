@@ -4,7 +4,7 @@ import styled from "styled-components"
 
 /**
  * Sticky-column scroll prototype on the home page (desktop).
- * Full-page scroll + bottle experiment: /home-scroll-prototype/
+ * Layered wiki front mockup (no motion yet): /home-scroll-prototype/
  */
 export function HomeStickyPrototype() {
   return (
@@ -13,7 +13,7 @@ export function HomeStickyPrototype() {
         <MotionLabBadge>Prototype</MotionLabBadge>
         <h2 id="sticky-prototype-heading">Motion lab (internal)</h2>
         <p>
-          Sticky section preview below. Static layout template (full poster) on{" "}
+          Sticky section preview below. Layered wiki front mockup (static compositing) on{" "}
           <Link to="/home-scroll-prototype/">/home-scroll-prototype/</Link>.
         </p>
       </MotionLabHeader>
