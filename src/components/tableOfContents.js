@@ -3,14 +3,17 @@ import styled from "styled-components"
  
 const Nav = styled.nav`
   position: fixed;
-  top: 120px;
-  left: 24px;
+  top: 170px;
+  left: max(16px, calc(50vw - 450px - 220px));
   width: 180px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   max-height: calc(100vh - 160px);
   overflow-y: auto;
+  @media (max-width: 1150px) {
+    display: none;
+  }
 `
  
 const Item = styled.button`
@@ -18,7 +21,7 @@ const Item = styled.button`
   border: none;
   text-align: left;
   cursor: pointer;
-  font-size: 2rem;
+  font-size: 1.5rem;
   line-height: 1.5;
   padding: 2px;
   border-left: 3px solid ${p => p.$active ? "var(--color-accent)" : "var(--color-border)"};
@@ -36,7 +39,7 @@ const TableOfContents = () => {
     useEffect(() => {
     const scan = () => {
       const root = document.getElementById("page-content") || document.body
-      const els = Array.from(root.querySelectorAll("h1, h2, h3"))
+      const els = Array.from(root.querySelectorAll("h2, h3"))
       els.forEach((el, i) => { if (!el.id) el.id = `heading-${i}` })
       setHeadings(els.map(el => ({ id: el.id, text: el.textContent, level: el.tagName })))
     }
