@@ -1,90 +1,70 @@
-# iGEM Toronto 2026 — Wiki
+# iGEM Toronto 2026 Wiki
 
-> Built with **Gatsby** + **Styled Components**.
-
----
+Built with Gatsby, React, Styled Components, and an MDX content pipeline for team-authored wiki pages.
 
 ## Prerequisites
 
-Make sure you have these installed before anything else:
+- Node.js 20 recommended. GitHub Actions builds with Node 20.
+- npm, installed with Node.
+- Git.
 
-- [Node.js](https://nodejs.org/) v18 or higher — check with `node -v`
-- [Git](https://git-scm.com/) — check with `git --version`
+If you use `nvm`, run:
 
----
+```bash
+nvm use
+```
 
 ## Getting Started
 
-### 1. Clone the repo
-
 ```bash
-git clone https://github.com/petadex/iGEM_wiki.git
-```
-
-### 2. Install dependencies
-
-```bash
-npm install
-```
-
-### 3. Start the dev server
-
-```bash
+npm ci
 npm run develop
 ```
 
-Open your browser and go to **http://localhost:8000**
-
-## 📁 Project Structure
-
-```
-src/
-├── components/
-│   └── WikiLayout.js      ← Shared layout (nav slot is marked inside)
-├── styles/
-│   └── globalStyles.js    ← All design tokens — edit colors/fonts here
-└── pages/
-    ├── index.js
-    ├── description.js
-    ├── team.js
-    └── ...
-```
-
----
-
-## Changing Colors & Fonts
-
-Everything is in `src/styles/globalStyles.js`. The main ones to know:
-
-| Token            | Default          | What it is      |
-| ---------------- | ---------------- | --------------- |
-| `--color-bg`     | `##f0ede6`       | Page background |
-| `--color-accent` | `#c8f050`        | brand color     |
-| `--color-text`   | `#0a0a0a`        | Body text       |
-| `--font-display` | DM Serif Display | Headings        |
-| `--font-body`    | DM Sans          | Body text       |
-
----
+Open `http://localhost:8000`.
 
 ## Useful Commands
 
-| Command           | What it does                           |
-| ----------------- | -------------------------------------- |
-| `npm run develop` | Start local dev server                 |
-| `npm run build`   | Build for production                   |
-| `npm run serve`   | Preview production build locally       |
-| `npm run clean`   | Clear cache (run this if things break) |
+| Command | What it does |
+| --- | --- |
+| `npm run develop` | Start the local Gatsby dev server. |
+| `npm run validate:content` | Check MDX frontmatter, route collisions, and nav links. |
+| `npm run build` | Validate content and build the production site. |
+| `npm run build:gatsby` | Run Gatsby build without the content validation wrapper. |
+| `npm run serve` | Preview the production build locally. |
+| `npm run clean` | Clear Gatsby cache. |
 
----
+## Project Structure
 
-## 🤝 Contributing
+```text
+src/
+  components/          Shared React components and MDX blocks
+  content/wiki/        Author-editable MDX wiki pages
+  data/                CSV and JS data sources
+  pages/               React-only routes and interactive pages
+  styles/              Global design tokens and base styles
+  templates/           Gatsby page templates for generated content
+scripts/
+  validate-content.mjs MDX content and route validation
+docs/
+  content-authoring.md Author guide for subteams
+```
 
-1. **Never push directly to `main`**
-2. Create a branch for your work: `git checkout -b feat/your-page-name`
-3. Make your changes
-4. Push and open a pull request
+Most text-heavy wiki pages now live in `src/content/wiki/**/index.mdx`. The homepage, team CSV page, and interactive Dry Lab atlas remain React pages in `src/pages`.
 
----
+## Writing Wiki Content
 
-_iGEM Toronto 2026 — University of Toronto_
-# test
+Start with `docs/content-authoring.md`. It explains the required frontmatter, approved MDX components, image conventions, and pull request checklist.
+
+Use `src/content/wiki/_template.mdx` as the starter for new pages.
+
+## Contributing
+
+1. Never push directly to `main`.
+2. Create a branch for your work.
+3. Edit code or MDX content.
+4. Run `npm run validate:content`.
+5. Run `npm run build`.
+6. Open a pull request.
+
+_iGEM Toronto 2026 - University of Toronto_
