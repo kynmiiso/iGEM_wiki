@@ -80,7 +80,7 @@ const WikiLayout = ({ children, pageTitle, sectionLabel, hideSiteChrome = false,
             {pageTitle && (
               <PageHeader>
                 {sectionLabel && <SectionLabel>{sectionLabel}</SectionLabel>}
-                {/* <PageTitle>{pageTitle}</PageTitle> */}
+                <PageTitle>{pageTitle}</PageTitle>
                 <Divider />
               </PageHeader>
             )}
@@ -177,19 +177,6 @@ const Nav = styled.nav`
   align-items: center;
   gap: var(--space-md) var(--space-lg);
   font-size: 0.9rem;
-`
-
-const NavLink = styled(Link)`
-  color: var(--color-muted);
-  text-decoration: none;
-  font-size: 0.9rem;
-
-  &:hover,
-  &:focus-visible {
-    color: var(--color-text);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
 `
 
 const NavItem = styled.div`
