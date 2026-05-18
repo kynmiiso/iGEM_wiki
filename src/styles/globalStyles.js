@@ -49,7 +49,10 @@ export const GlobalStyle = createGlobalStyle`
     -webkit-font-smoothing: antialiased;
   }
 
+<<<<<<< Updated upstream
   /* Gatsby roots: avoid zero-height chains so full-bleed / flex layouts get a real viewport. */
+=======
+>>>>>>> Stashed changes
   #___gatsby,
   #gatsby-focus-wrapper {
     min-height: 100vh;

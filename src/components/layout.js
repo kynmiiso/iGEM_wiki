@@ -1,9 +1,10 @@
 import React from "react"
-import { Link } from "gatsby"
 import styled from "styled-components"
 import { GlobalStyle } from "../styles/globalStyles.js"
 import { SponsorCarousel } from "./SponsorCarousel.js"
+import { WikiTopBar } from "./WikiTopBar.js"
 
+<<<<<<< Updated upstream
 const nav = [
   { to: "/", label: "Home" },
   { label: "Project", children: [
@@ -44,6 +45,8 @@ const nav = [
   ]},
 ]
 
+=======
+>>>>>>> Stashed changes
 const WikiLayout = ({ children, pageTitle, sectionLabel, hideSiteChrome = false }) => {
   return (
     <>
@@ -51,6 +54,7 @@ const WikiLayout = ({ children, pageTitle, sectionLabel, hideSiteChrome = false 
 
       <SiteWrapper>
 
+<<<<<<< Updated upstream
         {!hideSiteChrome && (
           <TopBar>
             <NavInner>
@@ -72,6 +76,9 @@ const WikiLayout = ({ children, pageTitle, sectionLabel, hideSiteChrome = false 
             </NavInner>
           </TopBar>
         )}
+=======
+        {!hideSiteChrome && <WikiTopBar />}
+>>>>>>> Stashed changes
 
         {hideSiteChrome ? (
           <MainFullBleed>{children}</MainFullBleed>
@@ -139,6 +146,7 @@ const SiteWrapper = styled.div`
   flex-direction: column;
 `
 
+<<<<<<< Updated upstream
 const TopBar = styled.div`
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg);
@@ -249,6 +257,8 @@ const DropdownLink = styled(Link)`
   }
 `
 
+=======
+>>>>>>> Stashed changes
 const Main = styled.main`
   flex: 1;
   max-width: var(--max-width);
@@ -257,10 +267,14 @@ const Main = styled.main`
   padding: var(--space-xl) var(--page-padding);
 `
 
+<<<<<<< Updated upstream
 /** Full-bleed main for prototype routes (no wiki chrome). */
 const MainFullBleed = styled.main`
   /* Do not flex-grow: parent is min-height:100vh column; growing here creates a tall empty
      flex slot while content can look “pushed” to the bottom of the viewport. */
+=======
+const MainFullBleed = styled.main`
+>>>>>>> Stashed changes
   flex: none;
   align-self: stretch;
   width: 100%;
