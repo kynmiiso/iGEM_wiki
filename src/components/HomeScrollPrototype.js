@@ -1,12 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react"
-<<<<<<< Updated upstream
-import { Link, withPrefix } from "gatsby"
-import styled, { css, keyframes } from "styled-components"
-=======
 import { withPrefix } from "gatsby"
 import styled, { css, keyframes } from "styled-components"
 import { WikiTopBar } from "./WikiTopBar.js"
->>>>>>> Stashed changes
 
 /**
  * Mockups live under /static/wiki-mockup/ so the browser loads predictable URLs
@@ -15,10 +10,6 @@ import { WikiTopBar } from "./WikiTopBar.js"
 const ASSETS = {
   back: withPrefix("/wiki-mockup/wiki-front-back.jpg"),
   front: withPrefix("/wiki-mockup/wiki-front-front.png"),
-<<<<<<< Updated upstream
-  nav33: withPrefix("/wiki-mockup/wiki-front-nav3.png"),
-=======
->>>>>>> Stashed changes
   logo: withPrefix("/wiki-mockup/wiki-front-logo.png"),
   bottle: withPrefix("/wiki-mockup/wiki-front-bottle.png"),
   water: withPrefix("/wiki-mockup/wiki-front-water.png"),
@@ -47,11 +38,7 @@ const BOTTLE_FLIP_MS = 580
 /**
  * Full-page wiki front compositing: layered mockup PNGs plus a gentle idle float on the logo.
  *
-<<<<<<< Updated upstream
- * Nav3 uses scroll-driven `position: fixed` while the mockup is on-screen.
-=======
  * Site nav uses scroll-driven `position: fixed` while the mockup is on-screen.
->>>>>>> Stashed changes
  *
  * Bottle touchpoints: (1) when the bottle midpoint crosses the viewport middle, capture scrollY
  * and pin the bottle centered; (2) stay pinned through the bottom of the page so it does not
@@ -248,19 +235,10 @@ export function HomeScrollPrototype() {
           </OverlayStack>
         </CompositionRoot>
 
-<<<<<<< Updated upstream
-        <Nav33Mount $pinned={navPinned}>
-          <Nav33Img src={ASSETS.nav33} alt="" />
-        </Nav33Mount>
-      </ScrollStack>
-
-      <WikiBackFab to="/">Back to wiki home</WikiBackFab>
-=======
         <HomeNavMount $pinned={navPinned}>
           <WikiTopBar />
         </HomeNavMount>
       </ScrollStack>
->>>>>>> Stashed changes
     </WikiFrontRoot>
   )
 }
@@ -274,77 +252,19 @@ const WikiFrontRoot = styled.div`
   overflow: visible;
 `
 
-<<<<<<< Updated upstream
-/** Lower on the screen: fixed pill so the mockup stays full-bleed to the top. */
-const WikiBackFab = styled(Link)`
-  position: fixed;
-  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
-  left: max(1rem, env(safe-area-inset-left, 0px));
-  z-index: 130;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  text-decoration: none;
-  max-width: calc(100vw - 2rem);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  &:hover {
-    border-color: var(--color-accent);
-    color: var(--color-text);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 3px;
-  }
-`
-
-=======
->>>>>>> Stashed changes
 const ScrollStack = styled.div`
   position: relative;
   width: 100%;
   min-width: 0;
 `
 
-<<<<<<< Updated upstream
-/** Absolute over bleed at rest; `fixed` while scrolling through mockup. */
-const Nav33Mount = styled.div`
-=======
 /** Absolute at rest; `fixed` while scrolling through mockup so nav stays reachable. */
 const HomeNavMount = styled.div`
->>>>>>> Stashed changes
   position: ${({ $pinned }) => ($pinned ? "fixed" : "absolute")};
   top: 0;
   left: 0;
   right: 0;
-<<<<<<< Updated upstream
-  z-index: 100;
-  pointer-events: none;
-  border-bottom: 1px solid rgba(34, 34, 34, 0.22);
-`
-
-const Nav33Img = styled.img`
-  display: block;
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  user-select: none;
-=======
   z-index: 110;
->>>>>>> Stashed changes
 `
 
 const CompositionRoot = styled.div`
