@@ -369,10 +369,10 @@ const bottleIdleFloat = keyframes`
 const bottleStickyRock = keyframes`
   0%,
   100% {
-    transform: rotate(-3deg);
+    transform: rotate(-10deg);
   }
   50% {
-    transform: rotate(3deg);
+    transform: rotate(10deg);
   }
 `
 
@@ -384,7 +384,7 @@ const BottleStickyRock = styled.div`
   ${({ $active }) =>
     $active
       ? css`
-          animation: ${bottleStickyRock} 3s ease-in-out infinite;
+          animation: ${bottleStickyRock} 2s ease-in-out infinite;
         `
       : css`
           animation: none;
