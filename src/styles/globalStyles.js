@@ -38,6 +38,7 @@ export const GlobalStyle = createGlobalStyle`
   html {
     font-size: 16px;
     scroll-behavior: smooth;
+    min-height: 100%;
   }
 
   body {
@@ -46,6 +47,11 @@ export const GlobalStyle = createGlobalStyle`
     font-family: var(--font-body);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+  }
+
+  #___gatsby,
+  #gatsby-focus-wrapper {
+    min-height: 100vh;
   }
 
   h1, h2, h3, h4, h5, h6 {

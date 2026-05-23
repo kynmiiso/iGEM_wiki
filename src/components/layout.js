@@ -3,6 +3,7 @@ import { Link } from "gatsby"
 import styled from "styled-components"
 import { GlobalStyle } from "../styles/globalStyles.js"
 import { SponsorCarousel } from "./SponsorCarousel.js"
+import { WikiTopBar } from "./WikiTopBar.js"
 
 const nav = [
   { to: "/", label: "Home" },
@@ -300,6 +301,17 @@ const Main = styled.main`
   width: 100%;
   margin: 0 auto;
   padding: var(--space-xl) var(--page-padding);
+`
+
+const MainFullBleed = styled.main`
+  flex: none;
+  align-self: stretch;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  overflow: visible;
 `
 
 const PageHeader = styled.div`
