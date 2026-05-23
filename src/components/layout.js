@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { Link } from "gatsby"
 import styled from "styled-components"
 import { GlobalStyle } from "../styles/globalStyles.js"
@@ -45,12 +45,11 @@ const nav = [
 ]
 
 const WikiLayout = ({ children, pageTitle, sectionLabel }) => {
+  const [menuOpen, setMenuOpen] = useState(false)
   return (
     <>
       <GlobalStyle />
-
       <SiteWrapper>
-
         <TopBar>
           <NavInner>
             <LogoPlaceholder to="/" aria-label="iGEM Toronto 2026 — Home">
@@ -68,9 +67,23 @@ const WikiLayout = ({ children, pageTitle, sectionLabel }) => {
                 </NavItem>
               ))}
             </Nav>
+            <Hamburger onClick={() => setMenuOpen(out => !out)} aria-label="Toggle navigation">
+              <span /><span /><span />
+            </Hamburger>
           </NavInner>
         </TopBar>
 
+        <MobileDrawer $open={menuOpen}>
+          {nav.slice(1).map(({ label, children }) => (
+            <MobileSection key={label}>
+              <b>{label}</b>
+              {children.map(({ to, label: l }) => (
+                <MobileLink key={to} to={to} onClick={() => setMenuOpen(false)}>{l}</MobileLink>
+              ))}
+            </MobileSection>
+          ))}
+        </MobileDrawer>
+        
         <Main>
           {pageTitle && (
             <PageHeader>
@@ -169,19 +182,7 @@ const Nav = styled.nav`
   align-items: center;
   gap: var(--space-md) var(--space-lg);
   font-size: 0.9rem;
-`
-
-const NavLink = styled(Link)`
-  color: var(--color-muted);
-  text-decoration: none;
-  font-size: 0.9rem;
-
-  &:hover,
-  &:focus-visible {
-    color: var(--color-text);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
+  @media (max-width: 768px) { display: none; }
 `
 
 const NavItem = styled.div`
@@ -211,6 +212,45 @@ const NavParent = styled.span`
     color: var(--color-text);
     &::after { transform: rotate(180deg); }
   }
+`
+
+const Hamburger = styled.button`
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  span { display: block; width: 24px; height: 2px; background: var(--color-text); border-radius: 2px; }
+  @media (max-width: 768px) { display: flex; }
+`
+
+const MobileDrawer = styled.div`
+  display: none;
+  @media (max-width: 768px) {
+    display: ${({ $open }) => ($open ? "flex" : "none")};
+    flex-direction: column;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+  }
+`
+
+const MobileSection = styled.div`
+  padding: var(--space-md) var(--page-padding);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  b { color: var(--color-text); font-size: 0.9rem; }
+`
+
+const MobileLink = styled(Link)`
+  padding-left: 1rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+  &:hover { color: var(--color-text); }
 `
 
 const Dropdown = styled.div`
