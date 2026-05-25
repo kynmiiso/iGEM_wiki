@@ -15,6 +15,16 @@ const ASSETS = {
   water: withPrefix("/wiki-mockup/wiki-front-water.png"),
 }
 
+/** Design canvas the layered PNGs were exported from. */
+const DESIGN_W = 1440
+const DESIGN_H = 2440
+
+/** Parallax scroll multipliers — higher = more movement relative to page scroll. */
+const PARALLAX = {
+  front: 0.07,
+  water: 0.05,
+}
+
 /** Overlays above the in-flow back plate (water on top). */
 const Z = {
   front: 1,
@@ -23,26 +33,29 @@ const Z = {
   water: 4,
 }
 
-/**
- * Fraction of the bottle layer height: positive `translateY` moves the bottle layer down
- * (toward the waterfall base / yellow figure). Increase if it still sits too high.
- */
 const BOTTLE_SHIFT_FRAC = -0.25
-
-/** Pixels scroll must move back above the captured TP1 scrollY before bottle unpins. */
 const BOTTLE_PIN_SCROLL_UP_LEAVE = 40
-
-/** FLIP duration (ms) for bottle pick-up / put-down when toggling sticky. */
 const BOTTLE_FLIP_MS = 580
 
 /**
- * Full-page wiki front compositing: layered mockup PNGs plus a gentle idle float on the logo.
+ * Scale dynamic foreground layers so they cover the hero frame on the current viewport.
+ * Background, title, and bottle sticky layer are outside this scale (fixed positioning needs no ancestor transform).
+ */
+function computeDynamicScale(frameWidth, frameHeight) {
+  if (!frameWidth || !frameHeight) return 1
+  const widthScale = frameWidth / DESIGN_W
+  const coverScale = Math.max(widthScale, frameHeight / DESIGN_H)
+  return coverScale / widthScale
+}
+
+/**
+ * Full-page wiki front compositing with parallax separation.
  *
- * Site nav uses scroll-driven `position: fixed` while the mockup is on-screen.
- *
+ * Static: background plate + PETABITE title (full-width, no parallax scale group).
  * Bottle touchpoints: (1) when the bottle midpoint crosses the viewport middle, capture scrollY
  * and pin the bottle centered; (2) stay pinned through the bottom of the page so it does not
  * vanish. Unpin only when the user scrolls back up past TP1 (`scrollY` below that capture minus slack).
+ * Bottle lives outside transformed parallax layers so position:fixed is viewport-relative.
  */
 export function HomeScrollPrototype() {
   const stackRef = useRef(null)
@@ -55,6 +68,9 @@ export function HomeScrollPrototype() {
   const flipCleanupRef = useRef(null)
   const [navPinned, setNavPinned] = useState(false)
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
+  const [dynamicScale, setDynamicScale] = useState(1)
+  const [frontShift, setFrontShift] = useState(0)
+  const [waterShift, setWaterShift] = useState(0)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
 
@@ -71,6 +87,14 @@ export function HomeScrollPrototype() {
       const y = window.scrollY
       const maxY = Math.max(0, doc.scrollHeight - window.innerHeight)
       const nearBottom = y >= maxY - 8
+
+      if (stack) {
+        const frameWidth = stack.clientWidth
+        const frameHeight = stack.clientHeight
+        setDynamicScale(computeDynamicScale(frameWidth, frameHeight))
+        setFrontShift(-y * PARALLAX.front)
+        setWaterShift(-y * PARALLAX.water)
+      }
 
       if (stack) {
         const rect = stack.getBoundingClientRect()
@@ -204,19 +228,24 @@ export function HomeScrollPrototype() {
     <WikiFrontRoot>
       <ScrollStack ref={stackRef}>
         <CompositionRoot>
+          {/* Static — full page width, sets scroll height */}
           <FlowSizer>
-            <RailImg src={ASSETS.back} alt="Wiki front — background scenery" />
+            <StaticImg src={ASSETS.back} alt="Wiki front — background scenery" />
           </FlowSizer>
+
           <OverlayStack aria-hidden>
-            <OverlaySlice $z={Z.front}>
-              <RailImg src={ASSETS.front} alt="" />
-            </OverlaySlice>
-            <OverlaySlice $z={Z.logo}>
-              <LogoFloatWrap>
-                <RailImg src={ASSETS.logo} alt="PETABITE" />
-              </LogoFloatWrap>
-            </OverlaySlice>
-            <OverlaySlice $z={Z.bottle}>
+            {/* Dynamic — buildings/people, bottle, waterfall */}
+            <DynamicParallaxRoot $scale={dynamicScale}>
+              <ParallaxSlice $z={Z.front} $shift={frontShift}>
+                <DynamicImg src={ASSETS.front} alt="" />
+              </ParallaxSlice>
+              <ParallaxSlice $z={Z.water} $shift={waterShift}>
+                <DynamicImg src={ASSETS.water} alt="" />
+              </ParallaxSlice>
+            </DynamicParallaxRoot>
+
+            {/* Bottle — outside transformed parallax root so position:fixed sticky scroll works */}
+            <BottleLayer $z={Z.bottle}>
               <BottlePinSpot ref={bottleTouchRef} $touchPinned={bottleTouchPinned}>
                 <BottleFlipSurface ref={bottleFlipRef}>
                   <BottleStickyRock $active={bottleTouchPinned}>
@@ -228,10 +257,14 @@ export function HomeScrollPrototype() {
                   </BottleStickyRock>
                 </BottleFlipSurface>
               </BottlePinSpot>
-            </OverlaySlice>
-            <OverlaySlice $z={Z.water}>
-              <RailImg src={ASSETS.water} alt="" />
-            </OverlaySlice>
+            </BottleLayer>
+
+            {/* Static — PETABITE title */}
+            <StaticSlice $z={Z.logo}>
+              <LogoFloatWrap>
+                <StaticImg src={ASSETS.logo} alt="PETABITE" />
+              </LogoFloatWrap>
+            </StaticSlice>
           </OverlayStack>
         </CompositionRoot>
 
@@ -249,16 +282,16 @@ const WikiFrontRoot = styled.div`
   width: 100%;
   min-width: 0;
   background: var(--color-bg);
-  overflow: visible;
+  overflow: hidden;
 `
 
 const ScrollStack = styled.div`
   position: relative;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
 `
 
-/** Absolute at rest; `fixed` while scrolling through mockup so nav stays reachable. */
 const HomeNavMount = styled.div`
   position: ${({ $pinned }) => ($pinned ? "fixed" : "absolute")};
   top: 0;
@@ -271,8 +304,10 @@ const CompositionRoot = styled.div`
   position: relative;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
 `
 
+/** In-flow sizer — background fills page width at natural aspect (${DESIGN_W}×${DESIGN_H}). */
 const FlowSizer = styled.div`
   width: 100%;
   pointer-events: none;
@@ -287,13 +322,64 @@ const OverlayStack = styled.div`
   pointer-events: none;
 `
 
-const OverlaySlice = styled.div`
+/**
+ * Shared scale for foreground parallax layers (front, waterfall).
+ * Bottle is a sibling layer — not scaled here — so sticky position:fixed is viewport-relative.
+ */
+const DynamicParallaxRoot = styled.div`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: scale(${({ $scale }) => $scale});
+  transform-origin: center bottom;
+  will-change: transform;
+`
+
+const ParallaxSlice = styled.div`
   position: absolute;
   inset: 0;
   z-index: ${({ $z }) => $z};
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  pointer-events: none;
+  transform: translate3d(0, ${({ $shift }) => $shift}px, 0);
+  will-change: transform;
+`
+
+/** Bottle layer — no CSS transform on this subtree (required for viewport-fixed sticky scroll). */
+const BottleLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: ${({ $z }) => $z};
+  pointer-events: none;
+`
+
+/** Static overlay slice — no parallax shift or dynamic scale. */
+const StaticSlice = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: ${({ $z }) => $z};
+  pointer-events: none;
+`
+
+/** Static layers: full width, natural height — matches original compositor. */
+const StaticImg = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  user-select: none;
+  pointer-events: none;
+`
+
+/** Dynamic layers: cover the hero frame so buildings/people/water fill the window. */
+const DynamicImg = styled.img`
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  user-select: none;
   pointer-events: none;
 `
 
@@ -317,7 +403,6 @@ const bottleIdleFloat = keyframes`
   }
 `
 
-/** Very slow, subtle sway only while the bottle is in touch “sticky” (fixed) mode. */
 const bottleStickyRock = keyframes`
   0%,
   100% {
@@ -328,7 +413,6 @@ const bottleStickyRock = keyframes`
   }
 `
 
-/** Subtle idle rotation while bottle is pinned (fixed); off during normal scroll. */
 const BottleStickyRock = styled.div`
   width: 100%;
   transform-origin: 50% 42%;
@@ -356,12 +440,10 @@ const LogoFloatWrap = styled.div`
   }
 `
 
-/** Owns FLIP `transform` so parent pin spot can stay `position: fixed` without fighting this layer. */
 const BottleFlipSurface = styled.div`
   width: 100%;
 `
 
-/** Scroll touch: pins bottle to viewport center while stack scrolls; releases near page bottom. */
 const BottlePinSpot = styled.div`
   width: 100%;
   pointer-events: none;
@@ -381,7 +463,6 @@ const BottlePinSpot = styled.div`
         `}
 `
 
-/** Nudges the bottle PNG down (see `BOTTLE_SHIFT_FRAC`); inner wrap adds idle float. */
 const BottleShiftWrap = styled.div`
   width: 100%;
   transform: translateY(${BOTTLE_SHIFT_FRAC * 100}%);

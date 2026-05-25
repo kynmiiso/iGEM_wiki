@@ -28,8 +28,7 @@ const WikiLayout = ({ children, pageTitle, sectionLabel, hideSiteChrome = false 
           </Main>
         )}
 
-        {!hideSiteChrome && (
-          <Footer>
+        <Footer>
             <FooterInner>
               <FooterTop>
                 <FooterIntro>
@@ -41,7 +40,7 @@ const WikiLayout = ({ children, pageTitle, sectionLabel, hideSiteChrome = false 
                 <FooterSponsorSlot>
                   <SponsorCarousel />
                 </FooterSponsorSlot>
-                <FooterConnect aria-label="Contact and social" style={{ marginTop: "2.7rem" }}>
+                <FooterConnect aria-label="Contact and social">
                   <ConnectLink href="https://www.instagram.com/igemtoronto" target="_blank" rel="noopener noreferrer">
                     Instagram
                   </ConnectLink>
@@ -61,8 +60,7 @@ const WikiLayout = ({ children, pageTitle, sectionLabel, hideSiteChrome = false 
                 </MetaLink>
               </FooterMeta>
             </FooterInner>
-          </Footer>
-        )}
+        </Footer>
 
       </SiteWrapper>
     </>
@@ -125,11 +123,17 @@ const Divider = styled.hr`
 `
 
 const Footer = styled.footer`
+  position: relative;
+  z-index: 100;
   margin-top: auto;
   background: var(--color-bg);
   color: var(--color-text);
   border-top: 1px solid var(--color-border);
   padding: var(--space-xl) var(--page-padding) var(--space-lg);
+
+  @media (max-width: 720px) {
+    padding: var(--space-lg) var(--page-padding) var(--space-md);
+  }
 `
 
 const FooterInner = styled.div`
@@ -146,7 +150,9 @@ const FooterTop = styled.div`
 
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
-    justify-items: start;
+    justify-items: center;
+    text-align: center;
+    row-gap: var(--space-md);
   }
 `
 
@@ -156,6 +162,12 @@ const FooterIntro = styled.div`
   align-items: flex-start;
   gap: var(--space-sm);
   justify-self: start;
+
+  @media (max-width: 720px) {
+    align-items: center;
+    justify-self: center;
+    width: 100%;
+  }
 `
 
 const FooterSponsorSlot = styled.div`
@@ -166,6 +178,9 @@ const FooterSponsorSlot = styled.div`
 
   @media (max-width: 720px) {
     justify-self: center;
+    width: 100%;
+    display: flex;
+    justify-content: center;
   }
 `
 
@@ -194,6 +209,11 @@ const FooterButton = styled.a`
   transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease,
     transform 0.15s ease;
 
+  @media (max-width: 720px) {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.75rem;
+  }
+
   &:hover {
     background: transparent;
     color: var(--color-text);
@@ -215,10 +235,13 @@ const FooterConnect = styled.nav`
   gap: var(--space-sm) var(--space-md);
   font-family: var(--font-body);
   font-size: 0.9375rem;
+  margin-top: 2.7rem;
 
   @media (max-width: 720px) {
-    justify-self: start;
-    justify-content: flex-start;
+    justify-self: center;
+    justify-content: center;
+    margin-top: 0;
+    font-size: 0.875rem;
   }
 `
 
@@ -245,16 +268,27 @@ const FooterRule = styled.hr`
   border: none;
   border-top: 1px solid var(--color-muted);
   margin: var(--space-lg) 0 var(--space-md);
+
+  @media (max-width: 720px) {
+    margin: var(--space-md) 0 var(--space-sm);
+  }
 `
 
 const FooterMeta = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.25rem 0;
   font-family: var(--font-body);
   font-size: 0.8125rem;
   color: var(--color-muted);
+
+  @media (max-width: 720px) {
+    justify-content: center;
+    font-size: 0.75rem;
+    text-align: center;
+  }
 `
 
 const MetaLink = styled.a`

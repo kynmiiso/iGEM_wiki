@@ -58,6 +58,13 @@ typings/
 .cache/
 public
 
+# Deprecated CMS prototype (Payload — not used)
+cms/
+
+# Local IDE / editor artifacts
+.cursor/
+.kiro/
+
 # Mac files
 .DS_Store
 
