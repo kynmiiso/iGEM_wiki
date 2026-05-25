@@ -6,7 +6,7 @@ import TableOfContents from "../../components/tableOfContents.js"
 import { Layout, TOCWrapper, Content, Title, Subheading } from "../../components/pageStyles.js"
 
 const Page = () => (
-  <WikiLayout>
+  <WikiLayout pageTitle="Milestones" >
     <ScrollProgress />
 
     <TOCWrapper>
