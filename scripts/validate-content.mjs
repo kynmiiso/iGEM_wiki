@@ -96,6 +96,10 @@ function pageRouteFromFile(filePath) {
   return `/${rel}/`
 }
 
+function isPayloadExport(filePath) {
+  return relative(filePath).split("/").includes("_payload-export")
+}
+
 function validateFrontmatter(filePath, frontmatter) {
   for (const key of requiredFrontmatter) {
     if (frontmatter[key] == null || frontmatter[key] === "") {
@@ -137,10 +141,24 @@ for (const filePath of mdxFiles) {
   validateFrontmatter(filePath, frontmatter)
 
   if (frontmatter.path) {
-    if (mdxRoutes.has(frontmatter.path)) {
+    const existingFilePath = mdxRoutes.get(frontmatter.path)
+
+    if (existingFilePath) {
+      const existingIsPayloadExport = isPayloadExport(existingFilePath)
+      const currentIsPayloadExport = isPayloadExport(filePath)
+
+      if (existingIsPayloadExport && !currentIsPayloadExport) {
+        continue
+      }
+
+      if (!existingIsPayloadExport && currentIsPayloadExport) {
+        mdxRoutes.set(frontmatter.path, filePath)
+        continue
+      }
+
       errors.push(
         `Duplicate MDX path "${frontmatter.path}" in ${relative(filePath)} and ${relative(
-          mdxRoutes.get(frontmatter.path)
+          existingFilePath
         )}.`
       )
     } else {

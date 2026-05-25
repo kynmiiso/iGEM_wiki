@@ -8,7 +8,11 @@
     "build:gatsby": "gatsby build",
     "serve": "gatsby serve",
     "clean": "gatsby clean",
-    "validate:content": "node scripts/validate-content.mjs"
+    "validate:content": "node scripts/validate-content.mjs",
+    "payload:develop": "npm --prefix cms/payload-app run dev -- --webpack",
+    "payload:export": "node scripts/export-payload-content.mjs",
+    "payload:import-mdx": "npm --prefix cms/payload-app run import:mdx",
+    "payload:sync": "node scripts/payload-sync.mjs"
   },
   "dependencies": {
     "@deck.gl/core": "^9.2.11",

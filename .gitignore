@@ -58,6 +58,14 @@ typings/
 .cache/
 public
 
+# Payload CMS runtime (source under cms/ is tracked)
+cms/payload-app/.next/
+cms/payload-app/node_modules/
+
+# Local IDE / editor artifacts
+.cursor/
+.kiro/
+
 # Mac files
 .DS_Store
 

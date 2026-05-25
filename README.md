@@ -33,6 +33,10 @@ Open `http://localhost:8000`.
 | `npm run build:gatsby` | Run Gatsby build without the content validation wrapper. |
 | `npm run serve` | Preview the production build locally. |
 | `npm run clean` | Clear Gatsby cache. |
+| `npm run payload:develop` | Start the local Payload CMS at `http://localhost:3000/admin`. |
+| `npm run payload:import-mdx` | Import existing MDX wiki pages into Payload as CMS drafts for demo/editing. |
+| `npm run payload:export` | Export published Payload wiki pages to static MDX. |
+| `npm run payload:sync` | Export Payload pages and run content validation. |
 
 ## Project Structure
 
@@ -57,6 +61,10 @@ Most text-heavy wiki pages now live in `src/content/wiki/**/index.mdx`. The home
 Start with `docs/content-authoring.md`. It explains the required frontmatter, approved MDX components, image conventions, and pull request checklist.
 
 Use `src/content/wiki/_template.mdx` as the starter for new pages.
+
+## Payload CMS Pilot
+
+Payload is being tested as a visual authoring layer for wiki content. See `docs/payload-cms-workflow.md` for the start-to-finish workflow and `docs/payload-github-pages-cicd.md` for the proposed GitHub Pages CI/CD path. Existing MDX wiki pages can be imported into Payload as drafts for the branch demo. When a Payload page is published, it exports to static MDX and Gatsby uses that export for the route, even if an older hand-written MDX page still exists as a fallback. The public iGEM wiki does not depend on a live CMS.
 
 ## Contributing
 
