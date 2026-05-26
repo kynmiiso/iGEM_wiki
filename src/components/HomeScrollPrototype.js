@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { withPrefix } from "gatsby"
 import styled, { css, keyframes } from "styled-components"
+import { WaterfallSideText } from "./WaterfallSideText.js"
 
 /**
  * Mockups live under /static/wiki-mockup/ so the browser loads predictable URLs
@@ -14,12 +15,13 @@ const ASSETS = {
   water: withPrefix("/wiki-mockup/wiki-front-water.png"),
 }
 
-/** Overlays above the in-flow back plate (water on top). */
+/** Overlays above the in-flow back plate. Text/popover above water so the glossary box is visible. */
 const Z = {
   front: 1,
   logo: 2,
   bottle: 3,
   water: 4,
+  text: 5,
 }
 
 /**
@@ -196,9 +198,12 @@ export function HomeScrollPrototype() {
           <FlowSizer>
             <RailImg src={ASSETS.back} alt="Wiki front — background scenery" />
           </FlowSizer>
-          <OverlayStack aria-hidden>
+          <OverlayStack>
             <OverlaySlice $z={Z.front}>
               <RailImg src={ASSETS.front} alt="" />
+            </OverlaySlice>
+            <OverlaySlice $z={Z.text} $interactive>
+              <WaterfallSideText />
             </OverlaySlice>
             <OverlaySlice $z={Z.logo}>
               <LogoFloatWrap>
@@ -248,6 +253,7 @@ const CompositionRoot = styled.div`
   position: relative;
   width: 100%;
   min-width: 0;
+  overflow: visible;
 `
 
 const FlowSizer = styled.div`
@@ -262,6 +268,7 @@ const OverlayStack = styled.div`
   width: 100%;
   height: 100%;
   pointer-events: none;
+  overflow: visible;
 `
 
 const OverlaySlice = styled.div`
@@ -271,7 +278,8 @@ const OverlaySlice = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  pointer-events: none;
+  pointer-events: ${({ $interactive }) => ($interactive ? "auto" : "none")};
+  overflow: visible;
 `
 
 const logoIdleFloat = keyframes`
