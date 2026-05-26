@@ -3,7 +3,7 @@ import styled from "styled-components"
  
 const Nav = styled.nav`
   position: fixed;
-  top: 170px;
+  top: 230px;
   left: max(16px, calc(50vw - 450px - 220px));
   width: 180px;
   display: flex;

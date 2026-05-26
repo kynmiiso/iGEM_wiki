@@ -75,7 +75,7 @@ const WikiLayout = ({ children, pageTitle, sectionLabel }) => {
           {pageTitle && (
             <PageHeader>
               {sectionLabel && <SectionLabel>{sectionLabel}</SectionLabel>}
-              <PageTitle>{pageTitle}</PageTitle>
+              {/* <PageTitle>{pageTitle}</PageTitle> */}
               <Divider />
             </PageHeader>
           )}

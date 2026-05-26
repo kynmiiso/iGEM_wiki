@@ -1,9 +1,9 @@
 import React from "react"
 import styled from "styled-components"
 import WikiLayout from "../components/layout.js"
-import ScrollProgress from "../../components/scrollProgress.js"
-import TableOfContents from "../../components/tableOfContents.js"
-import { Layout, TOCWrapper, Content, Title, Subheading } from "../../components/pageStyles.js"
+import ScrollProgress from "../components/scrollProgress.js"
+import TableOfContents from "../components/tableOfContents.js"
+import { Layout, TOCWrapper, Content, Title, Subheading } from "../components/pageStyles.js"
 
 const WetLabPage = () => (
   <WikiLayout pageTitle="Wet Lab">
