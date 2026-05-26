@@ -2,12 +2,12 @@ import React from "react"
 import WikiLayout from "../components/layout.js"
 import { HomeScrollPrototype } from "../components/HomeScrollPrototype.js"
 
-const HomePage = () => (
+const HomeScrollPrototypePage = () => (
   <WikiLayout hideSiteChrome>
     <HomeScrollPrototype />
   </WikiLayout>
 )
 
-export default HomePage
+export default HomeScrollPrototypePage
 
-export const Head = () => <title>Home — iGEM Toronto 2026</title>
+export const Head = () => <title>Home scroll prototype — iGEM Toronto 2026</title>
