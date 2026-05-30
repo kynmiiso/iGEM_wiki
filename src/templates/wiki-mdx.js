@@ -75,7 +75,9 @@ export const Head = ({ data }) => {
 export default WikiMdxTemplate
 
 const ArticleShell = styled.div`
+  width: 100%;
   max-width: 54rem;
+  margin: 0 auto;
 `
 
 const PageMeta = styled.aside`

@@ -10,11 +10,11 @@ export const Layout = styled.div`
 
 export const TOCWrapper = styled.div`
   position: fixed;
-  top: 120px;
+  top: 230px;
   width: 200px;
-  left: calc(50vw - 450px - 220px);
+  left: 24px;
 
-  @media (max-width: 850px) {
+  @media (max-width: 1420px) {
     display: none;
   }
 `
