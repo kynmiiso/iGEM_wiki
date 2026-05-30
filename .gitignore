@@ -58,8 +58,12 @@ typings/
 .cache/
 public
 
-# Deprecated CMS prototype (Payload — not used)
-cms/
+# Payload CMS build output (source under cms/ is tracked)
+cms/payload-app/.next/
+cms/payload-app/node_modules/
+cms/payload-app/.env
+cms/payload-app/*.db
+cms/payload-app/media/
 
 # Local IDE / editor artifacts
 .cursor/

@@ -1,0 +1,50 @@
+# Demo deploy (optional GitHub Actions fallback)
+
+# Primary demo flow uses Vercel Deploy Hooks — see docs/vercel-demo-deployment.md.
+# Use this workflow if you prefer CI builds instead of Vercel's wiki build command.
+
+name: Demo deploy (Payload sync + Gatsby)
+
+on:
+  repository_dispatch:
+    types: [payload-wiki-published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-deploy
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Sync and build wiki
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci && npm --prefix cms/payload-app ci
+
+      - name: Sync from hosted Payload
+        env:
+          PAYLOAD_URL: ${{ secrets.PAYLOAD_DEMO_URL }}
+          PAYLOAD_FETCH_TIMEOUT_MS: 60000
+        run: npm run payload:sync
+
+      - name: Build static wiki
+        env:
+          GATSBY_SITE_URL: ${{ secrets.WIKI_DEMO_URL }}
+        run: npm run build:gatsby
+
+      - name: Trigger Vercel wiki redeploy
+        if: ${{ secrets.VERCEL_WIKI_DEPLOY_HOOK != '' }}
+        run: curl -X POST "${{ secrets.VERCEL_WIKI_DEPLOY_HOOK }}"
