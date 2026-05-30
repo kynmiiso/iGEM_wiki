@@ -13,19 +13,29 @@ function isHostedDemo() {
   )
 }
 
-function scheduleExport(reason: string) {
+async function scheduleExport(reason: string) {
   if (process.env.PAYLOAD_SKIP_EXPORT === '1') return
 
+  // On Vercel/serverless the function suspends as soon as the request returns,
+  // so a deferred setTimeout callback never reliably runs. Fire the deploy-hook
+  // webhook synchronously (awaited) within the hook instead.
+  if (isHostedDemo()) {
+    if (!process.env.PAYLOAD_REBUILD_WEBHOOK_URL) {
+      console.warn(
+        `[payload] ${reason}: PAYLOAD_REBUILD_WEBHOOK_URL is not set; skipping wiki rebuild.`,
+      )
+      return
+    }
+    await triggerRebuildWebhook(reason)
+    console.log(`[payload] Triggered wiki rebuild after ${reason}.`)
+    return
+  }
+
+  // Local dev: debounce and run the export script directly; the dev server stays
+  // alive long enough for the deferred work to complete.
   if (pendingExport) clearTimeout(pendingExport)
 
   pendingExport = setTimeout(() => {
-    if (isHostedDemo()) {
-      triggerRebuildWebhook(reason).catch((error) => {
-        console.error(`[payload] Rebuild webhook failed after ${reason}:`, error)
-      })
-      return
-    }
-
     const command = process.platform === 'win32' ? 'npm.cmd' : 'npm'
     const syncScript = process.env.PAYLOAD_PUBLISH_SYNC_SCRIPT || 'payload:export'
     const child = spawn(command, ['run', syncScript], {
@@ -98,14 +108,22 @@ async function triggerRebuildWebhook(reason: string) {
 
 export const triggerWikiExportAfterChange: CollectionAfterChangeHook = async ({ doc }) => {
   if (doc?._status === 'published') {
-    scheduleExport(`publishing "${doc.title || doc.id}"`)
+    try {
+      await scheduleExport(`publishing "${doc.title || doc.id}"`)
+    } catch (error) {
+      console.error(`[payload] Rebuild webhook failed:`, error)
+    }
   }
 
   return doc
 }
 
 export const triggerWikiExportAfterDelete: CollectionAfterDeleteHook = async ({ doc }) => {
-  scheduleExport(`deleting "${doc?.title || doc?.id || 'wiki page'}"`)
+  try {
+    await scheduleExport(`deleting "${doc?.title || doc?.id || 'wiki page'}"`)
+  } catch (error) {
+    console.error(`[payload] Rebuild webhook failed:`, error)
+  }
 
   return doc
 }
