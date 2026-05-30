@@ -33,6 +33,10 @@ const db = usePostgres
   ? postgresAdapter({
       pool: {
         connectionString: postgresUrl,
+        // Hosted Postgres (Neon/Vercel) presents a self-signed cert chain that
+        // Node rejects by default ("self-signed certificate in certificate chain").
+        // Skip chain verification for the demo; the connection is still TLS-encrypted.
+        ssl: { rejectUnauthorized: false },
       },
       // Auto-sync the schema to the database on startup. Payload normally only
       // does this in development; we force it on so a fresh (empty) Vercel/Neon
