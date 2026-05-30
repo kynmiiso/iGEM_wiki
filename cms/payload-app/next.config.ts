@@ -7,6 +7,12 @@ const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: [
+    'payload',
+    '@payloadcms/db-postgres',
+    '@payloadcms/drizzle',
+    'sharp',
+  ],
   images: {
     localPatterns: [
       {

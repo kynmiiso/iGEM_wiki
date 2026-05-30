@@ -78,8 +78,8 @@ First load can take 30–60 seconds while webpack compiles — use incognito if 
 
 1. Vercel → **Add New → Project** → same GitHub repo
 2. **Root Directory:** leave as **`.`** (repo root)
-3. Framework: **Other** (uses root `vercel.json`)
-4. Build settings (should auto-read from `vercel.json`):
+3. Framework: **Other** (set build settings manually — see `vercel.wiki.json`)
+4. Build settings:
    - **Install:** `npm ci && npm --prefix cms/payload-app ci`
    - **Build:** `npm run build:demo`
    - **Output:** `public`
@@ -180,6 +180,7 @@ Pause demos by not publishing; no need to delete projects between meetings.
 
 | Issue | Fix |
 |-------|-----|
+| CMS deploy green but **404 on every route** | See **`docs/vercel-cms-fix.md`** — usually Output Directory = `public` on the CMS project |
 | CMS admin blank / slow | Wait 60s; hard refresh; try incognito |
 | Wiki build fails on export | Check `PAYLOAD_URL` on wiki project; ensure pages are **published** |
 | Publish doesn't rebuild wiki | Verify `PAYLOAD_REBUILD_WEBHOOK_URL` on CMS project |
@@ -192,7 +193,8 @@ Pause demos by not publishing; no need to delete projects between meetings.
 
 - `cms/payload-app/src/payload.config.ts` — Postgres + Vercel Blob on Vercel, SQLite locally
 - `cms/payload-app/vercel.json` — CMS build settings
-- `vercel.json` — wiki build settings
+- `vercel.wiki.json` — wiki build settings (reference; set in Vercel UI for wiki project)
+- `docs/vercel-cms-fix.md` — CMS 404 troubleshooting
 - `scripts/export-payload-content.mjs` — pulls published content + remote media
 
 ---
