@@ -12,7 +12,8 @@
     "payload:develop": "npm --prefix cms/payload-app run dev -- --webpack",
     "payload:export": "node scripts/export-payload-content.mjs",
     "payload:import-mdx": "npm --prefix cms/payload-app run import:mdx",
-    "payload:sync": "node scripts/payload-sync.mjs"
+    "payload:sync": "node scripts/payload-sync.mjs",
+    "build:demo": "npm run payload:sync && npm run build:gatsby"
   },
   "dependencies": {
     "@deck.gl/core": "^9.2.11",

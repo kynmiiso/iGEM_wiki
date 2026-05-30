@@ -8,7 +8,10 @@ export const WikiPages: CollectionConfig = {
     defaultColumns: ['title', 'section', 'path', '_status', 'updated'],
     group: 'Wiki',
     livePreview: {
-      url: ({ data }) => `http://localhost:8000${data?.path || '/'}`,
+      url: ({ data }) => {
+        const siteUrl = (process.env.WIKI_DEMO_URL || 'http://localhost:8000').replace(/\/$/, '')
+        return `${siteUrl}${data?.path || '/'}`
+      },
     },
   },
   access: {

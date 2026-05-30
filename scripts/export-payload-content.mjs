@@ -40,6 +40,8 @@ if (!response.ok) {
 const payload = await response.json()
 const pages = payload.docs || []
 
+await ensureRemoteMedia(pages)
+
 if (!isPathInside(outputRoot, path.join(root, "src", "content", "wiki"))) {
   console.error(`Refusing to export outside src/content/wiki: ${relative(outputRoot)}`)
   process.exit(1)
@@ -131,7 +133,7 @@ function validatePage(page) {
       const sourcePath = path.join(payloadMediaRoot, filename)
 
       if (!fs.existsSync(sourcePath)) {
-        errors.push(`${label} references missing media file "${filename}" in ${relative(payloadMediaRoot)}.`)
+        errors.push(`${label} references missing media file "${filename}" (not found locally or on ${payloadUrl}).`)
       }
     }
   }
@@ -185,7 +187,7 @@ function exportMedia(media) {
   const targetPath = path.join(staticMediaRoot, filename)
 
   if (!fs.existsSync(sourcePath)) {
-    errors.push(`Payload media file "${filename}" is missing from ${relative(payloadMediaRoot)}.`)
+    errors.push(`Payload media file "${filename}" is missing after download attempt.`)
     return `/payload-media/${filename}`
   }
 
@@ -195,6 +197,48 @@ function exportMedia(media) {
   }
 
   return `/payload-media/${filename}`
+}
+
+async function ensureRemoteMedia(pages) {
+  fs.mkdirSync(payloadMediaRoot, { recursive: true })
+
+  for (const page of pages) {
+    for (const block of page.content || []) {
+      if (block.blockType !== "figure") continue
+
+      const media = normalizeMedia(block.image)
+      if (!media?.filename) continue
+
+      const filename = path.basename(media.filename)
+      const sourcePath = path.join(payloadMediaRoot, filename)
+
+      if (fs.existsSync(sourcePath)) continue
+
+      const response = await fetch(mediaFileUrl(media), {
+        signal: AbortSignal.timeout(payloadFetchTimeoutMs),
+      })
+
+      if (!response.ok) {
+        errors.push(
+          `Unable to download media "${filename}" from ${payloadUrl}: ${response.status} ${response.statusText}`
+        )
+        continue
+      }
+
+      fs.writeFileSync(sourcePath, Buffer.from(await response.arrayBuffer()))
+    }
+  }
+}
+
+function mediaFileUrl(media) {
+  if (media.url?.startsWith("http")) return media.url
+
+  if (media.url) {
+    return `${payloadUrl}${media.url.startsWith("/") ? media.url : `/${media.url}`}`
+  }
+
+  const filename = path.basename(media.filename)
+  return `${payloadUrl}/api/media/file/${encodeURIComponent(filename)}`
 }
 
 function renderRichText(data) {
