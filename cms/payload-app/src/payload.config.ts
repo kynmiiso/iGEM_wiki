@@ -34,6 +34,11 @@ const db = usePostgres
       pool: {
         connectionString: postgresUrl,
       },
+      // Auto-sync the schema to the database on startup. Payload normally only
+      // does this in development; we force it on so a fresh (empty) Vercel/Neon
+      // Postgres gets its tables created without committing migration files.
+      // Fine for a demo; switch to generated migrations for a hardened prod setup.
+      push: true,
     })
   : sqliteAdapter({
       client: {
