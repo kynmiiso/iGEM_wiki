@@ -14,8 +14,24 @@ import { WikiPages } from './collections/WikiPages'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const postgresUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL || ''
-const usePostgres = postgresUrl.startsWith('postgres')
+const rawPostgresUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL || ''
+const usePostgres = rawPostgresUrl.startsWith('postgres')
+
+// Hosted Postgres (Neon/Vercel) presents a self-signed cert chain that Node
+// rejects by default ("self-signed certificate in certificate chain"). Force
+// sslmode=no-verify in the connection string AND pass an explicit ssl option so
+// verification is disabled regardless of how node-postgres merges the two. The
+// connection is still TLS-encrypted; we just skip CA-chain verification.
+const postgresUrl = (() => {
+  if (!usePostgres) return rawPostgresUrl
+  try {
+    const url = new URL(rawPostgresUrl)
+    url.searchParams.set('sslmode', 'no-verify')
+    return url.toString()
+  } catch {
+    return rawPostgresUrl
+  }
+})()
 
 // Resolve the public server URL.
 // On Vercel, VERCEL_PROJECT_PRODUCTION_URL is the stable production domain and

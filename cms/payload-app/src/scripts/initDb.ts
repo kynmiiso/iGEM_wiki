@@ -22,6 +22,13 @@ const run = async () => {
     return
   }
 
+  try {
+    const u = new URL(postgresUrl)
+    console.log(`[initDb] Connecting to Postgres host=${u.hostname} sslmode=${u.searchParams.get('sslmode') ?? '(default)'}`)
+  } catch {
+    console.log('[initDb] Connecting to Postgres (unparsable URL).')
+  }
+
   const { default: config } = await import('../payload.config')
   const payload = await getPayload({ config })
   payload.logger.info('[initDb] Postgres schema sync complete.')
