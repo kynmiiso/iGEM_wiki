@@ -3,7 +3,7 @@ import WikiLayout from "../components/layout.js"
 import { HomeScrollPrototype } from "../components/HomeScrollPrototype.js"
 
 const HomePage = () => (
-  <WikiLayout hideSiteChrome>
+  <WikiLayout fullBleed>
     <HomeScrollPrototype />
   </WikiLayout>
 )

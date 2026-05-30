@@ -1,7 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { withPrefix } from "gatsby"
 import styled, { css, keyframes } from "styled-components"
-import { WikiTopBar } from "./WikiTopBar.js"
 
 /**
  * Mockups live under /static/wiki-mockup/ so the browser loads predictable URLs
@@ -38,14 +37,11 @@ const BOTTLE_FLIP_MS = 580
 /**
  * Full-page wiki front compositing: layered mockup PNGs plus a gentle idle float on the logo.
  *
- * Site nav uses scroll-driven `position: fixed` while the mockup is on-screen.
- *
  * Bottle touchpoints: (1) when the bottle midpoint crosses the viewport middle, capture scrollY
  * and pin the bottle centered; (2) stay pinned through the bottom of the page so it does not
  * vanish. Unpin only when the user scrolls back up past TP1 (`scrollY` below that capture minus slack).
  */
 export function HomeScrollPrototype() {
-  const stackRef = useRef(null)
   const bottleTouchRef = useRef(null)
   const bottleFlipRef = useRef(null)
   const bottleTouchPinnedRef = useRef(false)
@@ -53,7 +49,6 @@ export function HomeScrollPrototype() {
   const flipUnpinFirstRef = useRef(null)
   const flipPinFirstRef = useRef(null)
   const flipCleanupRef = useRef(null)
-  const [navPinned, setNavPinned] = useState(false)
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
@@ -65,17 +60,11 @@ export function HomeScrollPrototype() {
 
   useLayoutEffect(() => {
     const tick = () => {
-      const stack = stackRef.current
       const bottleSpot = bottleTouchRef.current
       const doc = document.documentElement
       const y = window.scrollY
       const maxY = Math.max(0, doc.scrollHeight - window.innerHeight)
       const nearBottom = y >= maxY - 8
-
-      if (stack) {
-        const rect = stack.getBoundingClientRect()
-        setNavPinned(rect.top < 0 && rect.bottom > 0)
-      }
 
       if (bottleTouchPinnedRef.current) {
         const pin0 = bottlePinEnterScrollYRef.current
@@ -202,7 +191,7 @@ export function HomeScrollPrototype() {
 
   return (
     <WikiFrontRoot>
-      <ScrollStack ref={stackRef}>
+      <ScrollStack>
         <CompositionRoot>
           <FlowSizer>
             <RailImg src={ASSETS.back} alt="Wiki front — background scenery" />
@@ -235,9 +224,6 @@ export function HomeScrollPrototype() {
           </OverlayStack>
         </CompositionRoot>
 
-        <HomeNavMount $pinned={navPinned}>
-          <WikiTopBar />
-        </HomeNavMount>
       </ScrollStack>
     </WikiFrontRoot>
   )
@@ -256,15 +242,6 @@ const ScrollStack = styled.div`
   position: relative;
   width: 100%;
   min-width: 0;
-`
-
-/** Absolute at rest; `fixed` while scrolling through mockup so nav stays reachable. */
-const HomeNavMount = styled.div`
-  position: ${({ $pinned }) => ($pinned ? "fixed" : "absolute")};
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 110;
 `
 
 const CompositionRoot = styled.div`
