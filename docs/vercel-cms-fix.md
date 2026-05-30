@@ -1,67 +1,107 @@
-# Vercel CMS 404 Fix (deploy green, all routes 404)
+# Deploy the Payload CMS to Vercel (foolproof)
 
-If Payload CMS deploys successfully but `/` and `/admin` show Vercel `404 NOT_FOUND`, the CMS project is almost always serving **static files** instead of **Next.js**.
+This is the definitive guide for the **CMS** Vercel project. Follow it exactly after
+deleting the old broken Vercel projects.
 
-## Root cause (fixed in repo)
+> **Why the old project 404'd on every route:** Vercel deployed in ~10s without
+> running the Next.js build. That happens when the project's **Root Directory** or
+> **Framework** is wrong, so Vercel serves static files instead of the Next.js app.
+> The code is correct — local `next build` produces `/`, `/admin`, `/api/health`.
+> The fix is entirely in the project settings below.
 
-The repo root had `vercel.json` with `"outputDirectory": "public"` for the **Gatsby wiki**. Vercel monorepos often merge that into **every** project from the same repo — including the CMS — so the CMS never runs Next.js.
+---
 
-That file was removed from the repo root. Wiki settings now live in `vercel.wiki.json` (reference only — configure manually in the wiki Vercel project).
+## The 3 settings that MUST be right
 
-## Fix your existing CMS project (5 minutes)
+| Setting | Required value |
+|---------|----------------|
+| **Root Directory** | `cms/payload-app` |
+| **Framework Preset** | **Next.js** |
+| **Output Directory** | **empty / default** (NOT `public`, NOT `.next`) |
 
-1. **Delete the CMS Vercel project** and create a new one (fastest), **OR** fix settings below.
+If any of these is wrong, you get `404 NOT_FOUND` on every route.
 
-2. **Settings → General** (CMS project only):
-   - Root Directory: `cms/payload-app`
-   - Framework: **Next.js**
-   - Output Directory: **empty** (not `public`, not `.next`)
-   - Node.js: **20.x**
+---
 
-3. **Storage**: Postgres + Blob connected to **this** project.
+## Method A — Dashboard (git-connected, auto-deploys on push)
 
-4. **Environment variables**:
-   - `PAYLOAD_SECRET`
-   - `POSTGRES_URL` (auto from Postgres)
-   - `BLOB_READ_WRITE_TOKEN` (auto from Blob)
-   - `PAYLOAD_PUBLIC_SERVER_URL` = `https://your-cms-url.vercel.app`
+1. **Vercel → Add New → Project** → import `Abdel-E/iGEM_wiki`.
+2. On the configure screen, **before deploying**:
+   - **Root Directory** → click **Edit** → choose `cms/payload-app`.
+   - **Framework Preset** → must show **Next.js** (it should auto-detect once root is set).
+   - **Build/Output/Install** → leave as the Next.js defaults (the repo's
+     `cms/payload-app/vercel.json` already sets the right install + build commands).
+3. **Don't deploy yet** — add storage + env vars first (next two sections), then deploy.
 
-5. **Redeploy** with **clear build cache**.
+### Storage (this project only)
 
-6. Test: `https://your-cms-url.vercel.app/api/health`  
-   Must return: `{"ok":true,"service":"payload-cms"}`
+- **Storage → Create → Postgres** (Neon) → connect to this project. Injects `POSTGRES_URL`.
+- **Storage → Create → Blob** → connect to this project. Injects `BLOB_READ_WRITE_TOKEN`.
 
-## Deploy CMS via CLI (bypasses dashboard mistakes)
+### Environment variables (this project only)
+
+| Variable | Value |
+|----------|-------|
+| `PAYLOAD_SECRET` | a long random string — `openssl rand -hex 32` |
+| `POSTGRES_URL` | auto-added by Postgres storage |
+| `BLOB_READ_WRITE_TOKEN` | auto-added by Blob storage |
+
+`PAYLOAD_PUBLIC_SERVER_URL` is **optional now** — the config auto-detects the Vercel
+URL. Set it only if you use a custom domain.
+
+4. **Deploy.** First build takes 2–5 minutes (NOT 10 seconds). If it finishes in
+   ~10s, the Root Directory/Framework is wrong — stop and fix settings.
+
+---
+
+## Method B — CLI prebuilt deploy (guaranteed, bypasses dashboard settings)
+
+Use this if the dashboard keeps misbehaving. It builds **locally** and uploads the
+exact output, so Root Directory can't be set wrong.
 
 ```bash
 cd cms/payload-app
 npm ci
-npx vercel login
+
+# one-time: link to a NEW project (let it create one)
 npx vercel link
+
+# add env vars in the Vercel dashboard for this project first:
+#   PAYLOAD_SECRET, POSTGRES_URL, BLOB_READ_WRITE_TOKEN
 npx vercel env pull .env.local
-# Add PAYLOAD_SECRET etc. in Vercel dashboard first, then pull again
-npx vercel --prod
+
+# build locally, then deploy the prebuilt output
+npx vercel build --prod
+npx vercel deploy --prebuilt --prod
 ```
 
-Use the URL the CLI prints. Open `/admin` on that URL.
+Open the URL the CLI prints.
 
-## Wiki project (separate Vercel project)
+---
 
-When you create the **wiki** project (repo root `.`), set manually:
+## Verify it worked
 
-| Setting | Value |
-|---------|--------|
-| Framework | Other |
-| Build | `npm run build:demo` |
-| Output | `public` |
-| Install | `npm ci && npm --prefix cms/payload-app ci` |
+```bash
+curl -s https://YOUR-CMS-URL.vercel.app/api/health
+```
 
-See `vercel.wiki.json` in the repo for reference.
+- Returns `{"ok":true,"service":"payload-cms"}` → **fixed.** Open `/admin` and create
+  the first admin user.
+- Returns `NOT_FOUND` → the build didn't run. Re-check the 3 settings, then
+  **Redeploy with "Clear build cache."**
 
-## Still broken?
+---
 
-Paste from the **CMS** deployment build log:
+## Still broken? Send these 3 things
 
-1. The line that shows the build command (`next build` vs `build:demo`)
-2. Whether **Functions** tab lists routes like `/admin/[[...segments]]`
-3. The exact URL you open in the browser
+1. The build-log line showing the command (must be `next build`, never `build:demo`).
+2. Whether the deployment **Functions** tab lists `/admin/[[...segments]]`.
+3. The exact URL you opened and the `/api/health` response.
+
+---
+
+## The wiki is a SEPARATE project
+
+Don't try to open `/admin` on the wiki URL — it will always 404. The wiki
+(repo root) is configured separately; see `docs/vercel-demo-deployment.md`
+Part 2 and `vercel.wiki.json`.

@@ -17,6 +17,18 @@ const dirname = path.dirname(filename)
 const postgresUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL || ''
 const usePostgres = postgresUrl.startsWith('postgres')
 
+// Resolve the public server URL.
+// On Vercel, VERCEL_PROJECT_PRODUCTION_URL is the stable production domain and
+// VERCEL_URL is the per-deployment domain. Falling back to these means the admin
+// panel works on a fresh deploy without manually setting PAYLOAD_PUBLIC_SERVER_URL.
+const serverURL =
+  process.env.PAYLOAD_PUBLIC_SERVER_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000')
+
 const db = usePostgres
   ? postgresAdapter({
       pool: {
@@ -44,7 +56,7 @@ if (process.env.BLOB_READ_WRITE_TOKEN) {
 }
 
 export default buildConfig({
-  serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000',
+  serverURL,
   admin: {
     user: Users.slug,
     suppressHydrationWarning: true,
