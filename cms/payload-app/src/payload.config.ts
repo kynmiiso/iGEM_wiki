@@ -75,7 +75,11 @@ if (process.env.BLOB_READ_WRITE_TOKEN) {
         media: true,
       },
       token: process.env.BLOB_READ_WRITE_TOKEN,
-      clientUploads: true,
+      // Server-side uploads: the Payload function streams the file to Blob.
+      // Browser-direct (clientUploads) uploads were 400ing against
+      // vercel.com/api/blob; server uploads are reliable for images under the
+      // ~4.5MB serverless body limit, which covers normal wiki media.
+      clientUploads: false,
     }),
   )
 }
