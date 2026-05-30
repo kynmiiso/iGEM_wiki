@@ -78,7 +78,7 @@ First load can take 30–60 seconds while webpack compiles — use incognito if 
 
 1. Vercel → **Add New → Project** → same GitHub repo
 2. **Root Directory:** leave as **`.`** (repo root)
-3. Framework: **Other** (set build settings manually — see `vercel.wiki.json`)
+3. Framework: **Other** (build settings auto-read from the root `vercel.json`)
 4. Build settings:
    - **Install:** `npm install --no-audit --no-fund && npm --prefix cms/payload-app install --no-audit --no-fund`
    - **Build:** `npm run build:demo`
@@ -193,7 +193,7 @@ Pause demos by not publishing; no need to delete projects between meetings.
 
 - `cms/payload-app/src/payload.config.ts` — Postgres + Vercel Blob on Vercel, SQLite locally
 - `cms/payload-app/vercel.json` — CMS build settings
-- `vercel.wiki.json` — wiki build settings (reference; set in Vercel UI for wiki project)
+- `vercel.json` — wiki build settings (auto-read by the wiki project, root dir `.`)
 - `docs/vercel-cms-fix.md` — CMS 404 troubleshooting
 - `scripts/export-payload-content.mjs` — pulls published content + remote media
 

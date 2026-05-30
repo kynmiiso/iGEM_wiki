@@ -104,4 +104,4 @@ curl -s https://YOUR-CMS-URL.vercel.app/api/health
 
 Don't try to open `/admin` on the wiki URL — it will always 404. The wiki
 (repo root) is configured separately; see `docs/vercel-demo-deployment.md`
-Part 2 and `vercel.wiki.json`.
+Part 2 and the root `vercel.json`.
