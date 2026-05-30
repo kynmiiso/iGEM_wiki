@@ -80,7 +80,7 @@ First load can take 30–60 seconds while webpack compiles — use incognito if 
 2. **Root Directory:** leave as **`.`** (repo root)
 3. Framework: **Other** (set build settings manually — see `vercel.wiki.json`)
 4. Build settings:
-   - **Install:** `npm ci && npm --prefix cms/payload-app ci`
+   - **Install:** `npm install --no-audit --no-fund && npm --prefix cms/payload-app install --no-audit --no-fund`
    - **Build:** `npm run build:demo`
    - **Output:** `public`
 
@@ -125,7 +125,7 @@ If the CMS URL changed, update `PAYLOAD_PUBLIC_SERVER_URL` on the CMS project to
 From your laptop (with repo checked out on `payload-cms-prototype`):
 
 ```bash
-npm --prefix cms/payload-app ci
+npm --prefix cms/payload-app install
 
 # Pull Postgres connection string from Vercel:
 # CMS project → Storage → Postgres → .env.local tab

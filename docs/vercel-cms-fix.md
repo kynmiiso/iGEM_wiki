@@ -61,7 +61,7 @@ exact output, so Root Directory can't be set wrong.
 
 ```bash
 cd cms/payload-app
-npm ci
+npm install
 
 # one-time: link to a NEW project (let it create one)
 npx vercel link
