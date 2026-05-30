@@ -33,9 +33,12 @@ The public wiki never calls Payload at runtime.
 
 1. Vercel Dashboard → **Add New → Project**
 2. Import `Abdel-E/iGEM_wiki` (or your fork)
-3. **Root Directory:** `cms/payload-app`
-4. Framework: **Next.js** (auto-detected)
-5. Do **not** deploy yet — add storage first
+3. **Root Directory:** click **Edit** → select **`cms/payload-app`** (not repo root)
+4. **Framework Preset:** **Next.js** (must not be Gatsby or "Other")
+5. **Output Directory:** leave **empty** (do not use `public` — that is only for the wiki project)
+6. Do **not** deploy yet — add storage first
+
+If you see `output directory "public" was not found`, the CMS project is using wiki settings. Fix: **Settings → General → Output Directory** → clear it, **Framework** → Next.js, then redeploy.
 
 ### 2. Add Postgres (Neon)
 
