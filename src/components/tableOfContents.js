@@ -1,21 +1,16 @@
 import React, { useEffect, useState } from "react"
 import styled from "styled-components"
- 
+
 const Nav = styled.nav`
-  position: fixed;
-  top: 230px;
-  left: max(16px, calc(50vw - 450px - 220px));
-  width: 180px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: calc(100vh - 160px);
+  max-height: calc(100vh - 180px);
   overflow-y: auto;
-  @media (max-width: 1150px) {
-    display: none;
-  }
+  overscroll-behavior: contain;
 `
- 
+
 const Item = styled.button`
   background: none;
   border: none;
@@ -31,12 +26,12 @@ const Item = styled.button`
   transition: color 0.15s, border-color 0.15s;
   &:hover { color: var(--color-accent) !important; border-left-color: var(--color-accent) !important; }
 `
- 
+
 const TableOfContents = () => {
   const [headings, setHeadings] = useState([])
   const [active, setActive] = useState("")
- 
-    useEffect(() => {
+
+  useEffect(() => {
     const scan = () => {
       const root = document.getElementById("page-content") || document.body
       const els = Array.from(root.querySelectorAll("h2, h3"))
@@ -48,21 +43,24 @@ const TableOfContents = () => {
     return () => clearTimeout(t)
   }, [])
 
- 
   useEffect(() => {
+    const root = document.getElementById("page-content") || document.body
+    const observedHeadings = Array.from(root.querySelectorAll("h2, h3"))
     const observer = new IntersectionObserver(
       entries => {
-        const visible = entries.find(e => e.isIntersecting)
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
         if (visible) setActive(visible.target.id)
       },
       { rootMargin: "0px 0px -60% 0px" }
     )
-    document.querySelectorAll("h2, h3").forEach(el => observer.observe(el))
+    observedHeadings.forEach(el => observer.observe(el))
     return () => observer.disconnect()
   }, [headings])
- 
+
   if (headings.length === 0) return null
- 
+
   return (
     <Nav>
       {headings.map(h => (
@@ -78,5 +76,5 @@ const TableOfContents = () => {
     </Nav>
   )
 }
- 
+
 export default TableOfContents
