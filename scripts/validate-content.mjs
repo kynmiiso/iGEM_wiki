@@ -5,7 +5,7 @@ import process from "process"
 const root = process.cwd()
 const contentRoot = path.join(root, "src", "content", "wiki")
 const pagesRoot = path.join(root, "src", "pages")
-const layoutPath = path.join(root, "src", "components", "layout.js")
+const navPath = path.join(root, "src", "components", "WikiTopBar.js")
 
 const requiredFrontmatter = [
   "title",
@@ -96,6 +96,10 @@ function pageRouteFromFile(filePath) {
   return `/${rel}/`
 }
 
+function isPayloadExport(filePath) {
+  return relative(filePath).split("/").includes("_payload-export")
+}
+
 function validateFrontmatter(filePath, frontmatter) {
   for (const key of requiredFrontmatter) {
     if (frontmatter[key] == null || frontmatter[key] === "") {
@@ -137,10 +141,24 @@ for (const filePath of mdxFiles) {
   validateFrontmatter(filePath, frontmatter)
 
   if (frontmatter.path) {
-    if (mdxRoutes.has(frontmatter.path)) {
+    const existingFilePath = mdxRoutes.get(frontmatter.path)
+
+    if (existingFilePath) {
+      const existingIsPayloadExport = isPayloadExport(existingFilePath)
+      const currentIsPayloadExport = isPayloadExport(filePath)
+
+      if (existingIsPayloadExport && !currentIsPayloadExport) {
+        continue
+      }
+
+      if (!existingIsPayloadExport && currentIsPayloadExport) {
+        mdxRoutes.set(frontmatter.path, filePath)
+        continue
+      }
+
       errors.push(
         `Duplicate MDX path "${frontmatter.path}" in ${relative(filePath)} and ${relative(
-          mdxRoutes.get(frontmatter.path)
+          existingFilePath
         )}.`
       )
     } else {
@@ -164,9 +182,9 @@ for (const [route, mdxFile] of mdxRoutes) {
   }
 }
 
-if (fs.existsSync(layoutPath)) {
-  const layoutSource = fs.readFileSync(layoutPath, "utf8")
-  const navRoutes = [...layoutSource.matchAll(/to:\s*["`]([^"`]+)["`]/g)].map((match) => match[1])
+if (fs.existsSync(navPath)) {
+  const navSource = fs.readFileSync(navPath, "utf8")
+  const navRoutes = [...navSource.matchAll(/to:\s*["`]([^"`]+)["`]/g)].map((match) => match[1])
 
   for (const route of navRoutes) {
     if (!reactRoutes.has(route) && !mdxRoutes.has(route)) {

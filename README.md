@@ -1,70 +1,88 @@
-# iGEM Toronto 2026 Wiki
+# iGEM Toronto 2026 — Wiki
 
-Built with Gatsby, React, Styled Components, and an MDX content pipeline for team-authored wiki pages.
+Built with **Gatsby**, **Styled Components**, **MDX**, and an optional **Payload CMS** pilot for visual editing.
+
+---
 
 ## Prerequisites
 
-- Node.js 20 recommended. GitHub Actions builds with Node 20.
-- npm, installed with Node.
-- Git.
+- [Node.js](https://nodejs.org/) v20 recommended
+- [Git](https://git-scm.com/)
 
-If you use `nvm`, run:
+If you use `nvm`:
 
 ```bash
 nvm use
 ```
 
+---
+
 ## Getting Started
 
 ```bash
-npm ci
+git clone https://github.com/petadex/iGEM_wiki.git
+cd iGEM_wiki
+npm install
 npm run develop
 ```
 
-Open `http://localhost:8000`.
+Open **http://localhost:8000**
+
+---
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── layout.js          ← WikiLayout shell (nav, footer, page chrome)
+│   ├── WikiTopBar.js      ← Site navigation
+│   └── mdx/               ← MDX shortcodes (Callout, Figure, etc.)
+├── content/wiki/          ← Wiki pages as MDX (frontmatter drives routing)
+├── pages/                 ← React-only routes (home, team, dry-lab map, 404)
+├── styles/globalStyles.js ← Design tokens
+├── templates/wiki-mdx.js  ← Layout wrapper for MDX pages
+└── data/                  ← Team CSV, sponsor placeholders
+
+cms/payload-app/           ← Payload CMS (optional authoring UI)
+scripts/validate-content.mjs
+docs/vercel-demo-deployment.md  ← Hosted team demo guide
+```
+
+Most wiki pages live in `src/content/wiki/**/index.mdx`. Use `src/content/wiki/_template.mdx` for new pages.
+
+---
 
 ## Useful Commands
 
 | Command | What it does |
 | --- | --- |
-| `npm run develop` | Start the local Gatsby dev server. |
-| `npm run validate:content` | Check MDX frontmatter, route collisions, and nav links. |
-| `npm run build` | Validate content and build the production site. |
-| `npm run build:gatsby` | Run Gatsby build without the content validation wrapper. |
-| `npm run serve` | Preview the production build locally. |
-| `npm run clean` | Clear Gatsby cache. |
+| `npm run develop` | Start local Gatsby dev server |
+| `npm run build` | Validate content, then build for production |
+| `npm run validate:content` | Check MDX frontmatter and route collisions |
+| `npm run serve` | Preview production build locally |
+| `npm run clean` | Clear Gatsby cache |
+| `npm run payload:develop` | Payload admin at http://localhost:3000/admin |
+| `npm run payload:import-mdx` | Import existing MDX into Payload |
+| `npm run payload:export` | Export published Payload pages to MDX |
+| `npm run payload:sync` | Export + validate |
+| `npm run build:demo` | Sync from hosted Payload + Gatsby build (Vercel) |
 
-## Project Structure
+---
 
-```text
-src/
-  components/          Shared React components and MDX blocks
-  content/wiki/        Author-editable MDX wiki pages
-  data/                CSV and JS data sources
-  pages/               React-only routes and interactive pages
-  styles/              Global design tokens and base styles
-  templates/           Gatsby page templates for generated content
-scripts/
-  validate-content.mjs MDX content and route validation
-docs/
-  content-authoring.md Author guide for subteams
-```
+## Payload CMS & Vercel demo
 
-Most text-heavy wiki pages now live in `src/content/wiki/**/index.mdx`. The homepage, team CSV page, and interactive Dry Lab atlas remain React pages in `src/pages`.
+See `docs/payload-cms-workflow.md` (local) and **`docs/vercel-demo-deployment.md`** (hosted demo).
 
-## Writing Wiki Content
-
-Start with `docs/content-authoring.md`. It explains the required frontmatter, approved MDX components, image conventions, and pull request checklist.
-
-Use `src/content/wiki/_template.mdx` as the starter for new pages.
+---
 
 ## Contributing
 
-1. Never push directly to `main`.
-2. Create a branch for your work.
-3. Edit code or MDX content.
-4. Run `npm run validate:content`.
-5. Run `npm run build`.
-6. Open a pull request.
+1. Never push directly to `main`
+2. Create a branch for your work
+3. Run `npm run validate:content` and `npm run build`
+4. Open a pull request
 
-_iGEM Toronto 2026 - University of Toronto_
+---
+
+_iGEM Toronto 2026 — University of Toronto_
