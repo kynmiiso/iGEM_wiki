@@ -219,7 +219,14 @@ const TimelineRoot = styled.div`
   flex-direction: column;
   gap: 0;
   min-height: 75vh;
-  width: 100%;
+  width: min(96rem, calc(100vw - 1.5rem));
+  max-width: 96rem;
+  margin-inline: auto;
+  padding-inline: clamp(0.75rem, 2vw, 1.5rem);
+  box-sizing: border-box;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 
   @media (prefers-reduced-motion: reduce) {
     * {
@@ -235,6 +242,7 @@ const SubteamNavRow = styled.div`
   border-radius: 8px 8px 0 0;
   border-bottom: none;
   background: #fff;
+  box-sizing: border-box;
 `
 
 const SplitContainer = styled.div`
@@ -254,7 +262,7 @@ const SplitContainer = styled.div`
 `
 
 const DetailHalf = styled.div`
-  min-width: 0;
+  min-width: min(14rem, 100%);
   display: flex;
   flex-direction: column;
   flex: ${({ $full }) => ($full ? "1 1 100%" : "0 0 auto")};
@@ -316,7 +324,7 @@ const ResizeDivider = styled.div`
 `
 
 const CalendarHalf = styled.div`
-  min-width: 0;
+  min-width: min(28rem, 100%);
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -330,11 +338,12 @@ const CalendarHalf = styled.div`
 
 const CalendarPanel = styled.div`
   background: #fff;
-  padding: var(--space-lg);
+  padding: var(--space-md) clamp(1.25rem, 3.5vw, 2.75rem) var(--space-lg);
   min-height: 68vh;
   flex: 1;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 `
 
 

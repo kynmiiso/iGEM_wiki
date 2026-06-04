@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
-const STORAGE_KEY = "contribution-calendar-split-v1"
-const DEFAULT_SPLIT = 42
-const MIN_SPLIT = 22
-const MAX_SPLIT = 78
+const STORAGE_KEY = "contribution-calendar-split-v2"
+const DEFAULT_SPLIT = 30
+const MIN_SPLIT = 18
+const MAX_SPLIT = 40
 
 function readStoredSplit() {
   if (typeof window === "undefined") return DEFAULT_SPLIT

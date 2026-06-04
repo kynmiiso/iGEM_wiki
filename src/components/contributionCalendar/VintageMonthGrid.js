@@ -115,13 +115,15 @@ const GridWrap = styled.div`
   flex: 1;
   min-width: 0;
   width: 100%;
+  padding-inline: clamp(0.25rem, 1vw, 0.75rem);
+  box-sizing: border-box;
 `
 
 const WeekdayRow = styled.div`
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
-  margin-bottom: 6px;
+  gap: clamp(6px, 0.9vw, 10px);
+  margin-bottom: 8px;
 `
 
 const Weekday = styled.div`
@@ -137,14 +139,14 @@ const Weekday = styled.div`
 const WeekRow = styled.div`
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: clamp(6px, 0.9vw, 10px);
+  margin-bottom: clamp(6px, 0.9vw, 10px);
 `
 
 const Cell = styled.div`
   position: relative;
-  min-height: clamp(5.5rem, 10vw, 7.25rem);
-  padding: 0.5rem 0.35rem 0.35rem;
+  min-height: clamp(5.25rem, 9vw, 7rem);
+  padding: 0.55rem 0.5rem 0.4rem;
   background: ${({ $inBand, $outOfMonth }) => {
     if ($inBand) return $outOfMonth ? "#dceee8" : "#6de4c0"
     return $outOfMonth ? "#f3f3f0" : "#ffffff"
