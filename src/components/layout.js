@@ -44,14 +44,21 @@ const nav = [
   ]},
 ]
 
-const WikiLayout = ({ children, pageTitle, sectionLabel, hideSiteChrome = false, fullBleed = false }) => {
+const WikiLayout = ({
+  children,
+  pageTitle,
+  sectionLabel,
+  hideSiteChrome = false,
+  hideTopBar = false,
+  fullBleed = false,
+}) => {
   return (
     <>
       <GlobalStyle />
 
       <SiteWrapper>
 
-        {!hideSiteChrome && (
+        {!hideSiteChrome && !hideTopBar && (
           <TopBar>
             <NavInner>
               <LogoPlaceholder to="/" aria-label="iGEM Toronto 2026 — Home">

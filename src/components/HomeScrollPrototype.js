@@ -37,6 +37,9 @@ const BOTTLE_PIN_SCROLL_UP_LEAVE = 40
 /** FLIP duration (ms) for bottle pick-up / put-down when toggling sticky. */
 const BOTTLE_FLIP_MS = 580
 
+/** Back layer scroll speed vs foreground (lower = slower / more depth). */
+const BACK_PARALLAX_SPEED = 0.42
+
 /**
  * Full-page wiki front compositing: layered mockup PNGs plus a gentle idle float on the logo.
  *
@@ -57,12 +60,28 @@ export function HomeScrollPrototype() {
   const flipCleanupRef = useRef(null)
   const [navPinned, setNavPinned] = useState(false)
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
+  const [backParallaxY, setBackParallaxY] = useState(0)
+  const reduceMotionParallaxRef = useRef(false)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
 
   useEffect(() => {
     if (typeof window === "undefined") return
     window.scrollTo(0, 0)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return undefined
+    }
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const sync = () => {
+      reduceMotionParallaxRef.current = mq.matches
+      if (mq.matches) setBackParallaxY(0)
+    }
+    sync()
+    mq.addEventListener("change", sync)
+    return () => mq.removeEventListener("change", sync)
   }, [])
 
   useLayoutEffect(() => {
@@ -77,6 +96,11 @@ export function HomeScrollPrototype() {
       if (stack) {
         const rect = stack.getBoundingClientRect()
         setNavPinned(rect.top < 0 && rect.bottom > 0)
+        const scrolledInto = Math.max(0, -rect.top)
+        const offset = reduceMotionParallaxRef.current
+          ? 0
+          : scrolledInto * (1 - BACK_PARALLAX_SPEED)
+        setBackParallaxY((prev) => (prev === offset ? prev : offset))
       }
 
       if (bottleTouchPinnedRef.current) {
@@ -207,7 +231,12 @@ export function HomeScrollPrototype() {
       <ScrollStack ref={stackRef}>
         <CompositionRoot>
           <FlowSizer>
-            <RailImg src={ASSETS.back} alt="Wiki front — background scenery" />
+            <ParallaxBack
+              $active={backParallaxY > 0}
+              style={{ transform: `translate3d(0, ${backParallaxY}px, 0)` }}
+            >
+              <BackRailImg src={ASSETS.back} alt="Wiki front — background scenery" />
+            </ParallaxBack>
           </FlowSizer>
           <OverlayStack aria-hidden>
             <OverlaySlice $z={Z.front}>
@@ -279,9 +308,34 @@ const CompositionRoot = styled.div`
   overflow: visible;
 `
 
+const RailImg = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  user-select: none;
+  pointer-events: none;
+`
+
 const FlowSizer = styled.div`
   width: 100%;
   pointer-events: none;
+  overflow: hidden;
+`
+
+const ParallaxBack = styled.div`
+  width: 100%;
+  will-change: ${({ $active }) => ($active ? "transform" : "auto")};
+
+  @media (prefers-reduced-motion: reduce) {
+    transform: none !important;
+    will-change: auto;
+  }
+`
+
+const BackRailImg = styled(RailImg)`
+  transform: scale(1.04);
+  transform-origin: center top;
 `
 
 const OverlayStack = styled.div`
@@ -403,13 +457,4 @@ const BottleFloatWrap = styled.div`
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
-`
-
-const RailImg = styled.img`
-  display: block;
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  user-select: none;
-  pointer-events: none;
 `
