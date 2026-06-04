@@ -29,16 +29,16 @@ export const wikiNav = [
     { to: "/hardware/notebook/", label: "Notebook" },
     { to: "/hardware/results/", label: "Results" },
   ]},
+  { label: "Team", children: [
+    { to: "/team/", label: "Meet the Team" },
+    { to: "/team/attributions/", label: "Attributions" },
+    { to: "/team/collaborations/", label: "Collaborations" },
+  ]},
   { label: "Beyond the Bench", children: [
     { to: "/beyond-the-bench/education-toolkit/", label: "Education Toolkit" },
     { to: "/beyond-the-bench/human-practices/", label: "Human Practices" },
     { to: "/beyond-the-bench/entrepreneurship/", label: "Entrepreneurship" },
     { to: "/beyond-the-bench/safety/", label: "Safety" },
-  ]},
-  { label: "Team", children: [
-    { to: "/team/", label: "Meet the Team" },
-    { to: "/team/attributions/", label: "Attributions" },
-    { to: "/team/collaborations/", label: "Collaborations" },
   ]},
 ]
 
@@ -66,7 +66,12 @@ export function WikiTopBar() {
   )
 }
 
+/** Keep nav above portaled glossary popovers (`ExplainTermPopover` uses 100). */
+export const WIKI_TOP_BAR_Z_INDEX = 110
+
 const TopBar = styled.header`
+  position: relative;
+  z-index: ${WIKI_TOP_BAR_Z_INDEX};
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg);
 `
@@ -113,6 +118,11 @@ const NavItem = styled.div`
   &:hover > div,
   &:focus-within > div {
     display: flex;
+  }
+
+  &:last-child > div {
+    left: auto;
+    right: 0;
   }
 `
 

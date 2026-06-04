@@ -9,6 +9,9 @@ const TEXT_BOX_SHELL = withPrefix("/wiki-mockup/wiki-front-pop-up.png")
 /** Fixed popover size (px) — does not change when the window resizes. */
 export const POPOVER_WIDTH_PX = 400
 
+/** Below site chrome (`WikiTopBar` / home nav mount at 110); above mockup overlays (≤95). */
+export const POPOVER_Z_INDEX = 100
+
 export const POPOVER_GAP_PX = 12
 
 /** Lightning-bolt tip: fraction in from the popover’s left edge. */
@@ -70,8 +73,14 @@ export function ExplainTerm({ term, explanation, className }) {
   const buttonRef = useRef(null)
   const popoverRef = useRef(null)
   const [open, setOpen] = useState(false)
+  const [pinned, setPinned] = useState(false)
   const [pos, setPos] = useState(null)
   const coarsePointerRef = useRef(false)
+  const pinnedRef = useRef(false)
+
+  useEffect(() => {
+    pinnedRef.current = pinned
+  }, [pinned])
 
   const updatePosition = useCallback(() => {
     const btn = buttonRef.current
@@ -89,7 +98,13 @@ export function ExplainTerm({ term, explanation, className }) {
   }, [])
 
   const show = useCallback(() => setOpen(true), [])
-  const hide = useCallback(() => {
+  const dismiss = useCallback(() => {
+    setOpen(false)
+    setPinned(false)
+    setPos(null)
+  }, [])
+  const hideUnlessPinned = useCallback(() => {
+    if (pinnedRef.current) return
     setOpen(false)
     setPos(null)
   }, [])
@@ -111,18 +126,24 @@ export function ExplainTerm({ term, explanation, className }) {
     (ev) => {
       if (ev.key === "Escape") {
         ev.preventDefault()
-        hide()
+        dismiss()
         buttonRef.current?.blur()
       }
     },
-    [hide]
+    [dismiss]
   )
 
-  const onTermClick = useCallback(() => {
-    if (!coarsePointerRef.current) return
-    setOpen((v) => {
-      if (!v) setPos(null)
-      return !v
+  /** Click pins the popover open; click again (or Escape) dismisses it. */
+  const onTermClick = useCallback((ev) => {
+    ev.stopPropagation()
+    setPinned((wasPinned) => {
+      if (wasPinned) {
+        setOpen(false)
+        setPos(null)
+        return false
+      }
+      setOpen(true)
+      return true
     })
   }, [])
 
@@ -138,13 +159,18 @@ export function ExplainTerm({ term, explanation, className }) {
   }, [])
 
   useEffect(() => {
-    if (!open || !coarsePointerRef.current) return undefined
+    if (!open) return undefined
+    /* Pinned: click away to close. Touch: same when open (no hover preview). */
+    if (!pinned && !coarsePointerRef.current) return undefined
+
     const onDocPointer = (ev) => {
-      if (rootRef.current && !rootRef.current.contains(ev.target)) hide()
+      if (rootRef.current?.contains(ev.target)) return
+      if (buttonRef.current?.contains(ev.target)) return
+      dismiss()
     }
     document.addEventListener("pointerdown", onDocPointer)
     return () => document.removeEventListener("pointerdown", onDocPointer)
-  }, [open, hide])
+  }, [open, pinned, dismiss])
 
   return (
     <>
@@ -152,15 +178,16 @@ export function ExplainTerm({ term, explanation, className }) {
         ref={rootRef}
         className={className}
         onMouseEnter={show}
-        onMouseLeave={hide}
+        onMouseLeave={hideUnlessPinned}
         onFocus={show}
-        onBlur={hide}
+        onBlur={hideUnlessPinned}
         onKeyDown={onKeyDown}
       >
         <TermButton
           ref={buttonRef}
           type="button"
           aria-expanded={open}
+          aria-pressed={pinned}
           aria-describedby={open ? popoverId : undefined}
           onClick={onTermClick}
         >
@@ -227,7 +254,7 @@ const TermButton = styled.button`
   font: inherit;
   letter-spacing: inherit;
   text-transform: inherit;
-  cursor: help;
+  cursor: pointer;
   border-radius: 2px;
 
   &:focus-visible {
@@ -238,7 +265,7 @@ const TermButton = styled.button`
 
 const PopoverOuter = styled.div`
   position: fixed;
-  z-index: 9999;
+  z-index: ${POPOVER_Z_INDEX};
   pointer-events: none;
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.4));
 `
