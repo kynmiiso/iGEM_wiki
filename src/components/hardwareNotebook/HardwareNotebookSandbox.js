@@ -66,9 +66,17 @@ export function HardwareNotebookSandbox() {
   )
 
   const [noteStates, setNoteStates] = useState(() =>
-    loadPersistedLayout(HARDWARE_NOTEBOOK_NOTES) ??
-      buildInitialState(HARDWARE_NOTEBOOK_NOTES)
+    buildInitialState(HARDWARE_NOTEBOOK_NOTES)
   )
+
+  useEffect(() => {
+    const persisted = loadPersistedLayout(HARDWARE_NOTEBOOK_NOTES)
+    if (persisted) {
+      maxZRef.current =
+        Math.max(...Object.values(persisted).map((state) => state.zIndex), 0) + 10
+      setNoteStates(persisted)
+    }
+  }, [])
 
   const onBringToFront = useCallback((noteId) => {
     maxZRef.current += 1
@@ -91,6 +99,24 @@ export function HardwareNotebookSandbox() {
     })
   }, [])
 
+  const onNudgeNote = useCallback((noteId, deltaX, deltaY) => {
+    onBringToFront(noteId)
+    setNoteStates((prev) => {
+      const current = prev[noteId]
+      if (!current) return prev
+      const next = {
+        ...prev,
+        [noteId]: {
+          ...current,
+          xPct: Math.min(96, Math.max(4, current.xPct + deltaX)),
+          yPct: Math.min(96, Math.max(4, current.yPct + deltaY)),
+        },
+      }
+      persistLayout(next)
+      return next
+    })
+  }, [onBringToFront])
+
   const { dragVisual, bindNotePointerDown, isDragging } = useNoteDrag({
     sandboxRef,
     onBringToFront,
@@ -110,6 +136,7 @@ export function HardwareNotebookSandbox() {
         noteStates={noteStates}
         draggingId={dragVisual?.noteId ?? null}
         bindNotePointerDown={bindNotePointerDown}
+        onNudgeNote={onNudgeNote}
         canvasRef={canvasRef}
         noteRefs={noteRefs}
       />

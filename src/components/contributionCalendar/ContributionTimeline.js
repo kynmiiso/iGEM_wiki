@@ -35,18 +35,9 @@ function firstWeekIdForMonth(monthKey) {
 }
 
 export function ContributionTimeline() {
-  const initialWeekId = useMemo(() => {
-    if (typeof window !== "undefined") {
-      const fromHash = parseWeekHash(window.location.hash)
-      if (fromHash) return fromHash
-    }
-    return getDefaultWeekId()
-  }, [])
-
-  const initialMonth = useMemo(() => {
-    const week = CONTRIBUTION_WEEK_BY_ID[initialWeekId]
-    return week?.monthKeys[0] ?? "2026-04"
-  }, [initialWeekId])
+  const initialWeekId = getDefaultWeekId()
+  const initialMonth =
+    CONTRIBUTION_WEEK_BY_ID[initialWeekId]?.monthKeys[0] ?? "2026-04"
 
   const [monthKey, setMonthKey] = useState(initialMonth)
   const [selectedWeekId, setSelectedWeekId] = useState(initialWeekId)
@@ -121,6 +112,15 @@ export function ContributionTimeline() {
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined
+    const initialHashId = parseWeekHash(window.location.hash)
+    if (initialHashId) {
+      const initialHashWeek = CONTRIBUTION_WEEK_BY_ID[initialHashId]
+      setSelectedWeekId(initialHashId)
+      if (initialHashWeek?.monthKeys[0]) {
+        setMonthKey(initialHashWeek.monthKeys[0])
+      }
+    }
+
     const onHash = () => {
       const id = parseWeekHash(window.location.hash)
       if (id) selectWeek(id)
@@ -139,16 +139,12 @@ export function ContributionTimeline() {
         />
       </SubteamNavRow>
 
-      <SplitContainer ref={containerRef} $split={showDivider ? splitPct : null}>
+      <SplitContainer
+        ref={containerRef}
+        style={{ "--detail-split": `${splitPct}%` }}
+      >
         {showDetail && (
-          <DetailHalf
-            $full={hiddenPanel === "calendar"}
-            style={
-              showDivider
-                ? { flex: `0 0 ${splitPct}%`, maxWidth: `${splitPct}%` }
-                : undefined
-            }
-          >
+          <DetailHalf $full={hiddenPanel === "calendar"} $split={showDivider}>
             {!showCalendar && (
               <RestorePanelBar
                 label="Show calendar →"
@@ -265,8 +261,10 @@ const DetailHalf = styled.div`
   min-width: min(14rem, 100%);
   display: flex;
   flex-direction: column;
-  flex: ${({ $full }) => ($full ? "1 1 100%" : "0 0 auto")};
-  max-width: ${({ $full }) => ($full ? "100%" : "none")};
+  flex: ${({ $full, $split }) =>
+    $full ? "1 1 100%" : $split ? "0 0 var(--detail-split)" : "0 0 auto"};
+  max-width: ${({ $full, $split }) =>
+    $full ? "100%" : $split ? "var(--detail-split)" : "none"};
 
   @media (max-width: 900px) {
     flex: 1 1 auto;

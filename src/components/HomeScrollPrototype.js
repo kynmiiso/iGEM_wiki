@@ -58,9 +58,9 @@ export function HomeScrollPrototype() {
   const flipUnpinFirstRef = useRef(null)
   const flipPinFirstRef = useRef(null)
   const flipCleanupRef = useRef(null)
+  const parallaxBackRef = useRef(null)
   const [navPinned, setNavPinned] = useState(false)
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
-  const [backParallaxY, setBackParallaxY] = useState(0)
   const reduceMotionParallaxRef = useRef(false)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
@@ -77,7 +77,10 @@ export function HomeScrollPrototype() {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
     const sync = () => {
       reduceMotionParallaxRef.current = mq.matches
-      if (mq.matches) setBackParallaxY(0)
+      if (mq.matches && parallaxBackRef.current) {
+        parallaxBackRef.current.style.transform = "translate3d(0, 0, 0)"
+        parallaxBackRef.current.style.willChange = "auto"
+      }
     }
     sync()
     mq.addEventListener("change", sync)
@@ -100,7 +103,10 @@ export function HomeScrollPrototype() {
         const offset = reduceMotionParallaxRef.current
           ? 0
           : scrolledInto * (1 - BACK_PARALLAX_SPEED)
-        setBackParallaxY((prev) => (prev === offset ? prev : offset))
+        if (parallaxBackRef.current) {
+          parallaxBackRef.current.style.transform = `translate3d(0, ${offset}px, 0)`
+          parallaxBackRef.current.style.willChange = offset > 0 ? "transform" : "auto"
+        }
       }
 
       if (bottleTouchPinnedRef.current) {
@@ -232,13 +238,12 @@ export function HomeScrollPrototype() {
         <CompositionRoot>
           <FlowSizer>
             <ParallaxBack
-              $active={backParallaxY > 0}
-              style={{ transform: `translate3d(0, ${backParallaxY}px, 0)` }}
+              ref={parallaxBackRef}
             >
               <BackRailImg src={ASSETS.back} alt="Wiki front — background scenery" />
             </ParallaxBack>
           </FlowSizer>
-          <OverlayStack aria-hidden>
+          <OverlayStack>
             <OverlaySlice $z={Z.front}>
               <RailImg src={ASSETS.front} alt="" />
             </OverlaySlice>
@@ -325,7 +330,7 @@ const FlowSizer = styled.div`
 
 const ParallaxBack = styled.div`
   width: 100%;
-  will-change: ${({ $active }) => ($active ? "transform" : "auto")};
+  will-change: auto;
 
   @media (prefers-reduced-motion: reduce) {
     transform: none !important;

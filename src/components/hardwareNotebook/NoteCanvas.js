@@ -7,6 +7,7 @@ export function NoteCanvas({
   noteStates,
   draggingId,
   bindNotePointerDown,
+  onNudgeNote,
   canvasRef,
   noteRefs,
 }) {
@@ -29,6 +30,7 @@ export function NoteCanvas({
             zIndex={state?.zIndex ?? note.zIndex}
             isDragging={isDragging}
             onPointerDown={bindNotePointerDown(note.id)}
+            onNudge={(deltaX, deltaY) => onNudgeNote(note.id, deltaX, deltaY)}
           />
         )
       })}

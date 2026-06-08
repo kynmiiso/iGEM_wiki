@@ -15,6 +15,7 @@ export const DraggableNote = forwardRef(function DraggableNote(
     zIndex,
     isDragging,
     onPointerDown,
+    onNudge,
     style,
   },
   ref
@@ -31,9 +32,22 @@ export const DraggableNote = forwardRef(function DraggableNote(
       style={style}
       role="button"
       tabIndex={0}
-      aria-label={label}
+      aria-label={`${label}. Use arrow keys to move this note.`}
       aria-grabbed={isDragging}
       onPointerDown={onPointerDown}
+      onKeyDown={(event) => {
+        const step = event.shiftKey ? 5 : 1
+        const deltas = {
+          ArrowLeft: [-step, 0],
+          ArrowRight: [step, 0],
+          ArrowUp: [0, -step],
+          ArrowDown: [0, step],
+        }
+        const delta = deltas[event.key]
+        if (!delta) return
+        event.preventDefault()
+        onNudge?.(...delta)
+      }}
     >
       <NoteImg src={NOTE_ASSET} alt="" draggable={false} />
     </NoteWrap>

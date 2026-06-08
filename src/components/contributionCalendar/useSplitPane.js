@@ -20,11 +20,17 @@ function readStoredSplit() {
  * Draggable split between detail (left) and calendar (right) as % width for the left pane.
  */
 export function useSplitPane() {
-  const [splitPct, setSplitPct] = useState(readStoredSplit)
+  const [splitPct, setSplitPct] = useState(DEFAULT_SPLIT)
   const containerRef = useRef(null)
   const draggingRef = useRef(false)
   const splitRef = useRef(splitPct)
   splitRef.current = splitPct
+
+  useEffect(() => {
+    const stored = readStoredSplit()
+    splitRef.current = stored
+    setSplitPct(stored)
+  }, [])
 
   const persistSplit = useCallback((pct) => {
     if (typeof window === "undefined") return
