@@ -205,6 +205,11 @@ const Viewport = styled.div`
   overflow: hidden;
   position: relative;
   border-radius: 0.45rem;
+
+  @media (max-width: 720px) {
+    --slot: 4.25rem;
+    --sg: 0.4rem;
+  }
 `
 
 const Track = styled.div`
