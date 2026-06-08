@@ -76,8 +76,9 @@ export default WikiMdxTemplate
 
 const ArticleShell = styled.div`
   width: 100%;
-  max-width: 54rem;
+  max-width: 80rem;
   margin: 0 auto;
+  overflow: visible;
 `
 
 const PageMeta = styled.aside`
@@ -118,6 +119,7 @@ const StatusBadge = styled.span`
 `
 
 const Article = styled.article`
+  overflow: visible;
   color: var(--color-text);
   font-size: 1rem;
   line-height: 1.75;

@@ -1,5 +1,7 @@
 import React from "react"
 import styled, { css } from "styled-components"
+import { ContributionTimeline } from "../contributionCalendar/ContributionTimeline.js"
+import { HardwareNotebookSandbox } from "../hardwareNotebook/HardwareNotebookSandbox.js"
 
 export const Callout = ({ tone = "note", title, children }) => (
   <CalloutBox $tone={tone}>
@@ -35,6 +37,8 @@ export const mdxComponents = {
   Figure,
   ImageGrid,
   DataTable,
+  ContributionTimeline,
+  HardwareNotebookSandbox,
 }
 
 const toneStyles = {

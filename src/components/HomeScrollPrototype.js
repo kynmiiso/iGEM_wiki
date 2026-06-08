@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { withPrefix } from "gatsby"
 import styled, { css, keyframes } from "styled-components"
+import { WikiTopBar, WIKI_TOP_BAR_Z_INDEX } from "./WikiTopBar.js"
 import { WaterfallSideText } from "./WaterfallSideText.js"
 
 /**
@@ -36,14 +37,20 @@ const BOTTLE_PIN_SCROLL_UP_LEAVE = 40
 /** FLIP duration (ms) for bottle pick-up / put-down when toggling sticky. */
 const BOTTLE_FLIP_MS = 580
 
+/** Back layer scroll speed vs foreground (lower = slower / more depth). */
+const BACK_PARALLAX_SPEED = 0.42
+
 /**
  * Full-page wiki front compositing: layered mockup PNGs plus a gentle idle float on the logo.
+ *
+ * Site nav uses scroll-driven `position: fixed` while the mockup is on-screen.
  *
  * Bottle touchpoints: (1) when the bottle midpoint crosses the viewport middle, capture scrollY
  * and pin the bottle centered; (2) stay pinned through the bottom of the page so it does not
  * vanish. Unpin only when the user scrolls back up past TP1 (`scrollY` below that capture minus slack).
  */
 export function HomeScrollPrototype() {
+  const stackRef = useRef(null)
   const bottleTouchRef = useRef(null)
   const bottleFlipRef = useRef(null)
   const bottleTouchPinnedRef = useRef(false)
@@ -51,7 +58,10 @@ export function HomeScrollPrototype() {
   const flipUnpinFirstRef = useRef(null)
   const flipPinFirstRef = useRef(null)
   const flipCleanupRef = useRef(null)
+  const parallaxBackRef = useRef(null)
+  const [navPinned, setNavPinned] = useState(false)
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
+  const reduceMotionParallaxRef = useRef(false)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
 
@@ -60,13 +70,44 @@ export function HomeScrollPrototype() {
     window.scrollTo(0, 0)
   }, [])
 
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return undefined
+    }
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const sync = () => {
+      reduceMotionParallaxRef.current = mq.matches
+      if (mq.matches && parallaxBackRef.current) {
+        parallaxBackRef.current.style.transform = "translate3d(0, 0, 0)"
+        parallaxBackRef.current.style.willChange = "auto"
+      }
+    }
+    sync()
+    mq.addEventListener("change", sync)
+    return () => mq.removeEventListener("change", sync)
+  }, [])
+
   useLayoutEffect(() => {
     const tick = () => {
+      const stack = stackRef.current
       const bottleSpot = bottleTouchRef.current
       const doc = document.documentElement
       const y = window.scrollY
       const maxY = Math.max(0, doc.scrollHeight - window.innerHeight)
       const nearBottom = y >= maxY - 8
+
+      if (stack) {
+        const rect = stack.getBoundingClientRect()
+        setNavPinned(rect.top < 0 && rect.bottom > 0)
+        const scrolledInto = Math.max(0, -rect.top)
+        const offset = reduceMotionParallaxRef.current
+          ? 0
+          : scrolledInto * (1 - BACK_PARALLAX_SPEED)
+        if (parallaxBackRef.current) {
+          parallaxBackRef.current.style.transform = `translate3d(0, ${offset}px, 0)`
+          parallaxBackRef.current.style.willChange = offset > 0 ? "transform" : "auto"
+        }
+      }
 
       if (bottleTouchPinnedRef.current) {
         const pin0 = bottlePinEnterScrollYRef.current
@@ -193,10 +234,14 @@ export function HomeScrollPrototype() {
 
   return (
     <WikiFrontRoot>
-      <ScrollStack>
+      <ScrollStack ref={stackRef}>
         <CompositionRoot>
           <FlowSizer>
-            <RailImg src={ASSETS.back} alt="Wiki front — background scenery" />
+            <ParallaxBack
+              ref={parallaxBackRef}
+            >
+              <BackRailImg src={ASSETS.back} alt="Wiki front — background scenery" />
+            </ParallaxBack>
           </FlowSizer>
           <OverlayStack>
             <OverlaySlice $z={Z.front}>
@@ -229,6 +274,9 @@ export function HomeScrollPrototype() {
           </OverlayStack>
         </CompositionRoot>
 
+        <HomeNavMount $pinned={navPinned}>
+          <WikiTopBar />
+        </HomeNavMount>
       </ScrollStack>
     </WikiFrontRoot>
   )
@@ -249,6 +297,15 @@ const ScrollStack = styled.div`
   min-width: 0;
 `
 
+/** Absolute at rest; `fixed` while scrolling through mockup so nav stays reachable. */
+const HomeNavMount = styled.div`
+  position: ${({ $pinned }) => ($pinned ? "fixed" : "absolute")};
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: ${WIKI_TOP_BAR_Z_INDEX};
+`
+
 const CompositionRoot = styled.div`
   position: relative;
   width: 100%;
@@ -256,9 +313,34 @@ const CompositionRoot = styled.div`
   overflow: visible;
 `
 
+const RailImg = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  user-select: none;
+  pointer-events: none;
+`
+
 const FlowSizer = styled.div`
   width: 100%;
   pointer-events: none;
+  overflow: hidden;
+`
+
+const ParallaxBack = styled.div`
+  width: 100%;
+  will-change: auto;
+
+  @media (prefers-reduced-motion: reduce) {
+    transform: none !important;
+    will-change: auto;
+  }
+`
+
+const BackRailImg = styled(RailImg)`
+  transform: scale(1.04);
+  transform-origin: center top;
 `
 
 const OverlayStack = styled.div`
@@ -380,13 +462,4 @@ const BottleFloatWrap = styled.div`
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
-`
-
-const RailImg = styled.img`
-  display: block;
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  user-select: none;
-  pointer-events: none;
 `
