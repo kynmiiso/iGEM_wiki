@@ -3,6 +3,8 @@ import styled, { css } from "styled-components"
 import { ContributionTimeline } from "../contributionCalendar/ContributionTimeline.js"
 import { HardwareNotebookSandbox } from "../hardwareNotebook/HardwareNotebookSandbox.js"
 import { InteractiveGizmo } from "./interactive/InteractiveGizmo.js"
+import Citation from "../Citation"
+import References from "../References"
 
 export const Callout = ({ tone = "note", title, children }) => (
   <CalloutBox $tone={tone}>
@@ -41,6 +43,8 @@ export const mdxComponents = {
   ContributionTimeline,
   HardwareNotebookSandbox,
   InteractiveGizmo,
+  Citation,
+  References,
 }
 
 const toneStyles = {
