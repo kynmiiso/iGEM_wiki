@@ -1,18 +1,16 @@
-/**
- * Implement Gatsby's SSR (Server Side Rendering) APIs in this file.
- *
- * See: https://www.gatsbyjs.com/docs/reference/config-files/gatsby-ssr/
- */
-
-/**
- * @type {import('gatsby').GatsbySSR['onRenderBody']}
- */
-
 const React = require("react")
 
-exports.onRenderBody = ({ setHtmlAttributes, setHeadComponents }) => {
-  setHtmlAttributes({ lang: `en` })
+/**
+ * Browsers still request /favicon.ico by default; we ship /favicon.svg and advertise it here.
+ * Add static/favicon.ico later if you want to silence that specific request.
+ */
+exports.onRenderBody = ({ setHeadComponents }) => {
   setHeadComponents([
-    <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1.0" />
+    React.createElement("link", {
+      key: "favicon-svg",
+      rel: "icon",
+      href: "/favicon.svg",
+      type: "image/svg+xml",
+    }),
   ])
 }
