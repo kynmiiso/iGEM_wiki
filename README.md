@@ -1,90 +1,88 @@
 # iGEM Toronto 2026 — Wiki
 
-> Built with **Gatsby** + **Styled Components**.
+Built with **Gatsby**, **Styled Components**, **MDX**, and an optional **Payload CMS** pilot for visual editing.
 
 ---
 
 ## Prerequisites
 
-Make sure you have these installed before anything else:
+- [Node.js](https://nodejs.org/) v20 recommended
+- [Git](https://git-scm.com/)
 
-- [Node.js](https://nodejs.org/) v18 or higher — check with `node -v`
-- [Git](https://git-scm.com/) — check with `git --version`
+If you use `nvm`:
+
+```bash
+nvm use
+```
 
 ---
 
 ## Getting Started
 
-### 1. Clone the repo
-
 ```bash
 git clone https://github.com/petadex/iGEM_wiki.git
-```
-
-### 2. Install dependencies
-
-```bash
+cd iGEM_wiki
 npm install
-```
-
-### 3. Start the dev server
-
-```bash
 npm run develop
 ```
 
-Open your browser and go to **http://localhost:8000**
+Open **http://localhost:8000**
 
-## 📁 Project Structure
+---
+
+## Project Structure
 
 ```
 src/
 ├── components/
-│   └── WikiLayout.js      ← Shared layout (nav slot is marked inside)
-├── styles/
-│   └── globalStyles.js    ← All design tokens — edit colors/fonts here
-└── pages/
-    ├── index.js
-    ├── description.js
-    ├── team.js
-    └── ...
+│   ├── layout.js          ← WikiLayout shell (nav, footer, page chrome)
+│   ├── WikiTopBar.js      ← Site navigation
+│   └── mdx/               ← MDX shortcodes (Callout, Figure, etc.)
+├── content/wiki/          ← Wiki pages as MDX (frontmatter drives routing)
+├── pages/                 ← React-only routes (home, team, dry-lab map, 404)
+├── styles/globalStyles.js ← Design tokens
+├── templates/wiki-mdx.js  ← Layout wrapper for MDX pages
+└── data/                  ← Team CSV, sponsor placeholders
+
+cms/payload-app/           ← Payload CMS (optional authoring UI)
+scripts/validate-content.mjs
+docs/vercel-demo-deployment.md  ← Hosted team demo guide
 ```
 
----
-
-## Changing Colors & Fonts
-
-Everything is in `src/styles/globalStyles.js`. The main ones to know:
-
-| Token            | Default          | What it is      |
-| ---------------- | ---------------- | --------------- |
-| `--color-bg`     | `##f0ede6`       | Page background |
-| `--color-accent` | `#c8f050`        | brand color     |
-| `--color-text`   | `#0a0a0a`        | Body text       |
-| `--font-display` | DM Serif Display | Headings        |
-| `--font-body`    | DM Sans          | Body text       |
+Most wiki pages live in `src/content/wiki/**/index.mdx`. Use `src/content/wiki/_template.mdx` for new pages.
 
 ---
 
 ## Useful Commands
 
-| Command           | What it does                           |
-| ----------------- | -------------------------------------- |
-| `npm run develop` | Start local dev server                 |
-| `npm run build`   | Build for production                   |
-| `npm run serve`   | Preview production build locally       |
-| `npm run clean`   | Clear cache (run this if things break) |
+| Command | What it does |
+| --- | --- |
+| `npm run develop` | Start local Gatsby dev server |
+| `npm run build` | Validate content, then build for production |
+| `npm run validate:content` | Check MDX frontmatter and route collisions |
+| `npm run serve` | Preview production build locally |
+| `npm run clean` | Clear Gatsby cache |
+| `npm run payload:develop` | Payload admin at http://localhost:3000/admin |
+| `npm run payload:import-mdx` | Import existing MDX into Payload |
+| `npm run payload:export` | Export published Payload pages to MDX |
+| `npm run payload:sync` | Export + validate |
+| `npm run build:demo` | Sync from hosted Payload + Gatsby build (Vercel) |
 
 ---
 
-## 🤝 Contributing
+## Payload CMS & Vercel demo
 
-1. **Never push directly to `main`**
-2. Create a branch for your work: `git checkout -b feat/your-page-name`
-3. Make your changes
-4. Push and open a pull request
+See `docs/payload-cms-workflow.md` (local) and **`docs/vercel-demo-deployment.md`** (hosted demo).
+
+---
+
+## Contributing
+
+1. Never push directly to `main`
+2. Create a branch for your work
+3. Run `npm run validate:content` and `npm run build`
+4. Open a pull request
 
 ---
 
 _iGEM Toronto 2026 — University of Toronto_
-# test

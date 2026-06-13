@@ -4,20 +4,32 @@
   "private": true,
   "scripts": {
     "develop": "node scripts/run-develop.cjs",
-    "build": "gatsby build",
+    "build": "npm run validate:content && gatsby build",
+    "build:gatsby": "gatsby build",
     "serve": "gatsby serve",
-    "clean": "gatsby clean"
+    "clean": "gatsby clean",
+    "validate:content": "node scripts/validate-content.mjs",
+    "payload:develop": "npm --prefix cms/payload-app run dev -- --webpack",
+    "payload:export": "node scripts/export-payload-content.mjs",
+    "payload:import-mdx": "npm --prefix cms/payload-app run import:mdx",
+    "payload:sync": "node scripts/payload-sync.mjs",
+    "build:demo": "npm run payload:sync && npm run build:gatsby"
   },
   "dependencies": {
     "@deck.gl/core": "^9.2.11",
     "@deck.gl/layers": "^9.2.11",
+    "@mdx-js/react": "^2.3.0",
     "babel-plugin-styled-components": "^2.1.0",
     "gatsby": "^5.13.0",
+    "gatsby-plugin-mdx": "^5.16.0",
     "gatsby-plugin-styled-components": "^6.13.0",
     "gatsby-source-filesystem": "^5.16.0",
     "gatsby-transformer-csv": "^5.16.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-slug": "^6.0.0",
+    "remark-gfm": "^3.0.1",
     "styled-components": "^6.1.0"
   }
 }

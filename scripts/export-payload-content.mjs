@@ -1,0 +1,304 @@
+import fs from "fs"
+import path from "path"
+import process from "process"
+import { pathToFileURL } from "url"
+
+const root = process.cwd()
+const outputRoot = path.join(root, "src", "content", "wiki", "_payload-export")
+const payloadMediaRoot = path.join(root, "cms", "payload-app", "media")
+const staticMediaRoot = path.join(root, "static", "payload-media")
+const payloadUrl = String(process.env.PAYLOAD_URL || "http://localhost:3000").replace(/\/$/, "")
+const payloadFetchTimeoutMs = Number(process.env.PAYLOAD_FETCH_TIMEOUT_MS || 15000)
+const errors = []
+
+const { convertLexicalToMarkdown } = await import(
+  pathToFileURL(
+    path.join(root, "cms", "payload-app", "node_modules", "@payloadcms", "richtext-lexical", "dist", "index.js")
+  ).href
+)
+
+let response
+
+try {
+  response = await fetch(
+    `${payloadUrl}/api/wiki-pages?limit=100&depth=2&where[_status][equals]=published&sort=section,order`,
+    { signal: AbortSignal.timeout(payloadFetchTimeoutMs) }
+  )
+} catch (error) {
+  console.error(`Unable to fetch Payload pages from ${payloadUrl} within ${payloadFetchTimeoutMs}ms.`)
+  console.error("Make sure Payload is running with npm run payload:develop, then try again.")
+  console.error(error.message)
+  process.exit(1)
+}
+
+if (!response.ok) {
+  console.error(`Unable to fetch Payload pages from ${payloadUrl}: ${response.status} ${response.statusText}`)
+  console.error(await response.text())
+  process.exit(1)
+}
+
+const payload = await response.json()
+const pages = payload.docs || []
+
+await ensureRemoteMedia(pages)
+
+if (!isPathInside(outputRoot, path.join(root, "src", "content", "wiki"))) {
+  console.error(`Refusing to export outside src/content/wiki: ${relative(outputRoot)}`)
+  process.exit(1)
+}
+
+for (const page of pages) {
+  validatePage(page)
+}
+
+if (errors.length > 0) {
+  console.error("Payload export failed:")
+  for (const error of errors) console.error(`- ${error}`)
+  process.exit(1)
+}
+
+const expectedFiles = new Set()
+let writtenCount = 0
+let skippedCount = 0
+let removedCount = 0
+let copiedMediaCount = 0
+
+fs.mkdirSync(outputRoot, { recursive: true })
+fs.mkdirSync(staticMediaRoot, { recursive: true })
+
+for (const page of pages) {
+  const filePath = filePathForPage(page)
+  const rendered = renderPage(page)
+
+  expectedFiles.add(path.normalize(filePath))
+  fs.mkdirSync(path.dirname(filePath), { recursive: true })
+
+  if (fs.existsSync(filePath) && fs.readFileSync(filePath, "utf8") === rendered) {
+    skippedCount += 1
+    continue
+  }
+
+  fs.writeFileSync(filePath, rendered, "utf8")
+  writtenCount += 1
+}
+
+if (fs.existsSync(outputRoot)) {
+  for (const filePath of findMdxFiles(outputRoot)) {
+    if (!expectedFiles.has(path.normalize(filePath))) {
+      fs.rmSync(filePath, { force: true })
+      removedCount += 1
+    }
+  }
+}
+
+console.log(
+  `Exported ${pages.length} published Payload page(s) to ${relative(outputRoot)} ` +
+    `(${writtenCount} written, ${skippedCount} unchanged, ${removedCount} removed, ${copiedMediaCount} media copied).`
+)
+
+function validatePage(page) {
+  const label = page.title ? `Payload page "${page.title}"` : `Payload page "${page.id}"`
+
+  for (const field of ["title", "section", "path", "navTitle", "order", "description", "owners", "updated", "content"]) {
+    if (page[field] == null || page[field] === "") errors.push(`${label} is missing ${field}.`)
+  }
+
+  if (typeof page.path === "string" && (!page.path.startsWith("/") || !page.path.endsWith("/"))) {
+    errors.push(`${label} path must start and end with "/".`)
+  }
+
+  if (!Array.isArray(page.owners) || page.owners.length === 0) {
+    errors.push(`${label} must have at least one owner.`)
+  }
+
+  if (!Array.isArray(page.content) || page.content.length === 0) {
+    errors.push(`${label} must have at least one content block.`)
+  }
+
+  for (const block of page.content || []) {
+    if (block.blockType !== "figure") continue
+
+    const media = normalizeMedia(block.image)
+
+    if (!media && !block.src) {
+      errors.push(`${label} has a Figure block without Media or fallback src.`)
+    }
+
+    if (!block.alt && !media?.alt) {
+      errors.push(`${label} has a Figure block without alt text.`)
+    }
+
+    if (media) {
+      const filename = path.basename(media.filename)
+      const sourcePath = path.join(payloadMediaRoot, filename)
+
+      if (!fs.existsSync(sourcePath)) {
+        errors.push(`${label} references missing media file "${filename}" (not found locally or on ${payloadUrl}).`)
+      }
+    }
+  }
+}
+
+function filePathForPage(page) {
+  const routeParts = page.path.replace(/^\/|\/$/g, "").split("/").filter(Boolean)
+  const fileParts = routeParts.length > 0 ? routeParts : ["home"]
+  return path.join(outputRoot, ...fileParts, "index.mdx")
+}
+
+function renderPage(page) {
+  const owners = page.owners.map((owner) => owner.name).filter(Boolean)
+  const body = page.content.map(renderBlock).filter(Boolean).join("\n\n")
+
+  return `---\ntitle: ${quote(page.title)}\nsection: ${quote(page.section)}\npath: ${quote(page.path)}\nnavTitle: ${quote(page.navTitle)}\norder: ${Number(page.order)}\ndescription: ${quote(page.description)}\nowners: [${owners.map(quote).join(", ")}]\nupdated: ${quote(String(page.updated).slice(0, 10))}\nstatus: "published"\n---\n\n{/* Generated from Payload CMS. Edit in Payload, then re-run npm run payload:export. */}\n\n${body.trim()}\n`
+}
+
+function renderBlock(block) {
+  switch (block.blockType) {
+    case "richText":
+      return renderRichText(block.body)
+    case "callout":
+      return `<Callout${block.title ? ` title=${quote(block.title)}` : ""} tone=${quote(block.tone || "note")}>\n${block.body.trim()}\n</Callout>`
+    case "figure":
+      return renderFigure(block)
+    case "markdown":
+      return block.body.trim()
+    default:
+      return ""
+  }
+}
+
+function renderFigure(block) {
+  const media = normalizeMedia(block.image)
+  const src = media ? exportMedia(media) : block.src
+  const alt = block.alt || media?.alt || ""
+
+  return `<Figure\n  src=${quote(src)}\n  alt=${quote(alt)}${block.caption ? `\n  caption=${quote(block.caption)}` : ""}\n/>`
+}
+
+function normalizeMedia(media) {
+  if (!media || typeof media !== "object") return null
+  if (!media.filename) return null
+  return media
+}
+
+function exportMedia(media) {
+  const filename = path.basename(media.filename)
+  const sourcePath = path.join(payloadMediaRoot, filename)
+  const targetPath = path.join(staticMediaRoot, filename)
+
+  if (!fs.existsSync(sourcePath)) {
+    errors.push(`Payload media file "${filename}" is missing after download attempt.`)
+    return `/payload-media/${filename}`
+  }
+
+  if (!fs.existsSync(targetPath) || fs.readFileSync(sourcePath).compare(fs.readFileSync(targetPath)) !== 0) {
+    fs.copyFileSync(sourcePath, targetPath)
+    copiedMediaCount += 1
+  }
+
+  return `/payload-media/${filename}`
+}
+
+async function ensureRemoteMedia(pages) {
+  fs.mkdirSync(payloadMediaRoot, { recursive: true })
+
+  for (const page of pages) {
+    for (const block of page.content || []) {
+      if (block.blockType !== "figure") continue
+
+      const media = normalizeMedia(block.image)
+      if (!media?.filename) continue
+
+      const filename = path.basename(media.filename)
+      const sourcePath = path.join(payloadMediaRoot, filename)
+
+      if (fs.existsSync(sourcePath)) continue
+
+      const response = await fetch(mediaFileUrl(media), {
+        signal: AbortSignal.timeout(payloadFetchTimeoutMs),
+      })
+
+      if (!response.ok) {
+        errors.push(
+          `Unable to download media "${filename}" from ${payloadUrl}: ${response.status} ${response.statusText}`
+        )
+        continue
+      }
+
+      fs.writeFileSync(sourcePath, Buffer.from(await response.arrayBuffer()))
+    }
+  }
+}
+
+function mediaFileUrl(media) {
+  if (media.url?.startsWith("http")) return media.url
+
+  if (media.url) {
+    return `${payloadUrl}${media.url.startsWith("/") ? media.url : `/${media.url}`}`
+  }
+
+  const filename = path.basename(media.filename)
+  return `${payloadUrl}/api/media/file/${encodeURIComponent(filename)}`
+}
+
+function renderRichText(data) {
+  if (!data) return ""
+
+  try {
+    return convertLexicalToMarkdown({ data })
+  } catch {
+    return renderLexicalFallback(data)
+  }
+}
+
+function renderLexicalFallback(data) {
+  const children = data?.root?.children || []
+  return children.map(renderLexicalNode).filter(Boolean).join("\n\n")
+}
+
+function renderLexicalNode(node) {
+  if (node.type === "heading") {
+    const depth = Number(String(node.tag || "h2").replace("h", "")) || 2
+    return `${"#".repeat(depth)} ${renderLexicalChildren(node.children)}`
+  }
+
+  if (node.type === "list") {
+    return (node.children || []).map((child) => `- ${renderLexicalChildren(child.children)}`).join("\n")
+  }
+
+  return renderLexicalChildren(node.children)
+}
+
+function renderLexicalChildren(children = []) {
+  return children
+    .map((child) => {
+      if (child.text) return child.text
+      return renderLexicalChildren(child.children)
+    })
+    .join("")
+}
+
+function quote(value) {
+  return JSON.stringify(String(value ?? ""))
+}
+
+function findMdxFiles(directory) {
+  if (!fs.existsSync(directory)) return []
+
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(directory, entry.name)
+
+    if (entry.isDirectory()) return findMdxFiles(entryPath)
+    if (entry.isFile() && entry.name.endsWith(".mdx")) return [entryPath]
+    return []
+  })
+}
+
+function relative(filePath) {
+  return path.relative(root, filePath).replace(/\\/g, "/")
+}
+
+function isPathInside(child, parent) {
+  const relativePath = path.relative(parent, child)
+  return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+}
