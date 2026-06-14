@@ -1,7 +1,10 @@
 import React from "react"
 import styled, { css } from "styled-components"
 import { ContributionTimeline } from "../contributionCalendar/ContributionTimeline.js"
+import { DesignSketchbook } from "../designSketchbook/DesignSketchbook.js"
 import { HardwareNotebookSandbox } from "../hardwareNotebook/HardwareNotebookSandbox.js"
+import { HardwareArchitectureDiagram } from "../hardwareArchitecture/HardwareArchitectureDiagram.js"
+import { PageTab, PageTabs } from "../PageTabs.js"
 
 export const Callout = ({ tone = "note", title, children }) => (
   <CalloutBox $tone={tone}>
@@ -38,7 +41,11 @@ export const mdxComponents = {
   ImageGrid,
   DataTable,
   ContributionTimeline,
+  DesignSketchbook,
   HardwareNotebookSandbox,
+  HardwareArchitectureDiagram,
+  PageTabs,
+  PageTab,
 }
 
 const toneStyles = {

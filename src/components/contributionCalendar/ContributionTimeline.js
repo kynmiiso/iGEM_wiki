@@ -215,14 +215,10 @@ const TimelineRoot = styled.div`
   flex-direction: column;
   gap: 0;
   min-height: 75vh;
-  width: min(96rem, calc(100vw - 1.5rem));
+  width: 100%;
   max-width: 96rem;
-  margin-inline: auto;
-  padding-inline: clamp(0.75rem, 2vw, 1.5rem);
+  margin: 0 auto;
   box-sizing: border-box;
-  position: relative;
-  left: 50%;
-  transform: translateX(-50%);
 
   @media (prefers-reduced-motion: reduce) {
     * {

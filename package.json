@@ -25,6 +25,7 @@
     "gatsby-plugin-styled-components": "^6.13.0",
     "gatsby-source-filesystem": "^5.16.0",
     "gatsby-transformer-csv": "^5.16.0",
+    "page-flip": "^2.0.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rehype-autolink-headings": "^7.1.0",
