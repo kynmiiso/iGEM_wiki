@@ -7,6 +7,44 @@ export function quote(value) {
   return JSON.stringify(String(value ?? ""))
 }
 
+const GIZMO_CONFIG_RULES = {
+  growthCurve: {
+    initialPopulation: { min: 0.001, max: 500 },
+    carryingCapacity: { min: 10, max: 500 },
+    growthRate: { min: 0.05, max: 1.5 },
+    timeMax: { min: 1, max: 168 },
+    inputLabel: { type: "string", maxLength: 40 },
+  },
+  hardwareNotebook: {},
+  contributionTimeline: {},
+}
+
+export function routePartsForExport(route) {
+  if (typeof route !== "string" || !route.startsWith("/") || !route.endsWith("/")) {
+    throw new Error('Path must start and end with "/".')
+  }
+
+  if (route.includes("\\") || route.includes("\0") || route.includes("?") || route.includes("#")) {
+    throw new Error("Path contains unsupported characters.")
+  }
+
+  let decoded
+  try {
+    decoded = decodeURIComponent(route)
+  } catch {
+    throw new Error("Path contains invalid URL encoding.")
+  }
+
+  const parts = decoded.slice(1, -1).split("/").filter(Boolean)
+  for (const part of parts) {
+    if (part === "." || part === ".." || !/^[A-Za-z0-9][A-Za-z0-9._~-]*$/.test(part)) {
+      throw new Error(`Path segment "${part}" is not a safe wiki slug.`)
+    }
+  }
+
+  return parts.length > 0 ? parts : ["home"]
+}
+
 export function renderBlock(block, { resolveFigureSrc, onError } = {}) {
   if (!block?.blockType) return ""
 
@@ -84,8 +122,46 @@ function renderDataTable(block) {
 /** Normalizes a Payload `json` field that may arrive as an object or a string. */
 export function parseGizmoConfig(raw) {
   if (raw == null || raw === "") return {}
-  if (typeof raw === "object") return raw
-  return JSON.parse(raw) // throws on invalid JSON; caller reports it
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Gizmo config must be a JSON object.")
+  }
+  return parsed
+}
+
+export function normalizeGizmoConfig(name, raw) {
+  const rules = GIZMO_CONFIG_RULES[name]
+  if (!rules) throw new Error(`Unknown interactive gizmo "${name}".`)
+
+  let config
+  try {
+    config = parseGizmoConfig(raw)
+  } catch {
+    throw new Error(`Interactive gizmo "${name}" has invalid JSON config.`)
+  }
+  const normalized = {}
+
+  for (const [key, value] of Object.entries(config)) {
+    const rule = rules[key]
+    if (!rule) throw new Error(`Unsupported config key "${key}" for gizmo "${name}".`)
+
+    if (rule.type === "string") {
+      if (typeof value !== "string" || value.length > rule.maxLength) {
+        throw new Error(`Config "${key}" for gizmo "${name}" must be a short string.`)
+      }
+      normalized[key] = value
+      continue
+    }
+
+    if (typeof value !== "number" || !Number.isFinite(value) || value < rule.min || value > rule.max) {
+      throw new Error(
+        `Config "${key}" for gizmo "${name}" must be between ${rule.min} and ${rule.max}.`
+      )
+    }
+    normalized[key] = value
+  }
+
+  return normalized
 }
 
 function renderInteractiveGizmo(block, options) {
@@ -97,9 +173,9 @@ function renderInteractiveGizmo(block, options) {
 
   let config
   try {
-    config = parseGizmoConfig(block.config)
-  } catch {
-    options.onError?.(`Interactive Gizmo "${name}" has invalid JSON config.`)
+    config = normalizeGizmoConfig(name, block.config)
+  } catch (error) {
+    options.onError?.(error.message)
     return ""
   }
 

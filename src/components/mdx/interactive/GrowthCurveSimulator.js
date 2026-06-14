@@ -18,6 +18,12 @@ const PLOT_W = 520
 const PLOT_H = 260
 const PAD = 32
 
+function finiteNumber(value, fallback, min, max) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? clamp(value, min, max)
+    : fallback
+}
+
 export const GrowthCurveSimulator = ({
   initialPopulation = 5,
   carryingCapacity = 100,
@@ -25,9 +31,16 @@ export const GrowthCurveSimulator = ({
   timeMax = 24,
   inputLabel = "Hours",
 }) => {
-  const [n0, setN0] = useState(initialPopulation)
-  const [k, setK] = useState(carryingCapacity)
-  const [r, setR] = useState(growthRate)
+  const initialK = finiteNumber(carryingCapacity, 100, 10, 500)
+  const initialN0 = finiteNumber(initialPopulation, 5, 0.001, initialK)
+  const initialR = finiteNumber(growthRate, 0.4, 0.05, 1.5)
+  const safeTimeMax = finiteNumber(timeMax, 24, 1, 168)
+  const safeInputLabel =
+    typeof inputLabel === "string" && inputLabel.length <= 40 ? inputLabel : "Hours"
+
+  const [n0, setN0] = useState(initialN0)
+  const [k, setK] = useState(initialK)
+  const [r, setR] = useState(initialR)
 
   const { points, peak } = useMemo(() => {
     const steps = 60
@@ -36,18 +49,18 @@ export const GrowthCurveSimulator = ({
     let maxVal = 0
 
     for (let i = 0; i <= steps; i += 1) {
-      const t = (timeMax * i) / steps
+      const t = (safeTimeMax * i) / steps
       const value = k / (1 + ((k - safeN0) / safeN0) * Math.exp(-r * t))
       series.push({ t, value })
       if (value > maxVal) maxVal = value
     }
 
     return { points: series, peak: maxVal || 1 }
-  }, [n0, k, r, timeMax])
+  }, [n0, k, r, safeTimeMax])
 
   const polyline = points
     .map((point) => {
-      const x = PAD + (point.t / timeMax) * (PLOT_W - PAD * 2)
+      const x = PAD + (point.t / safeTimeMax) * (PLOT_W - PAD * 2)
       const y = PLOT_H - PAD - (point.value / peak) * (PLOT_H - PAD * 2)
       return `${x.toFixed(1)},${y.toFixed(1)}`
     })
@@ -114,7 +127,8 @@ export const GrowthCurveSimulator = ({
         </Field>
 
         <Readout>
-          After {timeMax} {inputLabel.toLowerCase()}: <strong>{finalValue.toFixed(1)}</strong> cells
+          After {safeTimeMax} {safeInputLabel.toLowerCase()}:{" "}
+          <strong>{finalValue.toFixed(1)}</strong> cells
         </Readout>
       </Controls>
     </Wrap>

@@ -12,6 +12,8 @@ import { interactiveRegistry } from "./registry.js"
  */
 export const InteractiveGizmo = ({ name, title, caption, config = {} }) => {
   const Component = interactiveRegistry[name]
+  const componentProps =
+    config && typeof config === "object" && !Array.isArray(config) ? config : {}
 
   if (!Component) {
     return (
@@ -25,7 +27,7 @@ export const InteractiveGizmo = ({ name, title, caption, config = {} }) => {
   return (
     <Wrap>
       {title && <Title>{title}</Title>}
-      <Component {...config} />
+      <Component {...componentProps} />
       {caption && <Caption>{caption}</Caption>}
     </Wrap>
   )

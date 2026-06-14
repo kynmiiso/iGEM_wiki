@@ -2,7 +2,12 @@
  * Offline tests for Payload → MDX block rendering (no server required).
  */
 import assert from "node:assert/strict"
-import { renderBlock, renderPageBody } from "./lib/payload-mdx-render.mjs"
+import {
+  normalizeGizmoConfig,
+  renderBlock,
+  renderPageBody,
+  routePartsForExport,
+} from "./lib/payload-mdx-render.mjs"
 
 let passed = 0
 
@@ -118,6 +123,34 @@ test("interactiveGizmo with invalid JSON reports an error and renders nothing", 
   )
   assert.equal(out, "")
   assert.match(captured, /invalid JSON/)
+})
+
+test("interactiveGizmo rejects unknown gizmos and unsafe config", () => {
+  assert.throws(
+    () => normalizeGizmoConfig("notRegistered", {}),
+    /Unknown interactive gizmo/
+  )
+  assert.throws(
+    () => normalizeGizmoConfig("growthCurve", { carryingCapacity: "large" }),
+    /must be between/
+  )
+  assert.throws(
+    () => normalizeGizmoConfig("growthCurve", { carryingCapacity: 1000 }),
+    /must be between/
+  )
+  assert.throws(
+    () => normalizeGizmoConfig("hardwareNotebook", { unexpected: true }),
+    /Unsupported config key/
+  )
+})
+
+test("wiki export paths reject traversal and unsafe segments", () => {
+  assert.deepEqual(routePartsForExport("/project/description/"), ["project", "description"])
+  assert.deepEqual(routePartsForExport("/"), ["home"])
+  assert.throws(() => routePartsForExport("/../../pages/"), /not a safe wiki slug/)
+  assert.throws(() => routePartsForExport("/%2e%2e/pages/"), /not a safe wiki slug/)
+  assert.throws(() => routePartsForExport("/project\\pages/"), /unsupported characters/)
+  assert.throws(() => routePartsForExport("/project/?draft=1"), /must start and end/)
 })
 
 test("gizmo can sit between text blocks (mid-page)", () => {

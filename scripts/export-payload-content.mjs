@@ -2,7 +2,12 @@ import fs from "fs"
 import path from "path"
 import process from "process"
 import { pathToFileURL } from "url"
-import { parseGizmoConfig, quote, renderBlock } from "./lib/payload-mdx-render.mjs"
+import {
+  normalizeGizmoConfig,
+  quote,
+  renderBlock,
+  routePartsForExport,
+} from "./lib/payload-mdx-render.mjs"
 
 const root = process.cwd()
 const outputRoot = path.join(root, "src", "content", "wiki", "_payload-export")
@@ -59,19 +64,30 @@ if (errors.length > 0) {
 }
 
 const expectedFiles = new Set()
+const renderedPages = []
 let writtenCount = 0
 let skippedCount = 0
 let removedCount = 0
 let copiedMediaCount = 0
-
-fs.mkdirSync(outputRoot, { recursive: true })
-fs.mkdirSync(staticMediaRoot, { recursive: true })
 
 for (const page of pages) {
   const filePath = filePathForPage(page)
   const rendered = renderPage(page)
 
   expectedFiles.add(path.normalize(filePath))
+  renderedPages.push({ filePath, rendered })
+}
+
+if (errors.length > 0) {
+  console.error("Payload export failed:")
+  for (const error of errors) console.error(`- ${error}`)
+  process.exit(1)
+}
+
+fs.mkdirSync(outputRoot, { recursive: true })
+fs.mkdirSync(staticMediaRoot, { recursive: true })
+
+for (const { filePath, rendered } of renderedPages) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true })
 
   if (fs.existsSync(filePath) && fs.readFileSync(filePath, "utf8") === rendered) {
@@ -108,6 +124,14 @@ function validatePage(page) {
     errors.push(`${label} path must start and end with "/".`)
   }
 
+  if (typeof page.path === "string") {
+    try {
+      routePartsForExport(page.path)
+    } catch (error) {
+      errors.push(`${label} ${error.message}`)
+    }
+  }
+
   if (!Array.isArray(page.owners) || page.owners.length === 0) {
     errors.push(`${label} must have at least one owner.`)
   }
@@ -140,9 +164,9 @@ function validatePage(page) {
         errors.push(`${label} has an Interactive Gizmo block without a gizmo selection.`)
       }
       try {
-        parseGizmoConfig(block.config)
-      } catch {
-        errors.push(`${label} has an Interactive Gizmo block with invalid JSON config.`)
+        normalizeGizmoConfig(block.gizmo, block.config)
+      } catch (error) {
+        errors.push(`${label} ${error.message}`)
       }
     }
   }
@@ -172,9 +196,11 @@ function validateFigureItem(pageLabel, item, context = "Figure block") {
 }
 
 function filePathForPage(page) {
-  const routeParts = page.path.replace(/^\/|\/$/g, "").split("/").filter(Boolean)
-  const fileParts = routeParts.length > 0 ? routeParts : ["home"]
-  return path.join(outputRoot, ...fileParts, "index.mdx")
+  const filePath = path.join(outputRoot, ...routePartsForExport(page.path), "index.mdx")
+  if (!isPathInside(filePath, outputRoot)) {
+    throw new Error(`Refusing to export outside ${relative(outputRoot)}: ${relative(filePath)}`)
+  }
+  return filePath
 }
 
 function renderPage(page) {
@@ -237,26 +263,26 @@ async function ensureRemoteMedia(pages) {
   for (const page of pages) {
     for (const block of page.content || []) {
       for (const item of collectFigureItems(block)) {
-      const media = normalizeMedia(item.image)
-      if (!media?.filename) continue
+        const media = normalizeMedia(item.image)
+        if (!media?.filename) continue
 
-      const filename = path.basename(media.filename)
-      const sourcePath = path.join(payloadMediaRoot, filename)
+        const filename = path.basename(media.filename)
+        const sourcePath = path.join(payloadMediaRoot, filename)
 
-      if (fs.existsSync(sourcePath)) continue
+        if (fs.existsSync(sourcePath)) continue
 
-      const response = await fetch(mediaFileUrl(media), {
-        signal: AbortSignal.timeout(payloadFetchTimeoutMs),
-      })
+        const response = await fetch(mediaFileUrl(media), {
+          signal: AbortSignal.timeout(payloadFetchTimeoutMs),
+        })
 
-      if (!response.ok) {
-        errors.push(
-          `Unable to download media "${filename}" from ${payloadUrl}: ${response.status} ${response.statusText}`
-        )
-        continue
-      }
+        if (!response.ok) {
+          errors.push(
+            `Unable to download media "${filename}" from ${payloadUrl}: ${response.status} ${response.statusText}`
+          )
+          continue
+        }
 
-      fs.writeFileSync(sourcePath, Buffer.from(await response.arrayBuffer()))
+        fs.writeFileSync(sourcePath, Buffer.from(await response.arrayBuffer()))
       }
     }
   }
