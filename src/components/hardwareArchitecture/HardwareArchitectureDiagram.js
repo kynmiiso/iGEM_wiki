@@ -16,8 +16,33 @@ import {
 
 const GROUP_BY_ID = Object.fromEntries(HARDWARE_ARCH_GROUPS.map((g) => [g.id, g]))
 
+/**
+ * The diagram is authored at this fixed internal width (in px). The whole stage
+ * is uniformly scaled with a CSS transform to fit whatever width is available,
+ * so the layout never reflows: boxes keep their exact relative positions and the
+ * arrows stay attached no matter how narrow the container gets.
+ */
+const DESIGN_WIDTH = 1000
+
 function getSubsystemColor(subsystemId) {
   return HARDWARE_SUBSYSTEMS[subsystemId]?.color ?? "#888880"
+}
+
+/**
+ * Position of `el` relative to `ancestor`, measured via offset metrics so the
+ * result is independent of any CSS transform applied to the stage (unlike
+ * getBoundingClientRect, which includes the scale).
+ */
+function offsetWithin(el, ancestor) {
+  let x = 0
+  let y = 0
+  let node = el
+  while (node && node !== ancestor) {
+    x += node.offsetLeft
+    y += node.offsetTop
+    node = node.offsetParent
+  }
+  return { x, y }
 }
 
 function rectCenter(r) {
@@ -37,6 +62,25 @@ function borderPoint(r, towardX, towardY) {
   const ty = dy !== 0 ? hh / Math.abs(dy) : Infinity
   const t = Math.min(tx, ty)
   return { x: cx + dx * t, y: cy + dy * t }
+}
+
+/**
+ * Slide a border point by `offset` along the edge it sits on (horizontal edges
+ * shift in x, vertical edges shift in y), staying within the box bounds. Used
+ * to fan out multiple edges between the same two boxes while keeping each
+ * arrow's endpoint flush against the box.
+ */
+function shiftAlongEdge(rect, p, offset) {
+  if (!offset) return p
+  const eps = 0.5
+  const onHorizontalEdge =
+    Math.abs(p.y - rect.y) < eps || Math.abs(p.y - (rect.y + rect.h)) < eps
+  if (onHorizontalEdge) {
+    const x = Math.min(Math.max(p.x + offset, rect.x + 8), rect.x + rect.w - 8)
+    return { x, y: p.y }
+  }
+  const y = Math.min(Math.max(p.y + offset, rect.y + 8), rect.y + rect.h - 8)
+  return { x: p.x, y }
 }
 
 /**
@@ -60,12 +104,10 @@ function edgeGeometry(fromRect, toRect, selfLoop, offset = 0) {
   const b1 = borderPoint(fromRect, cTo.x, cTo.y)
   const b2 = borderPoint(toRect, cFrom.x, cFrom.y)
 
-  // Shift the endpoints perpendicular to the edge direction by `offset`.
-  const len = Math.hypot(b2.x - b1.x, b2.y - b1.y) || 1
-  const perpX = (-(b2.y - b1.y) / len) * offset
-  const perpY = ((b2.x - b1.x) / len) * offset
-  const p1 = { x: b1.x + perpX, y: b1.y + perpY }
-  const p2 = { x: b2.x + perpX, y: b2.y + perpY }
+  // Fan out parallel edges by sliding each endpoint ALONG the box edge it sits
+  // on (never away from it), so the arrows stay attached to their boxes.
+  const p1 = shiftAlongEdge(fromRect, b1, offset)
+  const p2 = shiftAlongEdge(toRect, b2, offset)
 
   const dx = p2.x - p1.x
   const dy = p2.y - p1.y
@@ -90,12 +132,12 @@ function edgeGeometry(fromRect, toRect, selfLoop, offset = 0) {
   }
 }
 
-const LABEL_FONT = 9
-const LABEL_CHAR_W = 4.7
-const LABEL_LINE_H = 12
-const LABEL_MAX_CHARS = 22
-const LABEL_PAD_X = 8
-const LABEL_PAD_Y = 6
+const LABEL_FONT = 8
+const LABEL_CHAR_W = 4.2
+const LABEL_LINE_H = 11
+const LABEL_MAX_CHARS = 30
+const LABEL_PAD_X = 7
+const LABEL_PAD_Y = 5
 
 function wrapLabel(text, maxChars) {
   const words = String(text).split(/\s+/)
@@ -124,85 +166,84 @@ function rectsOverlap(a, b, margin = 0) {
   )
 }
 
+/** Area of the rectangle intersection of a and b (after inflating b by margin). */
+function overlapArea(a, b, margin = 0) {
+  const ix =
+    Math.min(a.x + a.w, b.x + b.w + margin) - Math.max(a.x, b.x - margin)
+  const iy =
+    Math.min(a.y + a.h, b.y + b.h + margin) - Math.max(a.y, b.y - margin)
+  if (ix <= 0 || iy <= 0) return 0
+  return ix * iy
+}
+
+const LABEL_BOX_MARGIN = 6
+const LABEL_GAP_MARGIN = 10
+
 /**
- * Place edge labels so they don't overlap each other. Each label starts at its
- * edge midpoint and is nudged the minimum distance needed to separate it from
- * its neighbours (along whichever axis needs the least movement), so labels
- * stay close to their arrows. Labels are drawn above the boxes, so they never
- * get hidden when groups collapse.
+ * Place each edge label in the nearest open spot that clears both the component
+ * boxes and the other labels. For every label we score a ring of candidate
+ * positions around its arrow midpoint and keep the lowest-penalty one, where
+ * penalty = (overlap with boxes) + (overlap with already-placed labels) +
+ * (distance from the arrow) + (out-of-bounds). Labels that have to travel get a
+ * leader line back to their arrow, and everything is drawn above the boxes so
+ * nothing is hidden on collapse.
  */
-function layoutLabels(labelSeeds, canvasSize) {
-  const labels = labelSeeds.map((seed, index) => {
+function layoutLabels(labelSeeds, obstacles, canvasSize) {
+  const W = canvasSize.w || 1000
+  const H = canvasSize.h || 620
+
+  const labels = labelSeeds.map((seed) => {
     const lines = wrapLabel(seed.text, LABEL_MAX_CHARS)
     const w = Math.max(...lines.map((l) => l.length)) * LABEL_CHAR_W + LABEL_PAD_X * 2
     const h = lines.length * LABEL_LINE_H + LABEL_PAD_Y * 2
-    // Stagger the initial position so labels that share an anchor don't start
-    // stacked exactly on top of each other (helps the resolver converge).
-    const jitter = (index % 2 === 0 ? 1 : -1) * index * 2
-    return {
-      id: seed.id,
-      color: seed.color,
-      lines,
-      w,
-      h,
-      ax: seed.x,
-      ay: seed.y,
-      x: seed.x - w / 2 + jitter,
-      y: seed.y - h / 2 - jitter,
-    }
+    return { id: seed.id, color: seed.color, lines, w, h, ax: seed.x, ay: seed.y }
   })
 
-  const W = canvasSize.w || 1000
-  const H = canvasSize.h || 620
-  const margin = 4
+  // Candidate offsets: the anchor itself, then rings at growing radius.
+  const candidates = [{ dx: 0, dy: 0 }]
+  const radii = [
+    20, 30, 42, 56, 72, 90, 110, 132, 156, 182, 210, 240, 275, 315, 360,
+  ]
+  for (const r of radii) {
+    for (let deg = 0; deg < 360; deg += 18) {
+      const rad = (deg * Math.PI) / 180
+      candidates.push({ dx: Math.cos(rad) * r, dy: Math.sin(rad) * r })
+    }
+  }
 
-  for (let iter = 0; iter < 220; iter += 1) {
-    let moved = false
+  // Place larger labels first so they claim open space before small ones.
+  const order = labels
+    .map((l, i) => i)
+    .sort((a, b) => labels[b].w * labels[b].h - labels[a].w * labels[a].h)
 
-    for (let i = 0; i < labels.length; i += 1) {
-      for (let j = i + 1; j < labels.length; j += 1) {
-        const a = labels[i]
-        const b = labels[j]
-        if (!rectsOverlap(a, b, margin)) continue
+  const placed = []
+  for (const idx of order) {
+    const label = labels[idx]
+    let best = null
+    let bestScore = Infinity
 
-        const overlapX =
-          Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) + margin
-        const overlapY =
-          Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) + margin
+    for (const c of candidates) {
+      const x = label.ax + c.dx - label.w / 2
+      const y = label.ay + c.dy - label.h / 2
+      const rect = { x, y, w: label.w, h: label.h }
 
-        // Separate along the axis of least overlap (minimum translation),
-        // keeping each label as close to its arrow as possible.
-        if (overlapX <= overlapY) {
-          const shift = overlapX / 2 + 0.5
-          if (a.x + a.w / 2 <= b.x + b.w / 2) {
-            a.x -= shift
-            b.x += shift
-          } else {
-            a.x += shift
-            b.x -= shift
-          }
-        } else {
-          const shift = overlapY / 2 + 0.5
-          if (a.y + a.h / 2 <= b.y + b.h / 2) {
-            a.y -= shift
-            b.y += shift
-          } else {
-            a.y += shift
-            b.y -= shift
-          }
-        }
-        moved = true
+      let score = 0
+      for (const o of obstacles) score += overlapArea(rect, o, LABEL_BOX_MARGIN) * 6
+      for (const o of placed) score += overlapArea(rect, o, LABEL_GAP_MARGIN) * 6
+      score += Math.hypot(c.dx, c.dy) * 0.3
+      const outX = Math.max(0, 2 - x) + Math.max(0, x + label.w - (W - 2))
+      const outY = Math.max(0, 2 - y) + Math.max(0, y + label.h - (H - 2))
+      score += (outX + outY) * 30
+
+      if (score < bestScore) {
+        bestScore = score
+        best = { x, y }
       }
     }
 
-    for (const a of labels) {
-      if (a.x < 2) a.x = 2
-      if (a.x + a.w > W - 2) a.x = W - a.w - 2
-      if (a.y < 2) a.y = 2
-      if (a.y + a.h > H - 2) a.y = H - a.h - 2
-    }
-
-    if (!moved) break
+    label.x = Math.max(2, Math.min(best.x, W - label.w - 2))
+    label.y = Math.max(2, Math.min(best.y, H - label.h - 2))
+    placed.push(label)
   }
 
   return labels
@@ -291,9 +332,12 @@ export function HardwareArchitectureDiagram() {
   const [collapsed, setCollapsed] = useState(() => new Set())
   const [activeSubsystems, setActiveSubsystems] = useState(() => new Set())
   const [rects, setRects] = useState({})
-  const [canvasSize, setCanvasSize] = useState({ w: 1000, h: 620 })
+  const [canvasSize, setCanvasSize] = useState({ w: DESIGN_WIDTH, h: 620 })
+  const [scale, setScale] = useState(1)
+  const [stageHeight, setStageHeight] = useState(620)
 
-  const canvasRef = useRef(null)
+  const containerRef = useRef(null)
+  const stageRef = useRef(null)
   const groupRefs = useRef({})
 
   const registerRef = useCallback((id, el) => {
@@ -302,23 +346,32 @@ export function HardwareArchitectureDiagram() {
   }, [])
 
   const measure = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const cb = canvas.getBoundingClientRect()
+    const container = containerRef.current
+    const stage = stageRef.current
+    if (!container || !stage) return
+
+    // Measure everything in the stage's fixed, untransformed design space.
     const next = {}
     for (const group of HARDWARE_ARCH_GROUPS) {
       const el = groupRefs.current[group.id]
       if (!el) continue
-      const r = el.getBoundingClientRect()
+      const o = offsetWithin(el, stage)
       next[group.id] = {
-        x: r.left - cb.left,
-        y: r.top - cb.top,
-        w: r.width,
-        h: r.height,
+        x: o.x,
+        y: o.y,
+        w: el.offsetWidth,
+        h: el.offsetHeight,
       }
     }
+    const stageW = stage.offsetWidth || DESIGN_WIDTH
+    const stageH = stage.offsetHeight
     setRects(next)
-    setCanvasSize({ w: cb.width, h: cb.height })
+    setCanvasSize({ w: stageW, h: stageH })
+    setStageHeight(stageH)
+
+    // Uniformly shrink/grow the whole stage to fit the available width.
+    const available = container.clientWidth
+    setScale(available > 0 ? available / stageW : 1)
   }, [])
 
   useLayoutEffect(() => {
@@ -332,7 +385,8 @@ export function HardwareArchitectureDiagram() {
       return () => window.removeEventListener("resize", measure)
     }
     const ro = new ResizeObserver(() => measure())
-    if (canvasRef.current) ro.observe(canvasRef.current)
+    if (containerRef.current) ro.observe(containerRef.current)
+    if (stageRef.current) ro.observe(stageRef.current)
     for (const group of HARDWARE_ARCH_GROUPS) {
       const el = groupRefs.current[group.id]
       if (el) ro.observe(el)
@@ -416,8 +470,8 @@ export function HardwareArchitectureDiagram() {
         x: geometry.labelX,
         y: geometry.labelY,
       }))
-    return layoutLabels(seeds, canvasSize)
-  }, [edgeGeoms, canvasSize, activeSubsystems])
+    return layoutLabels(seeds, Object.values(rects), canvasSize)
+  }, [edgeGeoms, rects, canvasSize, activeSubsystems])
 
   return (
     <DiagramRoot>
@@ -427,7 +481,17 @@ export function HardwareArchitectureDiagram() {
           items to highlight related parts — click again to deselect.
         </DiagramHint>
 
-        <Canvas ref={canvasRef}>
+        <Canvas
+          ref={containerRef}
+          style={{ height: `${Math.max(stageHeight * scale, 1)}px` }}
+        >
+          <Stage
+            ref={stageRef}
+            style={{
+              width: `${DESIGN_WIDTH}px`,
+              transform: `scale(${scale})`,
+            }}
+          >
           <SvgLayer
             viewBox={`0 0 ${canvasSize.w} ${canvasSize.h}`}
             preserveAspectRatio="none"
@@ -539,6 +603,7 @@ export function HardwareArchitectureDiagram() {
               )
             })}
           </LabelLayer>
+          </Stage>
         </Canvas>
       </DiagramColumn>
 
@@ -580,10 +645,10 @@ export default HardwareArchitectureDiagram
 
 const DiagramRoot = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
-  gap: var(--space-lg);
+  grid-template-columns: minmax(0, 1fr) minmax(9.5rem, 12rem);
+  gap: var(--space-md);
   width: 100%;
-  max-width: 72rem;
+  max-width: 74rem;
   margin: var(--space-lg) 0;
 
   @media (max-width: 900px) {
@@ -604,13 +669,26 @@ const DiagramHint = styled.p`
 
 const Canvas = styled.div`
   position: relative;
-  min-height: 30rem;
+  width: 100%;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background-color: #fff;
   background-image: radial-gradient(circle, rgba(34, 34, 34, 0.07) 1px, transparent 1px);
   background-size: 18px 18px;
   overflow: hidden;
+`
+
+/**
+ * Fixed-width drawing surface. It is scaled as a whole via an inline transform
+ * so the internal layout is fully deterministic and never reflows. The
+ * transform-origin keeps it pinned to the top-left of the Canvas.
+ */
+const Stage = styled.div`
+  position: relative;
+  transform-origin: top left;
+  /* Extra room below the boxes so arrow labels can spread into open space. */
+  padding-bottom: 4rem;
+  will-change: transform;
 `
 
 const SvgLayer = styled.svg`
@@ -642,22 +720,12 @@ const GroupGrid = styled.div`
     "ph    arduino    arduino    comms"
     "media heating    od         mixing"
     ".     power      power      .";
-  gap: clamp(0.5rem, 1.6vw, 1.25rem);
-  padding: clamp(0.6rem, 1.8vw, 1.25rem);
+  column-gap: 1.25rem;
+  row-gap: 6rem;
+  padding: 1.25rem;
   align-content: start;
   align-items: start;
   box-sizing: border-box;
-
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "bioreactor bioreactor"
-      "comms      comms"
-      "ph         arduino"
-      "media      heating"
-      "od         mixing"
-      "power      power";
-  }
 `
 
 const GroupRoot = styled.div`
@@ -683,7 +751,7 @@ const GroupHeader = styled.button`
   border: 1px solid var(--color-border);
   border-left: 4px solid ${({ $color }) => $color};
   border-radius: 6px;
-  padding: clamp(0.35rem, 1.1vw, 0.5rem) clamp(0.4rem, 1.2vw, 0.65rem);
+  padding: 0.5rem 0.65rem;
   background: ${({ $emphasized }) =>
     $emphasized
       ? "color-mix(in srgb, var(--color-accent) 18%, #fff)"
@@ -716,8 +784,7 @@ const Chevron = styled.span`
 
 const GroupTitle = styled.span`
   font-family: ${({ $display }) => ($display ? "var(--font-display)" : "var(--font-body)")};
-  font-size: ${({ $display }) =>
-    $display ? "clamp(0.85rem, 2.1vw, 1rem)" : "clamp(0.68rem, 1.5vw, 0.82rem)"};
+  font-size: ${({ $display }) => ($display ? "1rem" : "0.82rem")};
   font-weight: ${({ $display }) => ($display ? 400 : 700)};
   color: var(--color-text);
   line-height: 1.3;
@@ -729,14 +796,13 @@ const SingleNode = styled.div`
   border: 1px solid var(--color-border);
   border-left: 4px solid ${({ $color }) => $color};
   border-radius: 6px;
-  padding: clamp(0.4rem, 1.2vw, 0.55rem) clamp(0.45rem, 1.3vw, 0.7rem);
+  padding: 0.55rem 0.7rem;
   background: ${({ $emphasized }) =>
     $emphasized
       ? "color-mix(in srgb, var(--color-accent) 18%, #fff)"
       : "#fff"};
   font-family: ${({ $emphasized }) => ($emphasized ? "var(--font-display)" : "var(--font-body)")};
-  font-size: ${({ $emphasized }) =>
-    $emphasized ? "clamp(0.85rem, 2.1vw, 1rem)" : "clamp(0.68rem, 1.5vw, 0.82rem)"};
+  font-size: ${({ $emphasized }) => ($emphasized ? "1rem" : "0.82rem")};
   font-weight: ${({ $emphasized }) => ($emphasized ? 400 : 600)};
   overflow-wrap: anywhere;
   opacity: ${({ $dimmed }) => ($dimmed ? 0.28 : 1)};
@@ -784,9 +850,9 @@ const ChildList = styled.ul`
 `
 
 const ChildItem = styled.li`
-  font-size: clamp(0.6rem, 1.35vw, 0.72rem);
+  font-size: 0.72rem;
   line-height: 1.35;
-  padding: clamp(0.28rem, 0.9vw, 0.35rem) clamp(0.35rem, 1.1vw, 0.5rem);
+  padding: 0.35rem 0.5rem;
   overflow-wrap: anywhere;
   border: 1px solid color-mix(in srgb, ${({ $color }) => $color} 35%, var(--color-border));
   border-left: 3px solid ${({ $color }) => $color};
