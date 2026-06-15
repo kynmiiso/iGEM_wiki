@@ -268,6 +268,19 @@ export interface WikiPage {
       }
     | {
         /**
+         * Optional heading shown above the contribution calendar.
+         */
+        title?: string | null;
+        /**
+         * Optional caption shown below the contribution calendar.
+         */
+        caption?: string | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'contributionCalendar';
+      }
+    | {
+        /**
          * Which approved interactive component to render.
          */
         gizmo: 'growthCurve' | 'hardwareNotebook' | 'contributionTimeline';
@@ -496,6 +509,14 @@ export interface WikiPagesSelect<T extends boolean = true> {
           | {
               caption?: T;
               tableMarkdown?: T;
+              id?: T;
+              blockName?: T;
+            };
+        contributionCalendar?:
+          | T
+          | {
+              title?: T;
+              caption?: T;
               id?: T;
               blockName?: T;
             };

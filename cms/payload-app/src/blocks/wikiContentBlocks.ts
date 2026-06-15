@@ -135,6 +135,29 @@ export const wikiContentBlocks: Block[] = [
     ],
   },
   {
+    slug: 'contributionCalendar',
+    labels: {
+      singular: 'Contribution Calendar',
+      plural: 'Contribution Calendars',
+    },
+    fields: [
+      {
+        name: 'title',
+        type: 'text',
+        admin: {
+          description: 'Optional heading shown above the contribution calendar.',
+        },
+      },
+      {
+        name: 'caption',
+        type: 'textarea',
+        admin: {
+          description: 'Optional caption shown below the contribution calendar.',
+        },
+      },
+    ],
+  },
+  {
     slug: 'interactiveGizmo',
     labels: {
       singular: 'Interactive Gizmo',
