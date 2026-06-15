@@ -19,9 +19,8 @@ const errors = []
 let response
 
 try {
-  response = await fetch(
-    `${payloadUrl}/api/wiki-pages?limit=100&depth=2&where[_status][equals]=published&sort=section,order`,
-    { signal: AbortSignal.timeout(payloadFetchTimeoutMs) }
+  response = await fetchWithTimeout(
+    `${payloadUrl}/api/wiki-pages?limit=100&depth=2&where[_status][equals]=published&sort=section,order`
   )
 } catch (error) {
   console.error(`Unable to fetch Payload pages from ${payloadUrl} within ${payloadFetchTimeoutMs}ms.`)
@@ -264,9 +263,7 @@ async function ensureRemoteMedia(pages) {
 
         if (fs.existsSync(sourcePath)) continue
 
-        const response = await fetch(mediaFileUrl(media), {
-          signal: AbortSignal.timeout(payloadFetchTimeoutMs),
-        })
+        const response = await fetchWithTimeout(mediaFileUrl(media))
 
         if (!response.ok) {
           errors.push(
@@ -290,6 +287,17 @@ function mediaFileUrl(media) {
 
   const filename = path.basename(media.filename)
   return `${payloadUrl}/api/media/file/${encodeURIComponent(filename)}`
+}
+
+async function fetchWithTimeout(url) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), payloadFetchTimeoutMs)
+
+  try {
+    return await fetch(url, { signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 function renderRichText(data) {
