@@ -1,7 +1,6 @@
 import fs from "fs"
 import path from "path"
 import process from "process"
-import { pathToFileURL } from "url"
 import {
   normalizeGizmoConfig,
   quote,
@@ -16,12 +15,6 @@ const staticMediaRoot = path.join(root, "static", "payload-media")
 const payloadUrl = String(process.env.PAYLOAD_URL || "http://localhost:3000").replace(/\/$/, "")
 const payloadFetchTimeoutMs = Number(process.env.PAYLOAD_FETCH_TIMEOUT_MS || 15000)
 const errors = []
-
-const { convertLexicalToMarkdown } = await import(
-  pathToFileURL(
-    path.join(root, "cms", "payload-app", "node_modules", "@payloadcms", "richtext-lexical", "dist", "index.js")
-  ).href
-)
 
 let response
 
@@ -301,12 +294,7 @@ function mediaFileUrl(media) {
 
 function renderRichText(data) {
   if (!data) return ""
-
-  try {
-    return convertLexicalToMarkdown({ data })
-  } catch {
-    return renderLexicalFallback(data)
-  }
+  return renderLexicalFallback(data)
 }
 
 function renderLexicalFallback(data) {
