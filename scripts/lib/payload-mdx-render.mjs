@@ -122,10 +122,11 @@ function renderDataTable(block) {
 }
 
 function renderContributionCalendar(block) {
-  const attrs = [`name="contributionTimeline"`]
+  const attrs = []
   if (block.title) attrs.push(`title=${quote(block.title)}`)
   if (block.caption) attrs.push(`caption=${quote(block.caption)}`)
-  return `<InteractiveGizmo\n  ${attrs.join("\n  ")}\n/>`
+  if (attrs.length === 0) return "<ContributionCalendar />"
+  return `<ContributionCalendar\n  ${attrs.join("\n  ")}\n/>`
 }
 
 /** Normalizes a Payload `json` field that may arrive as an object or a string. */

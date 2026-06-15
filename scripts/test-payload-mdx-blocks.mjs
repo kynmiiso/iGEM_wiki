@@ -83,8 +83,7 @@ test("contribution calendar", () => {
     title: "Our season",
     caption: "Select a week to see each subteam's progress.",
   })
-  assert.match(out, /<InteractiveGizmo/)
-  assert.match(out, /name="contributionTimeline"/)
+  assert.match(out, /<ContributionCalendar/)
   assert.match(out, /title="Our season"/)
   assert.match(out, /caption="Select a week to see each subteam's progress\."/)
 })
