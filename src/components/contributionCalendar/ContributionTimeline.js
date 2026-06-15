@@ -34,7 +34,7 @@ function firstWeekIdForMonth(monthKey) {
   return w?.id ?? getDefaultWeekId()
 }
 
-export function ContributionTimeline() {
+export function ContributionTimeline({ embedded = false }) {
   const initialWeekId = getDefaultWeekId()
   const initialMonth =
     CONTRIBUTION_WEEK_BY_ID[initialWeekId]?.monthKeys[0] ?? "2026-04"
@@ -130,7 +130,7 @@ export function ContributionTimeline() {
   }, [selectWeek])
 
   return (
-    <TimelineRoot>
+    <TimelineRoot $embedded={embedded}>
       <SubteamNavRow>
         <SubteamFilterBar
           layout="navbar"
@@ -215,14 +215,15 @@ const TimelineRoot = styled.div`
   flex-direction: column;
   gap: 0;
   min-height: 75vh;
-  width: min(96rem, calc(100vw - 1.5rem));
-  max-width: 96rem;
+  width: ${({ $embedded }) => ($embedded ? "100%" : "min(96rem, calc(100vw - 1.5rem))")};
+  max-width: ${({ $embedded }) => ($embedded ? "100%" : "96rem")};
+  min-width: 0;
   margin-inline: auto;
-  padding-inline: clamp(0.75rem, 2vw, 1.5rem);
+  padding-inline: ${({ $embedded }) => ($embedded ? "0" : "clamp(0.75rem, 2vw, 1.5rem)")};
   box-sizing: border-box;
   position: relative;
-  left: 50%;
-  transform: translateX(-50%);
+  left: ${({ $embedded }) => ($embedded ? "auto" : "50%")};
+  transform: ${({ $embedded }) => ($embedded ? "none" : "translateX(-50%)")};
 
   @media (prefers-reduced-motion: reduce) {
     * {
