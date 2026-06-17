@@ -5,6 +5,9 @@ import { DesignSketchbook } from "../designSketchbook/DesignSketchbook.js"
 import { HardwareNotebookSandbox } from "../hardwareNotebook/HardwareNotebookSandbox.js"
 import { HardwareArchitectureDiagram } from "../hardwareArchitecture/HardwareArchitectureDiagram.js"
 import { PageTab, PageTabs } from "../PageTabs.js"
+import { InteractiveGizmo } from "./interactive/InteractiveGizmo.js"
+import Citation from "../Citation"
+import References from "../References"
 
 export const Callout = ({ tone = "note", title, children }) => (
   <CalloutBox $tone={tone}>
@@ -35,17 +38,29 @@ export const DataTable = ({ caption, children }) => (
   </DataTableWrap>
 )
 
+export const ContributionCalendar = ({ title, caption }) => (
+  <ContributionCalendarWrap>
+    {title && <CalendarTitle>{title}</CalendarTitle>}
+    <ContributionTimeline embedded />
+    {caption && <CalendarCaption>{caption}</CalendarCaption>}
+  </ContributionCalendarWrap>
+)
+
 export const mdxComponents = {
   Callout,
   Figure,
   ImageGrid,
   DataTable,
+  ContributionCalendar,
   ContributionTimeline,
   DesignSketchbook,
   HardwareNotebookSandbox,
   HardwareArchitectureDiagram,
   PageTabs,
   PageTab,
+  InteractiveGizmo,
+  Citation,
+  References,
 }
 
 const toneStyles = {
@@ -137,4 +152,24 @@ const TableCaption = styled.p`
   font-size: 0.9rem;
   font-weight: 700;
   margin-bottom: var(--space-sm);
+`
+
+const ContributionCalendarWrap = styled.div`
+  width: 100%;
+  max-width: 80rem;
+  min-width: 0;
+  margin: var(--space-lg) 0;
+`
+
+const CalendarTitle = styled.p`
+  color: var(--color-text) !important;
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+`
+
+const CalendarCaption = styled.p`
+  max-width: 48rem;
+  margin-top: var(--space-sm);
+  color: var(--color-muted);
+  font-size: 0.875rem;
 `
