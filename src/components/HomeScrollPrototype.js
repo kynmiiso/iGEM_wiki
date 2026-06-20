@@ -3,6 +3,7 @@ import { withPrefix } from "gatsby"
 import styled, { css, keyframes } from "styled-components"
 import { WikiTopBar, WIKI_TOP_BAR_Z_INDEX } from "./WikiTopBar.js"
 import { WaterfallSideText } from "./WaterfallSideText.js"
+import Petadex from "./Petadex.js"
 
 /**
  * Mockups live under /static/wiki-mockup/ so the browser loads predictable URLs
@@ -278,6 +279,9 @@ export function HomeScrollPrototype() {
           <WikiTopBar />
         </HomeNavMount>
       </ScrollStack>
+
+      <Petadex />
+
     </WikiFrontRoot>
   )
 }
