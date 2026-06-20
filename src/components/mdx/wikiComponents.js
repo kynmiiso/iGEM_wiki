@@ -35,11 +35,20 @@ export const DataTable = ({ caption, children }) => (
   </DataTableWrap>
 )
 
+export const ContributionCalendar = ({ title, caption }) => (
+  <ContributionCalendarWrap>
+    {title && <CalendarTitle>{title}</CalendarTitle>}
+    <ContributionTimeline embedded />
+    {caption && <CalendarCaption>{caption}</CalendarCaption>}
+  </ContributionCalendarWrap>
+)
+
 export const mdxComponents = {
   Callout,
   Figure,
   ImageGrid,
   DataTable,
+  ContributionCalendar,
   ContributionTimeline,
   HardwareNotebookSandbox,
   InteractiveGizmo,
@@ -136,4 +145,24 @@ const TableCaption = styled.p`
   font-size: 0.9rem;
   font-weight: 700;
   margin-bottom: var(--space-sm);
+`
+
+const ContributionCalendarWrap = styled.div`
+  width: 100%;
+  max-width: 80rem;
+  min-width: 0;
+  margin: var(--space-lg) 0;
+`
+
+const CalendarTitle = styled.p`
+  color: var(--color-text) !important;
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+`
+
+const CalendarCaption = styled.p`
+  max-width: 48rem;
+  margin-top: var(--space-sm);
+  color: var(--color-muted);
+  font-size: 0.875rem;
 `

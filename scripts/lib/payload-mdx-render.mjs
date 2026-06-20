@@ -59,6 +59,8 @@ export function renderBlock(block, { resolveFigureSrc, onError } = {}) {
       return renderImageGrid(block, { resolveFigureSrc, onError })
     case "dataTable":
       return renderDataTable(block)
+    case "contributionCalendar":
+      return renderContributionCalendar(block)
     case "interactiveGizmo":
       return renderInteractiveGizmo(block, { onError })
     case "markdown":
@@ -117,6 +119,14 @@ function renderDataTable(block) {
 
   const captionAttr = block.caption ? ` caption=${quote(block.caption)}` : ""
   return `<DataTable${captionAttr}>\n\n${table}\n\n</DataTable>`
+}
+
+function renderContributionCalendar(block) {
+  const attrs = []
+  if (block.title) attrs.push(`title=${quote(block.title)}`)
+  if (block.caption) attrs.push(`caption=${quote(block.caption)}`)
+  if (attrs.length === 0) return "<ContributionCalendar />"
+  return `<ContributionCalendar\n  ${attrs.join("\n  ")}\n/>`
 }
 
 /** Normalizes a Payload `json` field that may arrive as an object or a string. */

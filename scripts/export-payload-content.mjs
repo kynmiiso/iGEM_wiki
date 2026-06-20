@@ -1,7 +1,6 @@
 import fs from "fs"
 import path from "path"
 import process from "process"
-import { pathToFileURL } from "url"
 import {
   normalizeGizmoConfig,
   quote,
@@ -17,18 +16,11 @@ const payloadUrl = String(process.env.PAYLOAD_URL || "http://localhost:3000").re
 const payloadFetchTimeoutMs = Number(process.env.PAYLOAD_FETCH_TIMEOUT_MS || 15000)
 const errors = []
 
-const { convertLexicalToMarkdown } = await import(
-  pathToFileURL(
-    path.join(root, "cms", "payload-app", "node_modules", "@payloadcms", "richtext-lexical", "dist", "index.js")
-  ).href
-)
-
 let response
 
 try {
-  response = await fetch(
-    `${payloadUrl}/api/wiki-pages?limit=100&depth=2&where[_status][equals]=published&sort=section,order`,
-    { signal: AbortSignal.timeout(payloadFetchTimeoutMs) }
+  response = await fetchWithTimeout(
+    `${payloadUrl}/api/wiki-pages?limit=100&depth=2&where[_status][equals]=published&sort=section,order`
   )
 } catch (error) {
   console.error(`Unable to fetch Payload pages from ${payloadUrl} within ${payloadFetchTimeoutMs}ms.`)
@@ -271,9 +263,7 @@ async function ensureRemoteMedia(pages) {
 
         if (fs.existsSync(sourcePath)) continue
 
-        const response = await fetch(mediaFileUrl(media), {
-          signal: AbortSignal.timeout(payloadFetchTimeoutMs),
-        })
+        const response = await fetchWithTimeout(mediaFileUrl(media))
 
         if (!response.ok) {
           errors.push(
@@ -299,14 +289,20 @@ function mediaFileUrl(media) {
   return `${payloadUrl}/api/media/file/${encodeURIComponent(filename)}`
 }
 
-function renderRichText(data) {
-  if (!data) return ""
+async function fetchWithTimeout(url) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), payloadFetchTimeoutMs)
 
   try {
-    return convertLexicalToMarkdown({ data })
-  } catch {
-    return renderLexicalFallback(data)
+    return await fetch(url, { signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
   }
+}
+
+function renderRichText(data) {
+  if (!data) return ""
+  return renderLexicalFallback(data)
 }
 
 function renderLexicalFallback(data) {

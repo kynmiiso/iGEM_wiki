@@ -1,6 +1,11 @@
+import React from "react"
 import { GrowthCurveSimulator } from "./GrowthCurveSimulator.js"
 import { HardwareNotebookSandbox } from "../../hardwareNotebook/HardwareNotebookSandbox.js"
 import { ContributionTimeline } from "../../contributionCalendar/ContributionTimeline.js"
+
+const EmbeddedContributionTimeline = (props) => (
+  <ContributionTimeline {...props} embedded />
+)
 
 /**
  * Approved interactive "gizmos" subteams can embed in wiki pages.
@@ -17,7 +22,7 @@ import { ContributionTimeline } from "../../contributionCalendar/ContributionTim
 export const interactiveRegistry = {
   growthCurve: GrowthCurveSimulator,
   hardwareNotebook: HardwareNotebookSandbox,
-  contributionTimeline: ContributionTimeline,
+  contributionTimeline: EmbeddedContributionTimeline,
 }
 
 export const interactiveKeys = Object.keys(interactiveRegistry)

@@ -25,7 +25,7 @@ export const InteractiveGizmo = ({ name, title, caption, config = {} }) => {
   }
 
   return (
-    <Wrap>
+    <Wrap $wide={name === "contributionTimeline"}>
       {title && <Title>{title}</Title>}
       <Component {...componentProps} />
       {caption && <Caption>{caption}</Caption>}
@@ -34,7 +34,9 @@ export const InteractiveGizmo = ({ name, title, caption, config = {} }) => {
 }
 
 const Wrap = styled.div`
-  max-width: 54rem;
+  width: 100%;
+  max-width: ${({ $wide }) => ($wide ? "80rem" : "54rem")};
+  min-width: 0;
   margin: var(--space-lg) 0;
 `
 

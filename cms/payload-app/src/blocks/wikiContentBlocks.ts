@@ -98,9 +98,6 @@ export const wikiContentBlocks: Block[] = [
       singular: 'Image Grid',
       plural: 'Image Grids',
     },
-    admin: {
-      description: 'Side-by-side figures — maps to the wiki <ImageGrid> MDX component.',
-    },
     fields: [
       {
         name: 'figures',
@@ -121,9 +118,6 @@ export const wikiContentBlocks: Block[] = [
       singular: 'Data Table',
       plural: 'Data Tables',
     },
-    admin: {
-      description: 'Markdown table inside the wiki <DataTable> MDX component.',
-    },
     fields: [
       {
         name: 'caption',
@@ -141,14 +135,33 @@ export const wikiContentBlocks: Block[] = [
     ],
   },
   {
+    slug: 'contributionCalendar',
+    labels: {
+      singular: 'Contribution Calendar',
+      plural: 'Contribution Calendars',
+    },
+    fields: [
+      {
+        name: 'title',
+        type: 'text',
+        admin: {
+          description: 'Optional heading shown above the contribution calendar.',
+        },
+      },
+      {
+        name: 'caption',
+        type: 'textarea',
+        admin: {
+          description: 'Optional caption shown below the contribution calendar.',
+        },
+      },
+    ],
+  },
+  {
     slug: 'interactiveGizmo',
     labels: {
       singular: 'Interactive Gizmo',
       plural: 'Interactive Gizmos',
-    },
-    admin: {
-      description:
-        'Embed an approved interactive React component inline in the page — maps to <InteractiveGizmo>. Keep gizmo options in sync with src/components/mdx/interactive/registry.js.',
     },
     fields: [
       {

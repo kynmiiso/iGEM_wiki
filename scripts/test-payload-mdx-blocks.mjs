@@ -77,6 +77,17 @@ test("dataTable", () => {
   assert.match(out, /<\/DataTable>/)
 })
 
+test("contribution calendar", () => {
+  const out = renderBlock({
+    blockType: "contributionCalendar",
+    title: "Our season",
+    caption: "Select a week to see each subteam's progress.",
+  })
+  assert.match(out, /<ContributionCalendar/)
+  assert.match(out, /title="Our season"/)
+  assert.match(out, /caption="Select a week to see each subteam's progress\."/)
+})
+
 test("interactiveGizmo with config emits a JSX expression", () => {
   const out = renderBlock({
     blockType: "interactiveGizmo",
