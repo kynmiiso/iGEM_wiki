@@ -37,7 +37,7 @@ const Shell = styled.div`
   padding: 32px;
   gap: 24px;
   width: 720px;
-  margin: 64px auto;
+  margin: 500px auto;
 `
 
 const Window = styled.div`

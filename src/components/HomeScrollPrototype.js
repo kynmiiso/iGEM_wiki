@@ -4,6 +4,7 @@ import styled, { css, keyframes } from "styled-components"
 import { WikiTopBar, WIKI_TOP_BAR_Z_INDEX } from "./WikiTopBar.js"
 import { WaterfallSideText } from "./WaterfallSideText.js"
 import Petadex from "./Petadex.js"
+import PetadexBottlePath from "./PetadexBottlePath.js"
 
 /**
  * Mockups live under /static/wiki-mockup/ so the browser loads predictable URLs
@@ -63,6 +64,7 @@ export function HomeScrollPrototype() {
   const [navPinned, setNavPinned] = useState(false)
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
   const reduceMotionParallaxRef = useRef(false)
+  const petadexRef = useRef(null)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
 
@@ -96,7 +98,7 @@ export function HomeScrollPrototype() {
       const y = window.scrollY
       const maxY = Math.max(0, doc.scrollHeight - window.innerHeight)
       const nearBottom = y >= maxY - 8
-
+      
       if (stack) {
         const rect = stack.getBoundingClientRect()
         setNavPinned(rect.top < 0 && rect.bottom > 0)
@@ -280,7 +282,11 @@ export function HomeScrollPrototype() {
         </HomeNavMount>
       </ScrollStack>
 
-      <Petadex />
+      <PetadexBottlePath petadexRef={petadexRef}>
+        <div ref={petadexRef}>
+          <Petadex />
+        </div>
+      </PetadexBottlePath>
 
     </WikiFrontRoot>
   )
