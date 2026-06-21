@@ -48,7 +48,7 @@ export const SUBTEAM_TRACKS = [
     label: "Outreach",
     color: "#FDD8F1",
     textColor: "#06202B",
-    href: "/beyond-the-bench/education-toolkit/",
+    href: "/beyond-the-bench/outreach/",
   },
   {
     id: "venture",

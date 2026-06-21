@@ -28,9 +28,11 @@ const WikiMdxTemplate = ({ data, children }) => {
   return (
     <WikiLayout pageTitle={frontmatter.title} sectionLabel={frontmatter.section}>
       <ScrollProgress />
-      <TOCWrapper>
-        <TableOfContents />
-      </TOCWrapper>
+      {!frontmatter.hideToc && (
+        <TOCWrapper>
+          <TableOfContents />
+        </TOCWrapper>
+      )}
       <ArticleShell id="page-content">
         {(frontmatter.description || owners.length > 0 || updated || frontmatter.status) && (
           <PageMeta aria-label="Page metadata">
@@ -62,6 +64,7 @@ export const query = graphql`
         owners
         updated
         status
+        hideToc
       }
     }
   }
