@@ -247,6 +247,7 @@ export const wikiContentBlocks: Block[] = [
           { label: 'Growth Curve Simulator', value: 'growthCurve' },
           { label: 'Hardware Notebook', value: 'hardwareNotebook' },
           { label: 'Contribution Timeline', value: 'contributionTimeline' },
+          { label: 'Bioreactor Requirements', value: 'bioreactorRequirements' },
         ],
         admin: {
           description: 'Which approved interactive component to render.',
