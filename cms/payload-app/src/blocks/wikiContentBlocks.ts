@@ -158,6 +158,80 @@ export const wikiContentBlocks: Block[] = [
     ],
   },
   {
+    slug: 'hardwareArchitectureDiagram',
+    labels: {
+      singular: 'Hardware Architecture Diagram',
+      plural: 'Hardware Architecture Diagrams',
+    },
+    fields: [],
+  },
+  {
+    slug: 'designSketchbook',
+    labels: {
+      singular: 'Design Sketchbook',
+      plural: 'Design Sketchbooks',
+    },
+    fields: [],
+  },
+  {
+    slug: 'pageTabs',
+    labels: {
+      singular: 'Page Tabs',
+      plural: 'Page Tabs',
+    },
+    fields: [
+      {
+        name: 'layout',
+        type: 'select',
+        defaultValue: 'horizontal',
+        options: [
+          { label: 'Horizontal', value: 'horizontal' },
+          { label: 'Side', value: 'side' },
+        ],
+      },
+      {
+        name: 'defaultTab',
+        type: 'text',
+        admin: {
+          description: 'Optional tab id to open first, e.g. progress.',
+        },
+      },
+      {
+        name: 'tabs',
+        type: 'array',
+        required: true,
+        minRows: 1,
+        labels: {
+          singular: 'Tab',
+          plural: 'Tabs',
+        },
+        fields: [
+          {
+            name: 'id',
+            type: 'text',
+            required: true,
+            admin: {
+              description: 'Stable id using letters, numbers, hyphens, or underscores.',
+            },
+          },
+          {
+            name: 'label',
+            type: 'text',
+            required: true,
+          },
+          {
+            name: 'body',
+            type: 'textarea',
+            required: true,
+            admin: {
+              description: 'Markdown content for this tab. MDX components can be used if needed.',
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
     slug: 'interactiveGizmo',
     labels: {
       singular: 'Interactive Gizmo',
