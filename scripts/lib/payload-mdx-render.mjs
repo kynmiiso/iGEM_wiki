@@ -17,6 +17,7 @@ const GIZMO_CONFIG_RULES = {
   },
   hardwareNotebook: {},
   contributionTimeline: {},
+  bioreactorRequirements: {},
 }
 
 export function routePartsForExport(route) {
