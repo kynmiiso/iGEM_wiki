@@ -1,7 +1,11 @@
 import React from "react"
 import styled, { css } from "styled-components"
+import { BioreactorRequirements } from "../bioreactorRequirements/BioreactorRequirements.js"
 import { ContributionTimeline } from "../contributionCalendar/ContributionTimeline.js"
+import { DesignSketchbook } from "../designSketchbook/DesignSketchbook.js"
 import { HardwareNotebookSandbox } from "../hardwareNotebook/HardwareNotebookSandbox.js"
+import { HardwareArchitectureDiagram } from "../hardwareArchitecture/HardwareArchitectureDiagram.js"
+import { PageTab, PageTabs } from "../PageTabs.js"
 import { InteractiveGizmo } from "./interactive/InteractiveGizmo.js"
 import Citation from "../Citation"
 import References from "../References"
@@ -50,7 +54,12 @@ export const mdxComponents = {
   DataTable,
   ContributionCalendar,
   ContributionTimeline,
+  DesignSketchbook,
   HardwareNotebookSandbox,
+  BioreactorRequirements,
+  HardwareArchitectureDiagram,
+  PageTabs,
+  PageTab,
   InteractiveGizmo,
   Citation,
   References,

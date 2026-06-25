@@ -37,6 +37,7 @@ export const wikiNav = [
   { label: "Beyond the Bench", children: [
     { to: "/beyond-the-bench/education-toolkit/", label: "Education Toolkit" },
     { to: "/beyond-the-bench/human-practices/", label: "Human Practices" },
+    { to: "/beyond-the-bench/outreach/", label: "Outreach" },
     { to: "/beyond-the-bench/entrepreneurship/", label: "Entrepreneurship" },
     { to: "/beyond-the-bench/safety/", label: "Safety" },
   ]},
