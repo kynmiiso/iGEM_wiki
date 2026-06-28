@@ -94,11 +94,25 @@ export function HomeScrollPrototype() {
     const tick = () => {
       const stack = stackRef.current
       const bottleSpot = bottleTouchRef.current
-      const doc = document.documentElement
       const y = window.scrollY
-      const maxY = Math.max(0, doc.scrollHeight - window.innerHeight)
-      const nearBottom = y >= maxY - 8
-      
+
+      // Use ScrollStack bottom to know where the mockup section is in the viewport
+      const stackBottom = stack ? stack.getBoundingClientRect().bottom : window.innerHeight
+
+      // Release the bottle when the ScrollStack bottom crosses 45% of viewport height
+      const UNPIN_THRESHOLD = window.innerHeight * 0.45
+      const nearBottom = stackBottom <= UNPIN_THRESHOLD
+
+      if (bottleTouchPinnedRef.current && nearBottom) {
+        const flip = bottleFlipRef.current
+        if (flip) flipUnpinFirstRef.current = flip.getBoundingClientRect()
+        else flipUnpinFirstRef.current = null
+        bottleTouchPinnedRef.current = false
+        bottlePinEnterScrollYRef.current = null
+        setBottleTouchPinned(false)
+        return
+      }
+
       if (stack) {
         const rect = stack.getBoundingClientRect()
         setNavPinned(rect.top < 0 && rect.bottom > 0)
@@ -394,7 +408,7 @@ const bottleIdleFloat = keyframes`
   }
 `
 
-/** Very slow, subtle sway only while the bottle is in touch “sticky” (fixed) mode. */
+/** Very slow, subtle sway only while the bottle is in touch "sticky" (fixed) mode. */
 const bottleStickyRock = keyframes`
   0%,
   100% {
