@@ -41,6 +41,25 @@ const BOTTLE_FLIP_MS = 580
 const BACK_PARALLAX_SPEED = 0.42
 
 /**
+ * Fraction of the composition (layer) height where the water surface / ripple sits.
+ * Once this line rises above the anchored bottle, the bottle is treated as submerged.
+ * Tune against wiki-front-water.png (ripple ≈ 0.92 down the 1440×2440 canvas).
+ * Pushed to 0.98 so the bottle stays fully opaque until it's deep under the water.
+ */
+const WATER_RIPPLE_FRAC = 0.98
+
+/**
+ * Visible bottle band as a fraction of its layer height (already includes the
+ * BOTTLE_SHIFT nudge). The bottle fades from opaque→hidden as the ripple sweeps
+ * from BOT_FRAC up to TOP_FRAC — a narrow gap makes the fade snap 100→0 fast.
+ */
+const BOTTLE_SUBMERGE_TOP_FRAC = 0.49
+const BOTTLE_SUBMERGE_BOT_FRAC = 0.52
+
+/** Extra scroll room (vh) below the mockup so the water can rise over the pinned bottle. */
+const PLACEHOLDER_MIN_VH = 160
+
+/**
  * Full-page wiki front compositing: layered mockup PNGs plus a gentle idle float on the logo.
  *
  * Site nav uses scroll-driven `position: fixed` while the mockup is on-screen.
@@ -59,6 +78,7 @@ export function HomeScrollPrototype() {
   const flipPinFirstRef = useRef(null)
   const flipCleanupRef = useRef(null)
   const parallaxBackRef = useRef(null)
+  const waterRef = useRef(null)
   const [navPinned, setNavPinned] = useState(false)
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
   const reduceMotionParallaxRef = useRef(false)
@@ -109,22 +129,48 @@ export function HomeScrollPrototype() {
         }
       }
 
+      // Water surface (ripple) viewport position — the "barrier" the bottle sinks behind.
+      const water = waterRef.current
+      let rippleY = null
+      if (water) {
+        const wr = water.getBoundingClientRect()
+        rippleY = wr.top + wr.height * WATER_RIPPLE_FRAC
+      }
+
       if (bottleTouchPinnedRef.current) {
         const pin0 = bottlePinEnterScrollYRef.current
         if (pin0 != null && y < pin0 - BOTTLE_PIN_SCROLL_UP_LEAVE) {
           const flip = bottleFlipRef.current
-          if (flip) flipUnpinFirstRef.current = flip.getBoundingClientRect()
-          else flipUnpinFirstRef.current = null
+          if (flip) {
+            flipUnpinFirstRef.current = flip.getBoundingClientRect()
+            flip.style.opacity = ""
+          } else {
+            flipUnpinFirstRef.current = null
+          }
           bottleTouchPinnedRef.current = false
           bottlePinEnterScrollYRef.current = null
           setBottleTouchPinned(false)
+        } else {
+          // Anchored at the barrier: fade the bottle out as the rising water sweeps
+          // up over it, so it disappears behind the water and stays hidden past this
+          // point. Fades back in (and later unpins) only when the user scrolls up.
+          const flip = bottleFlipRef.current
+          if (flip && rippleY != null) {
+            const fr = flip.getBoundingClientRect()
+            const topY = fr.top + BOTTLE_SUBMERGE_TOP_FRAC * fr.height
+            const botY = fr.top + BOTTLE_SUBMERGE_BOT_FRAC * fr.height
+            const span = Math.max(1, botY - topY)
+            const op = Math.max(0, Math.min(1, (rippleY - topY) / span))
+            flip.style.opacity = String(op)
+          }
         }
       } else if (bottleSpot) {
+        const flip = bottleFlipRef.current
+        if (flip) flip.style.opacity = ""
         const br = bottleSpot.getBoundingClientRect()
         const bottleMidY = br.top + br.height / 2
         const viewMidY = window.innerHeight / 2
         if (!nearBottom && bottleMidY <= viewMidY && br.bottom > 32) {
-          const flip = bottleFlipRef.current
           if (flip) flipPinFirstRef.current = flip.getBoundingClientRect()
           else flipPinFirstRef.current = null
           bottlePinEnterScrollYRef.current = y
@@ -269,10 +315,15 @@ export function HomeScrollPrototype() {
               </BottlePinSpot>
             </OverlaySlice>
             <OverlaySlice $z={Z.water}>
-              <RailImg src={ASSETS.water} alt="" />
+              <RailImg ref={waterRef} src={ASSETS.water} alt="" />
             </OverlaySlice>
           </OverlayStack>
         </CompositionRoot>
+
+        {/* Placeholder scroll room so the water can fully rise over the pinned bottle. */}
+        <PlaceholderSection aria-hidden="true">
+          <PlaceholderLabel>placeholder — scroll room for water / bottle test</PlaceholderLabel>
+        </PlaceholderSection>
 
         <HomeNavMount $pinned={navPinned}>
           <WikiTopBar />
@@ -311,6 +362,26 @@ const CompositionRoot = styled.div`
   width: 100%;
   min-width: 0;
   overflow: visible;
+`
+
+const PlaceholderSection = styled.section`
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  min-height: ${PLACEHOLDER_MIN_VH}vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: var(--color-bg);
+`
+
+const PlaceholderLabel = styled.p`
+  margin-top: 3.5rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  opacity: 0.55;
 `
 
 const RailImg = styled.img`
