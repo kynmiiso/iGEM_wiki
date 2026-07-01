@@ -223,7 +223,10 @@ export function ExplainTerm({ term, explanation, className }) {
             }
           >
             <PopoverInner>
-              <ShellImg src={TEXT_BOX_SHELL} alt="" aria-hidden onLoad={updatePosition} />
+              <ShellWrap>
+                <ShellImg src={TEXT_BOX_SHELL} alt="" aria-hidden onLoad={updatePosition} />
+                {explanation ? <PopoverCopy>{explanation}</PopoverCopy> : null}
+              </ShellWrap>
             </PopoverInner>
           </PopoverOuter>,
           document.body
@@ -282,11 +285,32 @@ const PopoverInner = styled.div`
   }
 `
 
+const ShellWrap = styled.div`
+  position: relative;
+  width: 100%;
+`
+
 const ShellImg = styled.img`
   display: block;
   width: 100%;
   height: auto;
   user-select: none;
+  pointer-events: none;
+`
+
+/** Body copy over the black panel (left of mascot); covers baked-in “explanation” art. */
+const PopoverCopy = styled.p`
+  position: absolute;
+  left: 5.5%;
+  top: 14%;
+  width: 58%;
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-style: italic;
+  line-height: 1.38;
   pointer-events: none;
 `
 
