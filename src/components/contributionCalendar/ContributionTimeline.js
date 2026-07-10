@@ -30,6 +30,10 @@ function buildMilestonesByDate(weeks) {
 }
 
 function firstWeekIdForMonth(monthKey) {
+  // Prefer a week whose primary month is the target (avoids cross-month weeks
+  // whose monthKeys[0] is the previous month).
+  const preferred = CONTRIBUTION_WEEKS.find((wk) => wk.monthKeys[0] === monthKey)
+  if (preferred) return preferred.id
   const w = CONTRIBUTION_WEEKS.find((wk) => wk.monthKeys.includes(monthKey))
   return w?.id ?? getDefaultWeekId()
 }
@@ -68,29 +72,27 @@ export function ContributionTimeline({ embedded = false }) {
   const selectWeek = useCallback(
     (weekId) => {
       if (!CONTRIBUTION_WEEK_BY_ID[weekId]) return
+      const week = CONTRIBUTION_WEEK_BY_ID[weekId]
       setSelectedWeekId(weekId)
       syncHash(weekId)
-      const week = CONTRIBUTION_WEEK_BY_ID[weekId]
-      if (week.monthKeys[0] && !week.monthKeys.includes(monthKey)) {
-        setMonthKey(week.monthKeys[0])
-      }
+      // Keep the visible month if this week still belongs to it; otherwise follow the week.
+      setMonthKey((prev) =>
+        week.monthKeys.includes(prev) ? prev : week.monthKeys[0] ?? prev
+      )
     },
-    [monthKey, syncHash]
+    [syncHash]
   )
 
   const selectMonth = useCallback(
     (key) => {
+      const nextId = firstWeekIdForMonth(key)
       setMonthKey(key)
-      const current = CONTRIBUTION_WEEK_BY_ID[selectedWeekId]
-      if (!current?.monthKeys.includes(key)) {
-        const nextId = firstWeekIdForMonth(key)
-        if (nextId) {
-          setSelectedWeekId(nextId)
-          syncHash(nextId)
-        }
+      if (nextId) {
+        setSelectedWeekId(nextId)
+        syncHash(nextId)
       }
     },
-    [selectedWeekId, syncHash]
+    [syncHash]
   )
 
   const toggleSubteam = useCallback((id) => {
@@ -110,6 +112,8 @@ export function ContributionTimeline({ embedded = false }) {
     setHiddenPanel(null)
   }, [])
 
+  // Apply URL hash once on mount — do NOT re-run when selectWeek identity changes,
+  // or month navigation gets snapped back to the hash week's monthKeys[0].
   useEffect(() => {
     if (typeof window === "undefined") return undefined
     const initialHashId = parseWeekHash(window.location.hash)
@@ -120,7 +124,11 @@ export function ContributionTimeline({ embedded = false }) {
         setMonthKey(initialHashWeek.monthKeys[0])
       }
     }
+    return undefined
+  }, [])
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined
     const onHash = () => {
       const id = parseWeekHash(window.location.hash)
       if (id) selectWeek(id)
