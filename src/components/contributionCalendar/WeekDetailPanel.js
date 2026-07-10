@@ -108,6 +108,7 @@ const Detail = styled.p`
   line-height: 1.6;
   color: var(--color-muted);
   margin-bottom: var(--space-sm);
+  white-space: pre-line;
 `
 
 const ReadMore = styled(Link)`

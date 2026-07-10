@@ -6,37 +6,31 @@ navTitle: "Notebook"
 order: 30
 description: "Chronological hardware design, prototyping, and testing notes."
 owners: ["Hardware"]
-updated: "2026-05-16"
+updated: "2026-07-10"
 status: "published"
 ---
 
 {/* Generated from Payload CMS. Edit in Payload, then re-run npm run payload:export. */}
 
-Use this notebook to record hardware design progress, prototype changes, tests, and decisions. testing
+Use this notebook to record hardware design progress, prototype changes, tests, and decisions.
 
-## Entry Template
+<PageTabs defaultTab="bioreactor">
 
-### YYYY-MM-DD
+<PageTab id="stickies" label="Stickies">
 
-**Goal:** Describe the design or test question.
+<InteractiveGizmo name="hardwareNotebook" />
 
-**Work completed:** Summarize the build, prototype, or measurement.
+</PageTab>
 
-**Result:** Record what happened.
-
-**Next step:** State the next design action.
-
-<PageTabs>
-
-<PageTab id="6a383474730b7d806236d63c" label="bio reactor">
+<PageTab id="bioreactor" label="Bioreactor Build">
 
 <InteractiveGizmo name="bioreactorRequirements" />
 
 </PageTab>
 
-<PageTab id="6a38358e730b7d806236d63d" label="sticky note">
+<PageTab id="journal" label="Journal">
 
-<InteractiveGizmo name="hardwareNotebook" />
+<InteractiveGizmo name="hardwareJournal" />
 
 </PageTab>
 

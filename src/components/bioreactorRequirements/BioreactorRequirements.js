@@ -330,10 +330,11 @@ const Eyebrow = styled.p`
   margin: 0 0 var(--space-xs);
 `
 
-const SelectedDate = styled.h3`
+const SelectedDate = styled.p`
   font-size: clamp(1.4rem, 3vw, 2rem);
   color: var(--color-text);
   margin: 0;
+  font-weight: 600;
 `
 
 const Note = styled.p`

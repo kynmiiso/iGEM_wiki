@@ -60,8 +60,10 @@ const WEEK_CONTENT_OVERRIDES = {
         detail: "Defined sequence metadata fields and first-pass filtering thresholds for candidate PETases.",
       },
       hardware: {
-        summary: "Bioreactor requirements gathering.",
-        detail: "Documented temperature and pH sweep needs from wet lab; rough BOM for prototype v0.",
+        summary: "Pioreactor onboarding and early requirements work.",
+        detail:
+          "• Completed first pioreactor build sprint; documented screw, hat-PCB, and instruction pain points.\n• Patricia’s accessibility talk set user-friendly design criteria; shared requirements with wet lab on assay integration.",
+        link: "/hardware/notebook/#journal-2026-03-27",
       },
       humanPractices: {
         summary: "Stakeholder map started.",
@@ -82,11 +84,33 @@ const WEEK_CONTENT_OVERRIDES = {
       },
     },
   },
+  "week-2026-04-12": {
+    subteams: {
+      hardware: {
+        summary: "Pioreactor CEO debrief and BOM kickoff.",
+        detail:
+          "• Debriefed with Pioreactor CEO — confirmed Stemma QT connectors and shifted away from Raspberry Pi toward cheaper MCUs.\n• Assigned BOM owners per component (pump, OD, pH, temp, fan, glassware) and reviewed requirement strings by section.",
+        link: "/hardware/notebook/#journal-2026-04-15",
+      },
+    },
+    milestones: [
+      { date: "2026-04-15", label: "BOM kickoff + requirement strings", subteamId: "hardware" },
+    ],
+  },
+  "week-2026-04-26": {
+    subteams: {
+      hardware: {
+        summary: "BOM research and requirement flagging.",
+        detail:
+          "• Continued Digikey/Adafruit evaluation for pumps, sensors, and MCU options on the shared BOM sheet.\n• Leads synced with dry lab and wet lab on what the bioreactor needs to measure; flagged ambiguous requirement strings.",
+        link: "/hardware/notebook/#journal-2026-04-29",
+      },
+    },
+  },
   "week-2026-05-03": {
     overview:
-      "First experimental cycles: assay pilots in wet lab, metagenomic mining jobs on cluster, and CAD for bioreactor frame v1.",
+      "First experimental cycles: assay pilots in wet lab, metagenomic mining jobs on cluster, and early BOM evaluation.",
     milestones: [
-      { date: "2026-05-06", label: "Bioreactor CAD freeze", subteamId: "hardware" },
       { date: "2026-05-08", label: "First assay plate pilot", subteamId: "wetLab" },
     ],
     subteams: {
@@ -101,8 +125,9 @@ const WEEK_CONTENT_OVERRIDES = {
         link: "/dry-lab/overview/",
       },
       hardware: {
-        summary: "Frame v1 laser-cut ordered.",
-        detail: "Ordered acrylic test frame; firmware stub for temperature logging started.",
+        summary: "BOM evaluation before May ordering.",
+        detail:
+          "• Compared Stemma QT (I2C) vs PWM pump wiring and cable costs for multi-sensor setups.\n• Team assigned to review pioreactor source code ahead of prototyping sprint.",
       },
       humanPractices: {
         summary: "First expert interview.",
@@ -122,10 +147,70 @@ const WEEK_CONTENT_OVERRIDES = {
       },
     },
   },
+  "week-2026-05-10": {
+    subteams: {
+      hardware: {
+        summary: "BOM ordering decisions and prototyping assignments.",
+        detail:
+          "• May 12: finalized ordering path for Stemma QT, external temp sensor, and manual pH via wet-lab probe.\n• May 16: split OD, heater, and MCU connectivity prototyping across owners; OD blackout-box and calibration work started.",
+        link: "/hardware/notebook/#journal-2026-05-16",
+      },
+    },
+    milestones: [
+      { date: "2026-05-16", label: "OD/MCU prototyping assigned", subteamId: "hardware" },
+    ],
+  },
+  "week-2026-05-17": {
+    subteams: {
+      hardware: {
+        summary: "Pump and OD bench tests.",
+        detail:
+          "• Ran peristaltic pump test with red/blue water; plumbing validated visually.\n• OD readings were noisy — calibration work continues; real-time pH sensing deprioritized after wet-lab discussion.",
+        link: "/hardware/notebook/#journal-2026-05-19",
+      },
+    },
+  },
+  "week-2026-05-24": {
+    subteams: {
+      hardware: {
+        summary: "Cross-subteam requirements alignment.",
+        detail:
+          "• Filmed pioreactor demo; dry-lab leads confirmed temperature sweeps matter more than pH sweeps (25–70 °C target).\n• Agreed on continuous flow, OD600 feedback loop, and 3-pump layout; documented heater wattage and heat-up time estimates.",
+        link: "/hardware/notebook/#journal-2026-05-26",
+      },
+    },
+    milestones: [
+      { date: "2026-05-26", label: "Bioreactor requirements aligned", subteamId: "hardware" },
+    ],
+  },
+  "week-2026-05-31": {
+    subteams: {
+      hardware: {
+        summary: "System architecture v1 and OD parts ordered.",
+        detail:
+          "• Drafted sensor → MCU → cloud hierarchy; split physical controls (temp, runtime, OD) from cloud analytics.\n• Selected combined photodiode + TIA for OD600; ordered parts and assigned per-subsystem validation experiments.",
+        link: "/hardware/notebook/#journal-2026-06-02",
+      },
+    },
+    milestones: [
+      { date: "2026-06-02", label: "System architecture drafted", subteamId: "hardware" },
+    ],
+  },
+  "week-2026-06-07": {
+    subteams: {
+      hardware: {
+        summary: "Subsystem DoE and CAD progress.",
+        detail:
+          "• Defined design-of-experiment variables for flow rate, temperature accuracy, autoclave path, and sourcing feasibility.\n• CAD underway for self-healing caps and OD components; power budgeting and I2C daisy-chain options documented.",
+        link: "/hardware/notebook/#journal-2026-06-09",
+      },
+    },
+  },
   "week-2026-06-14": {
     overview:
       "Mid-season integration: validated hits list, bioreactor bring-up, and public engagement at local outreach event.",
     milestones: [
+      { date: "2026-06-16", label: "OD CAD prototype ordered", subteamId: "hardware" },
       { date: "2026-06-18", label: "Community workshop", subteamId: "outreach" },
       { date: "2026-06-20", label: "Top-50 PETase shortlist", subteamId: "dryLab" },
     ],
@@ -140,9 +225,10 @@ const WEEK_CONTENT_OVERRIDES = {
         link: "/dry-lab/model/",
       },
       hardware: {
-        summary: "Bioreactor wet test.",
-        detail: "Leak test passed; PID tuning for heating loop started.",
-        link: "/hardware/notebook/",
+        summary: "OD CAD prototype and power architecture review.",
+        detail:
+          "• Claire completed initial OD CAD and sent first prototype for print; team moved task tracking to Jira.\n• Reviewed RRF protocol diagrams, motor driver vs transistor tradeoffs, and team power diagram (I2C limits, pull-up resistors).",
+        link: "/hardware/notebook/#journal-2026-06-16",
       },
       humanPractices: {
         summary: "Policy memo draft.",
@@ -162,12 +248,33 @@ const WEEK_CONTENT_OVERRIDES = {
       },
     },
   },
+  "week-2026-06-21": {
+    subteams: {
+      hardware: {
+        summary: "Subsystem handout and build-session prep.",
+        detail:
+          "• Distributed subsystem components; reviewed pinout diagrams (OD needs voltage divider).\n• Planned extended build session: RRF finalization, KiCad pin diagram activity, and Arduino coding kickoff.",
+        link: "/hardware/notebook/#journal-2026-06-23",
+      },
+    },
+  },
+  "week-2026-07-05": {
+    subteams: {
+      hardware: {
+        summary: "GitHub repo live and build rhythm set.",
+        detail:
+          "• Created bioreactor GitHub repo; chose Thursday evenings as recurring in-person build nights.\n• Serial Studio wired to 8 devices; Lindsay soldered pumps, Claire advanced CAD/libraries, James testing thermocouple at 55 °C.",
+        link: "/hardware/notebook/#journal-2026-07-07",
+      },
+    },
+    milestones: [
+      { date: "2026-07-07", label: "Bioreactor repo + build schedule", subteamId: "hardware" },
+    ],
+  },
   "week-2026-07-26": {
     overview:
       "Summer crunch: hardware v2 iteration, scaled assays, and wiki content freeze targets for August review.",
-    milestones: [
-      { date: "2026-07-29", label: "Bioreactor v2 assembled", subteamId: "hardware" },
-    ],
+    milestones: [],
     subteams: {
       wetLab: {
         summary: "Assay throughput doubled.",
@@ -179,8 +286,10 @@ const WEEK_CONTENT_OVERRIDES = {
         detail: "Cross-validated scoring model on held-out metagenomes.",
       },
       hardware: {
-        summary: "v2 assembly complete.",
-        detail: "Swapped heating element; added pH probe mount and cable routing.",
+        summary: "In-person builds and subsystem integration.",
+        detail:
+          "• Continued Thursday build evenings — wiring, subsystem code, and in-person test runs.\n• Validating heater, pump, and OD subsystems against design-of-experiment protocols.",
+        link: "/hardware/notebook/#journal-2026-07-07",
       },
       humanPractices: {
         summary: "Ethics checklist signed off.",
@@ -278,6 +387,30 @@ const WEEK_CONTENT_OVERRIDES = {
   },
 }
 
+/** Last date (inclusive) for quiet hardware placeholders instead of "coming soon". */
+const HARDWARE_QUIET_UNTIL = "2026-07-07"
+
+const HARDWARE_QUIET_PLACEHOLDER = {
+  summary: "Read more on Hardware",
+  detail: "Quiet week for hardware — continuing work from previous sessions.",
+  link: "/hardware/notebook/",
+}
+
+function applyHardwareQuietWeek(week) {
+  if (week.start > HARDWARE_QUIET_UNTIL) return week
+
+  const hw = week.subteams.hardware
+  if (hw.summary !== "Progress update coming soon.") return week
+
+  return {
+    ...week,
+    subteams: {
+      ...week.subteams,
+      hardware: { ...HARDWARE_QUIET_PLACEHOLDER },
+    },
+  }
+}
+
 function mergeWeek(skeleton, override = {}) {
   const subteams = { ...defaultSubteams(), ...(override.subteams || {}) }
   return {
@@ -291,9 +424,9 @@ function mergeWeek(skeleton, override = {}) {
 }
 
 /** @type {ContributionWeek[]} */
-export const CONTRIBUTION_WEEKS = buildWeekSkeleton().map((sk) =>
-  mergeWeek(sk, WEEK_CONTENT_OVERRIDES[sk.id])
-)
+export const CONTRIBUTION_WEEKS = buildWeekSkeleton()
+  .map((sk) => mergeWeek(sk, WEEK_CONTENT_OVERRIDES[sk.id]))
+  .map(applyHardwareQuietWeek)
 
 /** @type {Record<string, ContributionWeek>} */
 export const CONTRIBUTION_WEEK_BY_ID = Object.fromEntries(
