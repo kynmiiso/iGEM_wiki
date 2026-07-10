@@ -4,29 +4,48 @@ import styled from "styled-components"
 /**
  * Scroll-driven "swipe-in" card.
  *
- * As the user scrolls through this box's tall track, an inner card:
- *   1. slides in from the left,
- *   2. holds centered on screen for a stretch,
- *   3. slides back out to the right, exiting the screen.
+ * Track mode (default): tall in-flow section; progress = scroll through that track.
+ * Anchored mode (`getProgress`): fixed overlay; parent supplies 0–1 progress so the
+ * card can sync to page landmarks (e.g. waterfall puddle → shore sand).
  *
- * Built as a standalone element so it can recur anywhere on the page (e.g. one
- * per PETase living condition). Drop it into any normal-flow container.
+ * Progress maps to: slide in from left → hold center → slide out to the right.
  */
 
 /** Scroll length of the whole enter → hold → exit cycle (viewport heights). */
-const TRACK_VH = 150
+const DEFAULT_TRACK_VH = 150
 
-/** Progress (0–1) checkpoints: finish entering, then start exiting. Widen the */
-/** middle for a longer on-screen hold; narrow it to swipe straight through.   */
-const ENTER_END = 0.28
-const HOLD_END = 0.58
+/** Progress (0–1) checkpoints: finish entering, then start exiting. */
+const DEFAULT_ENTER_END = 0.28
+const DEFAULT_HOLD_END = 0.58
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 const lerp = (a, b, t) => a + (b - a) * t
 
-export function SwipeInBox({ eyebrow, title, body, children }) {
+function xForProgress(p, off, enterEnd, holdEnd) {
+  if (p <= 0) return -off
+  if (p >= 1) return off
+  // No hold: one continuous pass from left → right.
+  if (holdEnd <= enterEnd) return lerp(-off, off, p)
+  if (p <= enterEnd) return lerp(-off, 0, p / enterEnd)
+  if (p <= holdEnd) return 0
+  return lerp(0, off, (p - holdEnd) / (1 - holdEnd))
+}
+
+export function SwipeInBox({
+  eyebrow,
+  title,
+  body,
+  children,
+  /** Optional: return 0–1 scroll progress. When set, card is a fixed overlay (no tall track). */
+  getProgress,
+  enterEnd = DEFAULT_ENTER_END,
+  holdEnd = DEFAULT_HOLD_END,
+  trackVh = DEFAULT_TRACK_VH,
+  className,
+}) {
   const trackRef = useRef(null)
   const boxRef = useRef(null)
+  const anchored = typeof getProgress === "function"
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined
@@ -44,24 +63,25 @@ export function SwipeInBox({ eyebrow, title, body, children }) {
     let raf = 0
     const update = () => {
       raf = 0
-      const track = trackRef.current
       const b = boxRef.current
-      if (!track || !b) return
+      if (!b) return
 
-      const rect = track.getBoundingClientRect()
-      const vh = window.innerHeight
-      const span = Math.max(1, rect.height - vh)
-      const p = clamp(-rect.top / span, 0, 1)
+      let p
+      if (anchored) {
+        p = clamp(Number(getProgress()) || 0, 0, 1)
+      } else {
+        const track = trackRef.current
+        if (!track) return
+        const rect = track.getBoundingClientRect()
+        const vh = window.innerHeight
+        const span = Math.max(1, rect.height - vh)
+        p = clamp(-rect.top / span, 0, 1)
+      }
 
-      // Distance (px) that fully clears the card off either edge, any viewport.
       const off = window.innerWidth / 2 + b.offsetWidth / 2 + 24
-
-      let x
-      if (p <= ENTER_END) x = lerp(-off, 0, p / ENTER_END)
-      else if (p <= HOLD_END) x = 0
-      else x = lerp(0, off, (p - HOLD_END) / (1 - HOLD_END))
-
+      const x = xForProgress(p, off, enterEnd, holdEnd)
       b.style.transform = `translate3d(${x}px, 0, 0)`
+      b.style.visibility = p <= 0 || p >= 1 ? "hidden" : "visible"
     }
 
     const onScroll = () => {
@@ -76,21 +96,31 @@ export function SwipeInBox({ eyebrow, title, body, children }) {
       window.removeEventListener("scroll", onScroll)
       window.removeEventListener("resize", onScroll)
     }
-  }, [])
+  }, [anchored, getProgress, enterEnd, holdEnd])
+
+  const card = (
+    <Box ref={boxRef} className={anchored ? undefined : className}>
+      {children || (
+        <>
+          {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+          {title && <Title>{title}</Title>}
+          {body && <Body>{body}</Body>}
+        </>
+      )}
+    </Box>
+  )
+
+  if (anchored) {
+    return (
+      <FixedStage className={className} aria-hidden="true">
+        {card}
+      </FixedStage>
+    )
+  }
 
   return (
-    <Track ref={trackRef} $vh={TRACK_VH}>
-      <StickyViewport>
-        <Box ref={boxRef}>
-          {children || (
-            <>
-              {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-              {title && <Title>{title}</Title>}
-              {body && <Body>{body}</Body>}
-            </>
-          )}
-        </Box>
-      </StickyViewport>
+    <Track ref={trackRef} $vh={trackVh} className={className}>
+      <StickyViewport>{card}</StickyViewport>
     </Track>
   )
 }
@@ -101,7 +131,6 @@ const Track = styled.div`
   position: relative;
   width: 100%;
   height: ${({ $vh }) => $vh}vh;
-  /* Clip (not scroll) so the off-screen card never spawns a horizontal scrollbar. */
   overflow: clip;
 `
 
@@ -114,22 +143,32 @@ const StickyViewport = styled.div`
   justify-content: center;
 `
 
+const FixedStage = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+`
+
 const Box = styled.div`
-  width: min(520px, 88vw);
-  padding: var(--space-lg, 1.5rem) var(--space-xl, 2rem);
+  width: min(760px, 92vw);
+  padding: clamp(1.5rem, 3vw, 2.25rem) clamp(1.75rem, 4vw, 2.75rem);
   border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-accent);
-  border-radius: 12px;
+  border-left: 5px solid var(--color-accent);
+  border-radius: 14px;
   background: var(--color-bg);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
   will-change: transform;
-  /* Start off-screen left; JS positions it on first frame. */
   transform: translate3d(-100vw, 0, 0);
+  visibility: hidden;
 `
 
 const Eyebrow = styled.p`
   margin: 0 0 var(--space-xs, 0.5rem);
-  font-size: 0.72rem;
+  font-size: clamp(0.78rem, 1.4vw, 0.9rem);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-weight: 700;
@@ -138,13 +177,13 @@ const Eyebrow = styled.p`
 
 const Title = styled.h3`
   margin: 0 0 var(--space-sm, 0.75rem);
-  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-size: clamp(1.85rem, 4vw, 2.65rem);
   color: var(--color-text);
 `
 
 const Body = styled.p`
   margin: 0;
   color: var(--color-muted);
-  font-size: 1rem;
+  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
   line-height: 1.65;
 `

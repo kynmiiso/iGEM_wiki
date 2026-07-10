@@ -1,14 +1,18 @@
 import React, { useLayoutEffect, useRef } from "react"
-import styled, { css } from "styled-components"
+import styled, { css, keyframes } from "styled-components"
 import { ExplainTerm } from "./ExplainTermPopover.js"
 
+/** Used for popover accessibility; visible copy lives in the textbox image asset. */
 const PETASE_EXPLANATION =
   "PETase breaks the chemical bonds in PET to free a compound called MHET. A second enzyme, MHETase, then cleaves this into environmentally friendly products (ethylene glycol and terephthalic acid)."
+
+const ARROW_SRC =
+  "https://static.igem.wiki/teams/6187/wiki/homepage-components/arrow.avif"
 
 /** Horizontal offset from the left edge of the mockup composition (%). */
 export const WATERFALL_TEXT_LEFT_PCT = 2
 
-/** Horizontal offset for right-side copy (% from left). */
+/** Horizontal start for right-side copy (% from left); box fills to the right edge. */
 export const WATERFALL_TEXT_RIGHT_LEFT_PCT = 75
 
 /** Vertical offset from the top of the mockup composition (%). */
@@ -18,10 +22,11 @@ export const WATERFALL_TEXT_TOP_PCT = 58
 export const WATERFALL_TEXT_RIGHT_TOP_PCT = 74
 
 /**
- * Width as % of mockup composition. Type inside uses `cqw` so font size tracks this box
- * when the window (and artwork) get narrower.
+ * Preferred width as % of mockup composition (left column). Type inside uses `cqw`
+ * so font size tracks this box when the window (and artwork) get narrower.
+ * Right column uses left→right edge fill instead of a fixed %.
  */
-export const WATERFALL_TEXT_WIDTH_PCT = 26
+export const WATERFALL_TEXT_WIDTH_PCT = 30
 
 /** Viewport px from top where faded copy reaches full opacity. */
 export const WATERFALL_TEXT_FADE_FULL_AT_PX = 150
@@ -121,12 +126,24 @@ export function WaterfallSideText() {
           breaks down into microplastics that can infiltrate our bodies—where they damage cells and
           cause cancer-associated mechanisms.
         </Body>
+        <Body $spaced>
+          To combat this, we are engineering plastic-degrading enzymes or{" "}
+          <TermHintWrap>
+            <ExplainTerm term="PETases..." explanation={PETASE_EXPLANATION} />
+            <PopupHint>
+              <ArrowImg src={ARROW_SRC} alt="" aria-hidden />
+              <HintText>
+                Hover red underlined words for a quick popup — or click to pin it open / click again
+                to close.
+              </HintText>
+            </PopupHint>
+          </TermHintWrap>
+        </Body>
       </TextMount>
 
       <TextMount ref={rightRef} $side="right">
         <Body $large>
-          To combat this, we are engineering plastic-degrading enzymes or{" "}
-          <ExplainTerm term="PETases..." explanation={PETASE_EXPLANATION} />
+          However, PETases currently in industry have a major limitation...
         </Body>
       </TextMount>
     </>
@@ -139,8 +156,6 @@ const TextMount = styled.div`
   position: absolute;
   top: ${({ $side }) =>
     $side === "right" ? WATERFALL_TEXT_RIGHT_TOP_PCT : WATERFALL_TEXT_TOP_PCT}%;
-  width: ${WATERFALL_TEXT_WIDTH_PCT}%;
-  max-width: 100%;
   box-sizing: border-box;
   container-type: inline-size;
   pointer-events: auto;
@@ -155,29 +170,35 @@ const TextMount = styled.div`
     $side === "left"
       ? css`
           left: ${WATERFALL_TEXT_LEFT_PCT}%;
+          width: ${WATERFALL_TEXT_WIDTH_PCT}%;
+          max-width: 100%;
           padding-right: 2%;
           padding-left: max(env(safe-area-inset-left, 0px), 2%);
+
+          @media (max-width: 720px) {
+            width: min(${WATERFALL_TEXT_WIDTH_PCT}%, 42vw);
+          }
+
+          @media (max-width: 480px) {
+            width: min(24%, 38vw);
+          }
         `
       : css`
+          /* Pin to the right edge so the box shrinks with the window instead of clipping. */
           left: ${WATERFALL_TEXT_RIGHT_LEFT_PCT}%;
-          padding-right: max(env(safe-area-inset-right, 0px), 2%);
+          right: max(env(safe-area-inset-right, 0px), 2%);
+          width: auto;
+          max-width: none;
           padding-left: 2%;
+          padding-right: 0;
         `}
-
-  @media (max-width: 720px) {
-    width: min(${WATERFALL_TEXT_WIDTH_PCT}%, 42vw);
-  }
-
-  @media (max-width: 480px) {
-    width: min(24%, 38vw);
-  }
 `
 
 const Heading = styled.h2`
   margin: 0 0 0.65em;
   color: #fff;
   font-family: var(--font-body);
-  font-size: clamp(0.85rem, 9.5cqw, 1.75rem);
+  font-size: clamp(1.15rem, 12.5cqw, 2.35rem);
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.15;
@@ -185,13 +206,68 @@ const Heading = styled.h2`
 `
 
 const Body = styled.p`
-  margin: 0;
+  margin: ${({ $spaced }) => ($spaced ? "0.9em 0 0" : "0")};
   color: rgba(255, 255, 255, 0.92);
   font-family: var(--font-body);
   font-size: ${({ $large }) =>
-    $large ? "clamp(0.9rem, 8.5cqw, 1.75rem)" : "clamp(0.7rem, 6cqw, 1.35rem)"};
+    $large ? "clamp(1.1rem, 11cqw, 2.15rem)" : "clamp(0.95rem, 9cqw, 1.75rem)"};
   font-weight: 400;
   line-height: ${({ $large }) => ($large ? 1.4 : 1.45)};
   overflow-wrap: break-word;
   overflow: visible;
+`
+
+const arrowFloat = keyframes`
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+`
+
+/** Keeps the arrow + hint tucked under the red-underlined term. */
+const TermHintWrap = styled.span`
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  vertical-align: baseline;
+  max-width: 100%;
+`
+
+const PopupHint = styled.span`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2em;
+  margin-top: 0.15em;
+  margin-left: -0.35em;
+  max-width: min(14rem, 90cqw);
+`
+
+const ArrowImg = styled.img`
+  display: block;
+  width: min(5.5rem, 55%);
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+  transform-origin: center bottom;
+  animation: ${arrowFloat} 1.8s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`
+
+const HintText = styled.span`
+  display: block;
+  width: 100%;
+  text-align: center;
+  color: #e63946;
+  font-family: var(--font-body);
+  font-size: clamp(0.65rem, 5.5cqw, 0.95rem);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: break-word;
 `
