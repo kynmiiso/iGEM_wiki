@@ -213,6 +213,13 @@ export function BioreactorRequirements() {
           )}
           <TableScroll>
             <Table>
+              <colgroup>
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "25%" }} />
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "19%" }} />
+              </colgroup>
               <thead>
                 <tr>
                   {REQUIREMENT_COLUMNS.map((col) => (
@@ -323,10 +330,11 @@ const Eyebrow = styled.p`
   margin: 0 0 var(--space-xs);
 `
 
-const SelectedDate = styled.h3`
+const SelectedDate = styled.p`
   font-size: clamp(1.4rem, 3vw, 2rem);
   color: var(--color-text);
   margin: 0;
+  font-weight: 600;
 `
 
 const Note = styled.p`
@@ -528,7 +536,15 @@ const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
-  min-width: 720px;
+  table-layout: fixed;
+
+  /* Override the global MDX prose table cap (max-width: 48rem) from the
+     article template so the table fills its container. Tripled selector
+     (&&&) outranks the template's ".article table" specificity. */
+  &&& {
+    width: 100%;
+    max-width: none;
+  }
 
   th,
   td {
@@ -537,6 +553,8 @@ const Table = styled.table`
     border-right: 1px solid var(--color-border);
     text-align: left;
     vertical-align: top;
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   th:last-child,
@@ -554,10 +572,6 @@ const Table = styled.table`
     text-transform: uppercase;
     white-space: nowrap;
     z-index: 1;
-  }
-
-  thead th:first-child {
-    min-width: 12rem;
   }
 
   tbody tr:last-child td {
@@ -662,12 +676,12 @@ const CellImages = styled.div`
 
   a {
     display: block;
-    max-width: min(280px, 100%);
+    max-width: 100%;
   }
 
   img {
     width: 100%;
-    max-width: min(280px, 100%);
+    max-width: 100%;
     height: auto;
     max-height: 220px;
     object-fit: contain;

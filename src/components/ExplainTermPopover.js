@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import { withPrefix } from "gatsby"
-import styled, { css, keyframes } from "styled-components"
+import styled, { keyframes } from "styled-components"
 
-/** Source: `src/components/wiki assets MOCKUP/pop up.png` */
-const TEXT_BOX_SHELL = withPrefix("/wiki-mockup/wiki-front-pop-up.png")
+/** Combined textbox + copy (PETase / MHETase explanation) from team iGEM static assets. */
+const MHETASE_TEXTBOX_IMG =
+  "https://static.igem.wiki/teams/6187/wiki/homepage-components/mhetase-textbox.avif"
 
 /** Fixed popover size (px) — does not change when the window resizes. */
-export const POPOVER_WIDTH_PX = 400
+export const POPOVER_WIDTH_PX = 560
 
 /** Below site chrome (`WikiTopBar` / home nav mount at 110); above mockup overlays (≤95). */
 export const POPOVER_Z_INDEX = 100
@@ -17,8 +17,8 @@ export const POPOVER_GAP_PX = 12
 /** Lightning-bolt tip: fraction in from the popover’s left edge. */
 const BOLT_TIP_X_FRAC = 0.36
 
-/** height ÷ width of `pop up.png` (568×355) for layout before the image loads. */
-const SHELL_ASPECT = 355 / 568
+/** Approximate height ÷ width before the popover image loads (updated after onLoad). */
+const SHELL_ASPECT = 0.62
 
 const POPOVER_POP_MS = 420
 
@@ -223,7 +223,13 @@ export function ExplainTerm({ term, explanation, className }) {
             }
           >
             <PopoverInner>
-              <ShellImg src={TEXT_BOX_SHELL} alt="" aria-hidden onLoad={updatePosition} />
+              <ShellWrap>
+                <ShellImg
+                  src={MHETASE_TEXTBOX_IMG}
+                  alt={explanation || "PETase and MHETase explanation"}
+                  onLoad={updatePosition}
+                />
+              </ShellWrap>
             </PopoverInner>
           </PopoverOuter>,
           document.body
@@ -280,6 +286,11 @@ const PopoverInner = styled.div`
     opacity: 1;
     transform: rotate(-2deg);
   }
+`
+
+const ShellWrap = styled.div`
+  position: relative;
+  width: 100%;
 `
 
 const ShellImg = styled.img`

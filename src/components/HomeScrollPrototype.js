@@ -1,10 +1,11 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { withPrefix } from "gatsby"
 import styled, { css, keyframes } from "styled-components"
 import { WikiTopBar, WIKI_TOP_BAR_Z_INDEX } from "./WikiTopBar.js"
 import { WaterfallSideText } from "./WaterfallSideText.js"
 import Petadex from "./Petadex.js"
 import PetadexBottlePath from "./PetadexBottlePath.js"
+import { SwipeInBox } from "./SwipeInBox.js"
 
 /**
  * Mockups live under /static/wiki-mockup/ so the browser loads predictable URLs
@@ -16,6 +17,14 @@ const ASSETS = {
   logo: withPrefix("/wiki-mockup/wiki-front-logo.png"),
   bottle: withPrefix("/wiki-mockup/wiki-front-bottle.png"),
   water: withPrefix("/wiki-mockup/wiki-front-water.png"),
+}
+
+/** Full-bleed shore section layers (iGEM team static CDN). */
+const SHORE_ASSETS = {
+  waterBg: "https://static.igem.wiki/teams/6187/wiki/homepage-components/5-water-bg.avif",
+  waterDetails: "https://static.igem.wiki/teams/6187/wiki/homepage-components/4-water-details.avif",
+  sand: "https://static.igem.wiki/teams/6187/wiki/homepage-components/3-sand.avif",
+  grass: "https://static.igem.wiki/teams/6187/wiki/homepage-components/2-grass.avif",
 }
 
 /** Overlays above the in-flow back plate. Text/popover above water so the glossary box is visible. */
@@ -43,6 +52,35 @@ const BOTTLE_FLIP_MS = 580
 const BACK_PARALLAX_SPEED = 0.42
 
 /**
+ * Fraction of the composition (layer) height where the water surface / ripple sits.
+ * Once this line rises above the anchored bottle, the bottle is treated as submerged.
+ * Tune against wiki-front-water.png (ripple ≈ 0.92 down the 1440×2440 canvas).
+ * Pushed to 0.98 so the bottle stays fully opaque until it's deep under the water.
+ */
+const WATER_RIPPLE_FRAC = 0.98
+
+/**
+ * Visible bottle band as a fraction of its layer height (already includes the
+ * BOTTLE_SHIFT nudge). The bottle fades from opaque→hidden as the ripple sweeps
+ * from BOT_FRAC up to TOP_FRAC — a narrow gap makes the fade snap 100→0 fast.
+ */
+const BOTTLE_SUBMERGE_TOP_FRAC = 0.49
+const BOTTLE_SUBMERGE_BOT_FRAC = 0.52
+
+/**
+ * Conditions card: enter high on the waterfall (before the bottle hits water),
+ * exit after scrolling into the sand.
+ */
+const CONDITIONS_ENTER_VH = 1.25
+const CONDITIONS_EXIT_SAND_FRAC = 0.42
+const CONDITIONS_EXIT_VH = 0.28
+/** Continuous left→right pass (no centered hold) so the card covers less screen time. */
+const CONDITIONS_ENTER_END = 1
+const CONDITIONS_HOLD_END = 0
+
+const clamp01 = (v) => Math.max(0, Math.min(1, v))
+
+/**
  * Full-page wiki front compositing: layered mockup PNGs plus a gentle idle float on the logo.
  *
  * Site nav uses scroll-driven `position: fixed` while the mockup is on-screen.
@@ -61,12 +99,34 @@ export function HomeScrollPrototype() {
   const flipPinFirstRef = useRef(null)
   const flipCleanupRef = useRef(null)
   const parallaxBackRef = useRef(null)
+  const waterRef = useRef(null)
+  const compositionRef = useRef(null)
+  const shoreRef = useRef(null)
   const [navPinned, setNavPinned] = useState(false)
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
   const reduceMotionParallaxRef = useRef(false)
   const petadexRef = useRef(null)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
+
+  /** 0–1 progress from past the puddle → a little into the sand. */
+  const getConditionsProgress = useCallback(() => {
+    const comp = compositionRef.current
+    const shore = shoreRef.current
+    if (!comp || !shore || typeof window === "undefined") return 0
+
+    const vh = window.innerHeight
+    const y = window.scrollY
+    const compBottomDoc = y + comp.getBoundingClientRect().bottom
+    const shoreRect = shore.getBoundingClientRect()
+    const shoreTopDoc = y + shoreRect.top
+
+    const enterScroll = compBottomDoc - vh * CONDITIONS_ENTER_VH
+    const exitScroll =
+      shoreTopDoc + shoreRect.height * CONDITIONS_EXIT_SAND_FRAC - vh * CONDITIONS_EXIT_VH
+
+    return clamp01((y - enterScroll) / Math.max(1, exitScroll - enterScroll))
+  }, [])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -126,22 +186,48 @@ export function HomeScrollPrototype() {
         }
       }
 
+      // Water surface (ripple) viewport position — the "barrier" the bottle sinks behind.
+      const water = waterRef.current
+      let rippleY = null
+      if (water) {
+        const wr = water.getBoundingClientRect()
+        rippleY = wr.top + wr.height * WATER_RIPPLE_FRAC
+      }
+
       if (bottleTouchPinnedRef.current) {
         const pin0 = bottlePinEnterScrollYRef.current
         if (pin0 != null && y < pin0 - BOTTLE_PIN_SCROLL_UP_LEAVE) {
           const flip = bottleFlipRef.current
-          if (flip) flipUnpinFirstRef.current = flip.getBoundingClientRect()
-          else flipUnpinFirstRef.current = null
+          if (flip) {
+            flipUnpinFirstRef.current = flip.getBoundingClientRect()
+            flip.style.opacity = ""
+          } else {
+            flipUnpinFirstRef.current = null
+          }
           bottleTouchPinnedRef.current = false
           bottlePinEnterScrollYRef.current = null
           setBottleTouchPinned(false)
+        } else {
+          // Anchored at the barrier: fade the bottle out as the rising water sweeps
+          // up over it, so it disappears behind the water and stays hidden past this
+          // point. Fades back in (and later unpins) only when the user scrolls up.
+          const flip = bottleFlipRef.current
+          if (flip && rippleY != null) {
+            const fr = flip.getBoundingClientRect()
+            const topY = fr.top + BOTTLE_SUBMERGE_TOP_FRAC * fr.height
+            const botY = fr.top + BOTTLE_SUBMERGE_BOT_FRAC * fr.height
+            const span = Math.max(1, botY - topY)
+            const op = Math.max(0, Math.min(1, (rippleY - topY) / span))
+            flip.style.opacity = String(op)
+          }
         }
       } else if (bottleSpot) {
+        const flip = bottleFlipRef.current
+        if (flip) flip.style.opacity = ""
         const br = bottleSpot.getBoundingClientRect()
         const bottleMidY = br.top + br.height / 2
         const viewMidY = window.innerHeight / 2
         if (!nearBottom && bottleMidY <= viewMidY && br.bottom > 32) {
-          const flip = bottleFlipRef.current
           if (flip) flipPinFirstRef.current = flip.getBoundingClientRect()
           else flipPinFirstRef.current = null
           bottlePinEnterScrollYRef.current = y
@@ -252,7 +338,7 @@ export function HomeScrollPrototype() {
   return (
     <WikiFrontRoot>
       <ScrollStack ref={stackRef}>
-        <CompositionRoot>
+        <CompositionRoot ref={compositionRef}>
           <FlowSizer>
             <ParallaxBack
               ref={parallaxBackRef}
@@ -286,10 +372,48 @@ export function HomeScrollPrototype() {
               </BottlePinSpot>
             </OverlaySlice>
             <OverlaySlice $z={Z.water}>
-              <RailImg src={ASSETS.water} alt="" />
+              <RailImg ref={waterRef} src={ASSETS.water} alt="" />
             </OverlaySlice>
           </OverlayStack>
         </CompositionRoot>
+
+        <SwipeInBox
+          getProgress={getConditionsProgress}
+          enterEnd={CONDITIONS_ENTER_END}
+          holdEnd={CONDITIONS_HOLD_END}
+          eyebrow="PETase living conditions"
+          title="Three conditions"
+          body="Temperature, pH, and the surrounding environment all have to line up for PETase to break down plastic efficiently — and industrial enzymes today only work in a narrow window."
+        />
+
+        <DrawnShoreSection ref={shoreRef}>
+          <ShoreFlowSizer>
+            <ShoreRailImg src={SHORE_ASSETS.waterBg} alt="" />
+          </ShoreFlowSizer>
+          <ShoreOverlayStack>
+            <ShoreLayer $z={1}>
+              <ShoreRailImg src={SHORE_ASSETS.waterDetails} alt="" />
+            </ShoreLayer>
+            <ShoreLayer $z={2}>
+              <ShoreStackImg src={SHORE_ASSETS.sand} alt="" />
+              <ShoreStackImg src={SHORE_ASSETS.grass} alt="" />
+            </ShoreLayer>
+            <ShoreTextLayer $z={3}>
+              <ShoreTextMount>
+                <ShoreBody>
+                  That&apos;s why our team has developed the LOGAN index: a planetary sequence
+                  search that discovers novel plastic-degrading enzymes.
+                </ShoreBody>
+                <ShoreBody $spaced>
+                  Before, the industry was using an enzyme dataset of roughly 200. With our
+                  advisory lab, the RNAlab, the team uncovered 215.7 million high-quality
+                  plastic‑degrading enzymes — a 1,000,000‑fold increase from the enzyme
+                  landscape previously known.
+                </ShoreBody>
+              </ShoreTextMount>
+            </ShoreTextLayer>
+          </ShoreOverlayStack>
+        </DrawnShoreSection>
 
         <HomeNavMount $pinned={navPinned}>
           <WikiTopBar />
@@ -335,6 +459,93 @@ const CompositionRoot = styled.div`
   width: 100%;
   min-width: 0;
   overflow: visible;
+`
+
+/** Full-bleed shore under the waterfall; height from water-bg art. */
+const DrawnShoreSection = styled.section`
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: #000;
+`
+
+const ShoreFlowSizer = styled.div`
+  width: 100%;
+  pointer-events: none;
+`
+
+const ShoreOverlayStack = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+`
+
+const ShoreLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: ${({ $z }) => $z};
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+`
+
+const ShoreTextLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: ${({ $z }) => $z};
+  pointer-events: none;
+`
+
+/** Sits on the sand bank (left/center of the shore art). */
+const ShoreTextMount = styled.div`
+  position: absolute;
+  top: 22%;
+  left: max(env(safe-area-inset-left, 0px), 10%);
+  width: min(48%, 34rem);
+  max-width: calc(100% - 14%);
+  box-sizing: border-box;
+  container-type: inline-size;
+  pointer-events: auto;
+
+  @media (max-width: 720px) {
+    top: 20%;
+    left: max(env(safe-area-inset-left, 0px), 6%);
+    width: min(56%, 48vw);
+  }
+`
+
+const ShoreBody = styled.p`
+  margin: ${({ $spaced }) => ($spaced ? "0.85em 0 0" : "0")};
+  color: #51594a;
+  font-family: var(--font-body);
+  font-size: clamp(1.15rem, 10cqw, 2.15rem);
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+`
+
+const ShoreRailImg = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  user-select: none;
+  pointer-events: none;
+`
+
+/** Sand and grass share the foreground frame; stacked absolute. */
+const ShoreStackImg = styled(ShoreRailImg)`
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: auto;
 `
 
 const RailImg = styled.img`
