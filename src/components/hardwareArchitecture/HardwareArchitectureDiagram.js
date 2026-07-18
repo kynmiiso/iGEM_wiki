@@ -22,7 +22,7 @@ const GROUP_BY_ID = Object.fromEntries(HARDWARE_ARCH_GROUPS.map((g) => [g.id, g]
  * so the layout never reflows: boxes keep their exact relative positions and the
  * arrows stay attached no matter how narrow the container gets.
  */
-const DESIGN_WIDTH = 1100
+const DESIGN_WIDTH = 1000
 
 function getSubsystemColor(subsystemId) {
   return HARDWARE_SUBSYSTEMS[subsystemId]?.color ?? "#888880"
@@ -132,12 +132,12 @@ function edgeGeometry(fromRect, toRect, selfLoop, offset = 0) {
   }
 }
 
-const LABEL_FONT = 15
-const LABEL_CHAR_W = 7.5
-const LABEL_LINE_H = 19
-const LABEL_MAX_CHARS = 24
-const LABEL_PAD_X = 11
-const LABEL_PAD_Y = 8
+const LABEL_FONT = 8
+const LABEL_CHAR_W = 4.2
+const LABEL_LINE_H = 11
+const LABEL_MAX_CHARS = 30
+const LABEL_PAD_X = 7
+const LABEL_PAD_Y = 5
 
 function wrapLabel(text, maxChars) {
   const words = String(text).split(/\s+/)
@@ -648,7 +648,7 @@ const DiagramRoot = styled.div`
   grid-template-columns: minmax(0, 1fr) minmax(9.5rem, 12rem);
   gap: var(--space-md);
   width: 100%;
-  max-width: 90rem;
+  max-width: 74rem;
   margin: var(--space-lg) 0;
 
   @media (max-width: 900px) {
@@ -661,7 +661,7 @@ const DiagramColumn = styled.div`
 `
 
 const DiagramHint = styled.p`
-  font-size: 1.05rem;
+  font-size: 0.85rem;
   color: var(--color-muted);
   margin-bottom: var(--space-md);
   line-height: 1.55;
@@ -687,7 +687,7 @@ const Stage = styled.div`
   position: relative;
   transform-origin: top left;
   /* Extra room below the boxes so arrow labels can spread into open space. */
-  padding-bottom: 7rem;
+  padding-bottom: 4rem;
   will-change: transform;
 `
 
@@ -714,18 +714,15 @@ const GroupGrid = styled.div`
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: auto 3rem auto 15rem auto 10rem auto;
+  grid-auto-rows: min-content;
   grid-template-areas:
     ".     bioreactor bioreactor comms"
-    ".     .          .          comms"
     "ph    arduino    arduino    comms"
-    ".     .          .          .    "
     "media heating    od         mixing"
-    ".     .          .          .    "
-    ".     power      power      .    ";
-  column-gap: 1.5rem;
-  row-gap: 0;
-  padding: 2rem;
+    ".     power      power      .";
+  column-gap: 1.25rem;
+  row-gap: 6rem;
+  padding: 1.25rem;
   align-content: start;
   align-items: start;
   box-sizing: border-box;
@@ -775,7 +772,7 @@ const GroupHeader = styled.button`
 
 const Chevron = styled.span`
   display: inline-block;
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   color: var(--color-muted);
   transform: rotate(${({ $collapsed }) => ($collapsed ? "-90deg" : "0")});
   transition: transform 0.15s ease;
@@ -787,7 +784,7 @@ const Chevron = styled.span`
 
 const GroupTitle = styled.span`
   font-family: ${({ $display }) => ($display ? "var(--font-display)" : "var(--font-body)")};
-  font-size: ${({ $display }) => ($display ? "1.125rem" : "1rem")};
+  font-size: ${({ $display }) => ($display ? "1rem" : "0.82rem")};
   font-weight: ${({ $display }) => ($display ? 400 : 700)};
   color: var(--color-text);
   line-height: 1.3;
@@ -805,7 +802,7 @@ const SingleNode = styled.div`
       ? "color-mix(in srgb, var(--color-accent) 18%, #fff)"
       : "#fff"};
   font-family: ${({ $emphasized }) => ($emphasized ? "var(--font-display)" : "var(--font-body)")};
-  font-size: ${({ $emphasized }) => ($emphasized ? "1.125rem" : "1rem")};
+  font-size: ${({ $emphasized }) => ($emphasized ? "1rem" : "0.82rem")};
   font-weight: ${({ $emphasized }) => ($emphasized ? 400 : 600)};
   overflow-wrap: anywhere;
   opacity: ${({ $dimmed }) => ($dimmed ? 0.28 : 1)};
@@ -817,7 +814,7 @@ const SingleNode = styled.div`
 `
 
 const GroupNote = styled.p`
-  font-size: 0.925rem;
+  font-size: 0.72rem;
   color: var(--color-muted);
   line-height: 1.45;
   margin: 0.35rem 0 0;
@@ -853,7 +850,7 @@ const ChildList = styled.ul`
 `
 
 const ChildItem = styled.li`
-  font-size: 0.925rem;
+  font-size: 0.72rem;
   line-height: 1.35;
   padding: 0.35rem 0.5rem;
   overflow-wrap: anywhere;
@@ -886,7 +883,7 @@ const LegendColumn = styled.aside`
 
 const LegendTitle = styled.h3`
   font-family: var(--font-body) !important;
-  font-size: 0.9rem !important;
+  font-size: 0.72rem !important;
   font-weight: 700 !important;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -947,13 +944,13 @@ const LegendChipText = styled.span`
   min-width: 0;
 
   strong {
-    font-size: 0.975rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--color-text);
   }
 
   span {
-    font-size: 0.875rem;
+    font-size: 0.68rem;
     line-height: 1.4;
     color: var(--color-muted);
   }
@@ -968,7 +965,7 @@ const ClearBtn = styled.button`
   padding: 0.4rem 0.75rem;
   background: var(--color-bg);
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
 
