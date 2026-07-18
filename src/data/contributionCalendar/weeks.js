@@ -122,12 +122,31 @@ const WEEK_CONTENT_OVERRIDES = {
       },
     },
   },
+  "week-2026-05-31": {
+    milestones: [
+      { date: "2026-06-03", label: "Pickup orders and organize and label reagents", subteamId: "wetLab" },
+      { date: "2026-06-04", label: "Prep LB broth and LB agar, autoclave, pouring plates", subteamId: "wetLab" },
+    ]
+  },
+  "week-2026-06-07": {
+    milestones: [
+      { date: "2026-06-11", label: "Pickup cells and liquid culture for comp cells", subteamId: "wetLab" },
+      { date: "2026-06-12", label: "BME Teaching Lab tour, prepare SOB media, prepare Mix&Go comp cells", subteamId: "wetLab" },
+    ]
+  },
   "week-2026-06-14": {
     overview:
       "Mid-season integration: validated hits list, bioreactor bring-up, and public engagement at local outreach event.",
     milestones: [
       { date: "2026-06-18", label: "Community workshop", subteamId: "outreach" },
       { date: "2026-06-20", label: "Top-50 PETase shortlist", subteamId: "dryLab" },
+      { date: "2026-06-15", label: "Make 0.5mL DH5a liquid culture, Transform BL21 with pUC19", subteamId: "wetLab" },
+      { date: "2026-06-16", label: "Inoculate 50mL SOB with DH5a culture, put into shaking incubator, Redo BL21 transformations with pUC19", subteamId: "wetLab" },
+      { date: "2026-06-16", label: "Make DH5a competent cells, Transform DH5a with distro plasmids", subteamId: "wetLab" },
+      { date: "2026-06-17", label: "Redo DH5a transformations", subteamId: "wetLab" },
+      { date: "2026-06-17", label: "5mL liquid cultures of transformed BL21", subteamId: "wetLab" },
+      { date: "2026-06-18", label: "Glycerol stock BL21, Miniprep BL21", subteamId: "wetLab" },
+      { date: "2026-06-19", label: "Pour 5 chlor, 15 amp plates", subteamId: "wetLab" }
     ],
     subteams: {
       wetLab: {
