@@ -109,7 +109,7 @@ export default WikiMdxTemplate
 
 const ArticleShell = styled.div`
   width: 100%;
-  max-width: 96rem;
+  max-width: 80rem;
   margin: 0 auto;
   overflow: visible;
 

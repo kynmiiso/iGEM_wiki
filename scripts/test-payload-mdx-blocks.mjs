@@ -158,8 +158,8 @@ test("interactiveGizmo without config omits the prop", () => {
   assert.ok(!/config=/.test(out), "should not emit a config prop when empty")
 })
 
-test("propless gizmos (hardwareNotebook, contributionTimeline, bioreactorRequirements) render by name", () => {
-  for (const name of ["hardwareNotebook", "contributionTimeline", "bioreactorRequirements"]) {
+test("propless gizmos (hardwareNotebook, hardwareJournal, contributionTimeline, bioreactorRequirements) render by name", () => {
+  for (const name of ["hardwareNotebook", "hardwareJournal", "contributionTimeline", "bioreactorRequirements"]) {
     const out = renderBlock({ blockType: "interactiveGizmo", gizmo: name })
     assert.match(out, new RegExp(`<InteractiveGizmo`))
     assert.match(out, new RegExp(`name="${name}"`))

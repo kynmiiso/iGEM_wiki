@@ -16,6 +16,7 @@ const GIZMO_CONFIG_RULES = {
     inputLabel: { type: "string", maxLength: 40 },
   },
   hardwareNotebook: {},
+  hardwareJournal: {},
   contributionTimeline: {},
   bioreactorRequirements: {},
 }
