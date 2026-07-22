@@ -100,13 +100,10 @@ export function SwipeInBox({
 
   const card = (
     <Box ref={boxRef} className={anchored ? undefined : className}>
-      {children || (
-        <>
-          {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-          {title && <Title>{title}</Title>}
-          {body && <Body>{body}</Body>}
-        </>
-      )}
+      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+      {title && <Title>{title}</Title>}
+      {body && <Body>{body}</Body>}
+      {children}
     </Box>
   )
 
@@ -154,13 +151,12 @@ const FixedStage = styled.div`
 `
 
 const Box = styled.div`
-  width: min(760px, 92vw);
-  padding: clamp(1.5rem, 3vw, 2.25rem) clamp(1.75rem, 4vw, 2.75rem);
-  border: 1px solid var(--color-border);
-  border-left: 5px solid var(--color-accent);
-  border-radius: 14px;
-  background: var(--color-bg);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  width: min(1100px, 98vw);
+  padding: clamp(0.75rem, 2vw, 1.25rem) clamp(1rem, 2.5vw, 1.75rem);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   will-change: transform;
   transform: translate3d(-100vw, 0, 0);
   visibility: hidden;
@@ -176,9 +172,18 @@ const Eyebrow = styled.p`
 `
 
 const Title = styled.h3`
-  margin: 0 0 var(--space-sm, 0.75rem);
-  font-size: clamp(1.85rem, 4vw, 2.65rem);
-  color: var(--color-text);
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(1.55rem, 3.4vw, 2.35rem);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.25;
+  text-align: center;
+  letter-spacing: normal;
+  text-transform: none;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 14px rgba(0, 0, 0, 0.35);
 `
 
 const Body = styled.p`

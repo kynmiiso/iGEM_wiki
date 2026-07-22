@@ -16,7 +16,7 @@ export const WATERFALL_TEXT_LEFT_PCT = 2
 export const WATERFALL_TEXT_RIGHT_LEFT_PCT = 75
 
 /** Vertical offset from the top of the mockup composition (%). */
-export const WATERFALL_TEXT_TOP_PCT = 58
+export const WATERFALL_TEXT_TOP_PCT = 55
 
 /** Vertical offset for right-side copy — sits below the left block (%). */
 export const WATERFALL_TEXT_RIGHT_TOP_PCT = 74
@@ -195,10 +195,10 @@ const TextMount = styled.div`
 `
 
 const Heading = styled.h2`
-  margin: 0 0 0.65em;
+  margin: 0 0 0.55em;
   color: #fff;
   font-family: var(--font-body);
-  font-size: clamp(1.15rem, 12.5cqw, 2.35rem);
+  font-size: clamp(0.95rem, 9cqw, 1.7rem);
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.15;
@@ -206,13 +206,13 @@ const Heading = styled.h2`
 `
 
 const Body = styled.p`
-  margin: ${({ $spaced }) => ($spaced ? "0.9em 0 0" : "0")};
+  margin: ${({ $spaced }) => ($spaced ? "0.75em 0 0" : "0")};
   color: rgba(255, 255, 255, 0.92);
   font-family: var(--font-body);
   font-size: ${({ $large }) =>
-    $large ? "clamp(1.1rem, 11cqw, 2.15rem)" : "clamp(0.95rem, 9cqw, 1.75rem)"};
+    $large ? "clamp(1.1rem, 11cqw, 2.15rem)" : "clamp(0.8rem, 7cqw, 1.3rem)"};
   font-weight: 400;
-  line-height: ${({ $large }) => ($large ? 1.4 : 1.45)};
+  line-height: ${({ $large }) => ($large ? 1.4 : 1.4)};
   overflow-wrap: break-word;
   overflow: visible;
 `
