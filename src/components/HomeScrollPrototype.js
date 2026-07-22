@@ -171,6 +171,20 @@ const CONDITIONS_EXIT_VH = 0.35
 const CONDITIONS_ENTER_END = 1
 const CONDITIONS_HOLD_END = 0.3
 
+/**
+ * Autonomous shore-bottle rematch (section1).
+ * Triggers once when the shore crosses an early viewport threshold after the sky
+ * bottle sinks; then slowly drifts down and exits left on its own.
+ */
+/** Shore top below this fraction of vh → start the drift (appear as shore peeks in). */
+const SHORE_BOTTLE_TRIGGER_FRAC = 1.02
+/** Shore top above this → reset so the drift can replay on the next pass. */
+const SHORE_BOTTLE_RESET_FRAC = 1.08
+/** Total drift duration (continuous path travel). */
+const SHORE_BOTTLE_DRIFT_MS = 12000
+/** Sky bottle treated as sunk once fade opacity drops below this. */
+const SHORE_BOTTLE_SUNK_OPACITY = 0.2
+
 const clamp01 = (v) => Math.max(0, Math.min(1, v))
 
 /**
@@ -196,8 +210,12 @@ export function HomeScrollPrototype() {
   const waterRef = useRef(null)
   const compositionRef = useRef(null)
   const shoreRef = useRef(null)
+  const shoreBottlePlayedRef = useRef(false)
+  /** True after the sky bottle finishes its waterfall sink (near-bottom unpin). */
+  const skyBottleHasSunkRef = useRef(false)
   const [navPinned, setNavPinned] = useState(false)
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
+  const [shoreBottlePlaying, setShoreBottlePlaying] = useState(false)
   const reduceMotionParallaxRef = useRef(false)
   const petadexRef = useRef(null)
 
@@ -268,10 +286,11 @@ export function HomeScrollPrototype() {
         const flip = bottleFlipRef.current
         if (flip) flipUnpinFirstRef.current = flip.getBoundingClientRect()
         else flipUnpinFirstRef.current = null
+        skyBottleHasSunkRef.current = true
         bottleTouchPinnedRef.current = false
         bottlePinEnterScrollYRef.current = null
         setBottleTouchPinned(false)
-        return
+        // Fall through — still run parallax / shore rematch this frame.
       }
 
       if (stack) {
@@ -329,6 +348,9 @@ export function HomeScrollPrototype() {
             const span = Math.max(1, botY - topY)
             const op = Math.max(0, Math.min(1, (rippleY - topY) / span))
             flip.style.opacity = String(op)
+            if (op < SHORE_BOTTLE_SUNK_OPACITY) {
+              skyBottleHasSunkRef.current = true
+            }
           }
         }
       } else if (bottleSpot) {
@@ -345,6 +367,27 @@ export function HomeScrollPrototype() {
           setBottleTouchPinned(true)
         }
       }
+
+      // Shore rematch: trigger a slow autonomous drift once the sky bottle has sunk
+      // and the shore is just entering the viewport (earlier than a mid-shore scrub).
+      const shore = shoreRef.current
+      if (shore) {
+        const rect = shore.getBoundingClientRect()
+        const vh = window.innerHeight
+        if (rect.top > vh * SHORE_BOTTLE_RESET_FRAC) {
+          if (shoreBottlePlayedRef.current) {
+            shoreBottlePlayedRef.current = false
+            setShoreBottlePlaying(false)
+          }
+        } else if (
+          skyBottleHasSunkRef.current &&
+          !shoreBottlePlayedRef.current &&
+          rect.top < vh * SHORE_BOTTLE_TRIGGER_FRAC
+        ) {
+          shoreBottlePlayedRef.current = true
+          setShoreBottlePlaying(true)
+        }
+      }
     }
 
     tick()
@@ -355,6 +398,17 @@ export function HomeScrollPrototype() {
       window.removeEventListener("resize", tick)
     }
   }, [])
+
+  // Reduced-motion path has no CSS animationend — clear the quiet mid-pose after a beat.
+  useEffect(() => {
+    if (!shoreBottlePlaying || typeof window === "undefined") return undefined
+    const reduce =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (!reduce) return undefined
+    const t = window.setTimeout(() => setShoreBottlePlaying(false), 2200)
+    return () => window.clearTimeout(t)
+  }, [shoreBottlePlaying])
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
@@ -557,7 +611,24 @@ export function HomeScrollPrototype() {
               <ShoreStackImg src={SHORE_ASSETS.sand} alt="" />
               <ShoreStackImg src={SHORE_ASSETS.grass} alt="" />
             </ShoreLayer>
-            <ShoreTextLayer $z={3}>
+            <ShoreBottleLayer $z={3}>
+              <ShoreBottleMount
+                $playing={shoreBottlePlaying}
+                onAnimationEnd={(e) => {
+                  if (e.target !== e.currentTarget) return
+                  setShoreBottlePlaying(false)
+                }}
+              >
+                <ShoreBottleSize>
+                  <ShoreBottleCrop>
+                    <ShoreBottleRock $playing={shoreBottlePlaying}>
+                      <ShoreBottleImg src={BOTTLE_STAGES.section1} alt="" />
+                    </ShoreBottleRock>
+                  </ShoreBottleCrop>
+                </ShoreBottleSize>
+              </ShoreBottleMount>
+            </ShoreBottleLayer>
+            <ShoreTextLayer $z={4}>
               <ShoreTextMount>
                 <ShoreBody>
                   That&apos;s why our team has developed the LOGAN index: a planetary sequence
@@ -667,6 +738,141 @@ const ShoreTextLayer = styled.div`
   pointer-events: none;
 `
 
+/** Rematched section1 bottle: autonomous slow drift along the river, under shore copy. */
+const ShoreBottleLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: ${({ $z }) => $z};
+  pointer-events: none;
+  overflow: hidden;
+`
+
+/**
+ * Path: appear high on the right early, drift mostly downward for a long stretch,
+ * then sweep left to exit near the end.
+ * Linear timing so it does not ease/idle at each waypoint.
+ */
+const shoreBottleDrift = keyframes`
+  0% {
+    left: 104%;
+    top: 4%;
+    opacity: 0;
+  }
+  4% {
+    left: 102%;
+    top: 8%;
+    opacity: 1;
+  }
+  45% {
+    left: 96%;
+    top: 42%;
+    opacity: 1;
+  }
+  68% {
+    left: 90%;
+    top: 64%;
+    opacity: 1;
+  }
+  82% {
+    left: 58%;
+    top: 74%;
+    opacity: 1;
+  }
+  100% {
+    left: -16%;
+    top: 82%;
+    opacity: 1;
+  }
+`
+
+const ShoreBottleMount = styled.div`
+  position: absolute;
+  left: 104%;
+  top: 4%;
+  width: 25%;
+  max-width: 12rem;
+  transform: translate3d(-50%, -55%, 0);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  ${({ $playing }) =>
+    $playing
+      ? css`
+          visibility: visible;
+          animation: ${shoreBottleDrift} ${SHORE_BOTTLE_DRIFT_MS}ms linear forwards;
+        `
+      : css`
+          animation: none;
+        `}
+
+  @media (prefers-reduced-motion: reduce) {
+    ${({ $playing }) =>
+      $playing
+        ? css`
+            /* Keep a quiet mid-path pose; no long drift. */
+            visibility: visible;
+            animation: none;
+            left: 92%;
+            top: 48%;
+            opacity: 0.9;
+          `
+        : css`
+            animation: none;
+          `}
+  }
+`
+
+/** Match sky bottle display size (width set on mount vs shore box). */
+const ShoreBottleSize = styled.div`
+  width: 100%;
+`
+
+/** Top-third crop via overflow so rock/drop-shadow stay natural. */
+const ShoreBottleCrop = styled.div`
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  line-height: 0;
+`
+
+const shoreBottleRock = keyframes`
+  0%,
+  100% {
+    transform: rotate(-5deg) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: rotate(5deg) translate3d(0, -4px, 0);
+  }
+`
+
+const ShoreBottleRock = styled.div`
+  width: 100%;
+  transform-origin: 50% 70%;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
+
+  ${({ $playing }) =>
+    $playing
+      ? css`
+          animation: ${shoreBottleRock} 2.4s ease-in-out infinite;
+        `
+      : css`
+          animation: none;
+        `}
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+  }
+`
+
+const ShoreBottleImg = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+`
+
 /** Sits on the sand bank (left/center of the shore art). */
 const ShoreTextMount = styled.div`
   position: absolute;
@@ -720,6 +926,8 @@ const ConditionImage = styled.img`
   object-fit: contain;
   user-select: none;
   pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35))
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
 `
 
 const ConditionCaption = styled.figcaption`

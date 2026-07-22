@@ -29,13 +29,26 @@ function prefersReducedMotion() {
 }
 
 function SketchPageContent({ page }) {
+  const showMedia = page.variant === "spread"
   return (
     <SketchPageInner $variant={page.variant}>
       {page.variant === "cover" && <SketchCoverMark aria-hidden>✎</SketchCoverMark>}
       <SketchTitle>{page.title}</SketchTitle>
       {page.subtitle && <SketchSubtitle>{page.subtitle}</SketchSubtitle>}
       {page.body && <SketchBody>{page.body}</SketchBody>}
-      {page.variant === "spread" && <SketchPlaceholder aria-hidden />}
+      {showMedia && page.imageSrc && (
+        <SketchFigure>
+          <SketchImage src={page.imageSrc} alt={page.imageAlt || ""} />
+          {page.caption && <SketchCaption>{page.caption}</SketchCaption>}
+        </SketchFigure>
+      )}
+      {showMedia && !page.imageSrc && (
+        <SketchPlaceholder aria-hidden={false}>
+          <SketchPlaceholderLabel>
+            {page.imagePlaceholder || "Image coming soon"}
+          </SketchPlaceholderLabel>
+        </SketchPlaceholder>
+      )}
     </SketchPageInner>
   )
 }
@@ -262,7 +275,12 @@ const SketchPlaceholder = styled.div`
   margin-top: var(--space-md);
   width: 100%;
   max-width: 20rem;
-  height: 7rem;
+  min-height: 7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  box-sizing: border-box;
   border: 1.5px dashed rgba(34, 34, 34, 0.2);
   border-radius: 4px;
   background: repeating-linear-gradient(
@@ -272,6 +290,36 @@ const SketchPlaceholder = styled.div`
     transparent 6px,
     transparent 12px
   );
+`
+
+const SketchPlaceholderLabel = styled.span`
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--color-muted);
+`
+
+const SketchFigure = styled.figure`
+  margin: var(--space-md) 0 0;
+  width: 100%;
+  max-width: 20rem;
+`
+
+const SketchImage = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  border: 1px solid rgba(34, 34, 34, 0.12);
+`
+
+const SketchCaption = styled.figcaption`
+  margin-top: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--color-muted);
 `
 
 const Controls = styled.div`
