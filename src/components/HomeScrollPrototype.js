@@ -181,7 +181,7 @@ const SHORE_BOTTLE_TRIGGER_FRAC = 1.02
 /** Shore top above this → reset so the drift can replay on the next pass. */
 const SHORE_BOTTLE_RESET_FRAC = 1.08
 /** Total drift duration (continuous path travel). */
-const SHORE_BOTTLE_DRIFT_MS = 12000
+const SHORE_BOTTLE_DRIFT_MS = 20000
 /** Sky bottle treated as sunk once fade opacity drops below this. */
 const SHORE_BOTTLE_SUNK_OPACITY = 0.2
 
