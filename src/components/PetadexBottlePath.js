@@ -4,6 +4,11 @@ import { withPrefix } from "gatsby"
 
 const BOTTLE_IMG = withPrefix("/wiki-mockup/wiki-front-bottle.png")
 
+const IMG = {
+  battle:            withPrefix("/images/petadex-battle-button-bg.png"),
+}
+
+
 const Wrapper = styled.div`
   position: relative;
   width: 100%;
@@ -11,23 +16,32 @@ const Wrapper = styled.div`
 
 const BattleBtn = styled.button`
   position: absolute;
-  background: #cc0000;
+  z-index: 101;
+  background-image: url(${IMG.battle});
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-color: transparent;
   border: none;
-  border-radius: 12px;
-  color: #ffcccc;
-  font-family: monospace;
-  font-weight: 700;
-  font-size: 1.6rem;
-  padding: 12px 28px;
+  width: 180px;
+  height: 58px;
   cursor: pointer;
-  box-shadow: 0 4px 0 #880000;
-  letter-spacing: 2px;
-  transition: transform 0.1s, box-shadow 0.1s, opacity 0.3s;
+  transition: transform 0.1s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: ${p => p.$visible ? 1 : 0};
   pointer-events: ${p => p.$visible ? "auto" : "none"};
-  transform: translate(-50%, -50%);
-  &:active { transform: translate(-50%,-50%) translateY(3px); box-shadow: 0 1px 0 #880000; }
-  &:hover { background: #aa0000; }
+  &:active { transform: translateY(3px); }
+  &:hover { filter: brightness(1.1); }
+`
+
+const BattleText = styled.span`
+  font-family: monospace;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #000;
+  letter-spacing: 3px;
+  pointer-events: none;
 `
 
 const BottleImg = styled.img`
@@ -87,7 +101,7 @@ const PetadexBottlePath = ({ petadexRef, onBattle, children }) => {
     ].join(" ")
 
     setPathD(d)
-    setBtnPos({ x: x2 + 120, y: y2 - 20})
+    setBtnPos({ x: x2 - 290, y: y2 - 260})
     setCornerLen((x2 - x1) + (y2 - y1))
     return true
   }, [petadexRef])
@@ -215,7 +229,7 @@ const PetadexBottlePath = ({ petadexRef, onBattle, children }) => {
         style={{ left: btnPos.x, top: btnPos.y }}
         onClick={onBattle}
       >
-        BATTLE
+        <BattleText>BATTLE</BattleText>
       </BattleBtn>
     </Wrapper>
   )
