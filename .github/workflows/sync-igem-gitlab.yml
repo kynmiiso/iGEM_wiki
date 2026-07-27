@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Push sync branch and open GitLab merge request
+      - name: Merge GitHub main into GitLab main
         env:
           GITLAB_TOKEN: ${{ secrets.IGEM_GITLAB_TOKEN }}
         run: |
@@ -33,16 +33,11 @@ jobs:
             exit 1
           fi
 
-          SYNC_BRANCH="github-sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          git config user.name "iGEM Toronto sync"
-          git config user.email "igem@g.skule.ca"
+          git config user.name "iGEM Toronto Sync Bot"
+          git config user.email "igem-toronto-sync@users.noreply.github.com"
           git branch github-main "$GITHUB_SHA"
           git remote add igem "https://oauth2:${GITLAB_TOKEN}@gitlab.igem.org/2026/toronto.git"
           git fetch igem main
-          git switch -c "$SYNC_BRANCH" igem/main
+          git switch -c igem-main-sync igem/main
           git merge --no-edit github-main
-          git push -u igem "$SYNC_BRANCH" \
-            -o merge_request.create \
-            -o merge_request.target=main \
-            -o merge_request.remove_source_branch \
-            -o merge_request.title="Sync GitHub main (${GITHUB_SHA})"
+          git push igem HEAD:main
