@@ -9,6 +9,7 @@
     "build:gatsby": "gatsby build",
     "serve": "gatsby serve",
     "clean": "gatsby clean",
+    "sync:igem": "node scripts/sync-igem.mjs",
     "validate:content": "node scripts/validate-content.mjs",
     "payload:develop": "npm --prefix cms/payload-app run dev -- --webpack",
     "payload:export": "node scripts/export-payload-content.mjs",
