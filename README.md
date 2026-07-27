@@ -59,6 +59,7 @@ Most wiki pages live in `src/content/wiki/**/index.mdx`. Use `src/content/wiki/_
 | --- | --- |
 | `npm run develop` | Start local Gatsby dev server |
 | `npm run build` | Validate content, then build for production |
+| `npm run build:igem` | Build GitLab Pages output with the `/toronto` path prefix |
 | `npm run validate:content` | Check MDX frontmatter and route collisions |
 | `npm run serve` | Preview production build locally |
 | `npm run clean` | Clear Gatsby cache |
@@ -82,6 +83,40 @@ See `docs/payload-cms-workflow.md` (local) and **`docs/vercel-demo-deployment.md
 2. Create a branch for your work
 3. Run `npm run validate:content` and `npm run build`
 4. Open a pull request
+
+---
+
+## Sync GitHub main to iGEM GitLab
+
+GitHub is the source of truth. After changes are merged into GitHub `main`, sync
+them to the protected iGEM GitLab repository through a GitLab merge request.
+Do not force-push either `main` branch.
+
+Configure the iGEM remote once:
+
+```bash
+git remote get-url igem || \
+  git remote add igem https://gitlab.igem.org/2026/toronto.git
+```
+
+For each sync:
+
+```bash
+git switch main
+git pull --ff-only origin main
+git fetch igem main
+
+SYNC_BRANCH="igem-sync-$(date +%Y-%m-%d-%H%M)"
+git switch -c "$SYNC_BRANCH" igem/main
+git merge --no-edit origin/main
+git push -u igem "$SYNC_BRANCH"
+git switch main
+```
+
+Git prints a link for opening the GitLab merge request. Open it, confirm the
+target is `main`, and merge it. The iGEM GitLab Pages pipeline runs after that
+merge. If the merge command reports conflicts, resolve and test them before
+pushing the sync branch.
 
 ---
 
