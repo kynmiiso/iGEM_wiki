@@ -63,6 +63,7 @@ Most wiki pages live in `src/content/wiki/**/index.mdx`. Use `src/content/wiki/_
 | `npm run validate:content` | Check MDX frontmatter and route collisions |
 | `npm run serve` | Preview production build locally |
 | `npm run clean` | Clear Gatsby cache |
+| `npm run sync:igem` | Push GitHub `main` to a new iGEM GitLab merge-request branch |
 | `npm run payload:develop` | Payload admin at http://localhost:3000/admin |
 | `npm run payload:import-mdx` | Import existing MDX into Payload |
 | `npm run payload:export` | Export published Payload pages to MDX |
@@ -92,6 +93,9 @@ GitHub is the source of truth. After changes are merged into GitHub `main`, sync
 them to the protected iGEM GitLab repository through a GitLab merge request.
 Do not force-push either `main` branch.
 
+GitHub Actions automatically creates a GitLab merge request after each push to
+GitHub `main`. It requires the `IGEM_GITLAB_TOKEN` GitHub Actions secret.
+
 Configure the iGEM remote once:
 
 ```bash
@@ -99,18 +103,10 @@ git remote get-url igem || \
   git remote add igem https://gitlab.igem.org/2026/toronto.git
 ```
 
-For each sync:
+If the automatic workflow fails, run this manual fallback:
 
 ```bash
-git switch main
-git pull --ff-only origin main
-git fetch igem main
-
-SYNC_BRANCH="igem-sync-$(date +%Y-%m-%d-%H%M)"
-git switch -c "$SYNC_BRANCH" igem/main
-git merge --no-edit origin/main
-git push -u igem "$SYNC_BRANCH"
-git switch main
+npm run sync:igem
 ```
 
 Git prints a link for opening the GitLab merge request. Open it, confirm the
