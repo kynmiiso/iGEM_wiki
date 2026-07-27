@@ -33,8 +33,8 @@ jobs:
             exit 1
           fi
 
-          git config user.name "iGEM Toronto sync"
-          git config user.email "igem@g.skule.ca"
+          git config user.name "iGEM Toronto Sync Bot"
+          git config user.email "igem-toronto-sync@users.noreply.github.com"
           git branch github-main "$GITHUB_SHA"
           git remote add igem "https://oauth2:${GITLAB_TOKEN}@gitlab.igem.org/2026/toronto.git"
           git fetch igem main
