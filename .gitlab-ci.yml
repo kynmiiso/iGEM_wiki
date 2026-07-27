@@ -2,10 +2,12 @@ image: node:20.19.0
 
 variables:
   GATSBY_TELEMETRY_DISABLED: "1"
+  GATSBY_PATH_PREFIX: "/toronto"
   XDG_CONFIG_HOME: "$CI_PROJECT_DIR/.config"
 
 pages:
   stage: build
+  timeout: 30m
   cache:
     key:
       files:
@@ -13,9 +15,10 @@ pages:
     paths:
       - .npm/
   before_script:
-    - npm ci --cache .npm --prefer-offline
+    - npm ci --cache .npm --prefer-offline --no-audit --no-fund
   script:
-    - npm run build
+    - npm run build:igem
+    - node scripts/trim-pages-artifact.mjs
   artifacts:
     paths:
       - public
