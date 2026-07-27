@@ -90,11 +90,12 @@ See `docs/payload-cms-workflow.md` (local) and **`docs/vercel-demo-deployment.md
 ## Sync GitHub main to iGEM GitLab
 
 GitHub is the source of truth. After changes are merged into GitHub `main`, sync
-them to the protected iGEM GitLab repository through a GitLab merge request.
+them to the protected iGEM GitLab repository.
 Do not force-push either `main` branch.
 
-GitHub Actions automatically creates a GitLab merge request after each push to
-GitHub `main`. It requires the `IGEM_GITLAB_TOKEN` GitHub Actions secret.
+GitHub Actions automatically merges and pushes to GitLab `main` after each push
+to GitHub `main`. It requires the `IGEM_GITLAB_TOKEN` GitHub Actions secret and
+permission for that token's account to push to GitLab's protected `main` branch.
 
 Configure the iGEM remote once:
 
