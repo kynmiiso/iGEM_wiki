@@ -16,6 +16,11 @@ const payloadUrl = String(process.env.PAYLOAD_URL || "http://localhost:3000").re
 const payloadFetchTimeoutMs = Number(process.env.PAYLOAD_FETCH_TIMEOUT_MS || 15000)
 const errors = []
 
+// Exit code contract (used by scripts/payload-sync.mjs):
+// 1 = content/validation failure (always fatal)
+// 2 = Payload CMS unreachable (callers may fall back to the committed export)
+const EXIT_CMS_UNREACHABLE = 2
+
 let response
 
 try {
@@ -26,13 +31,13 @@ try {
   console.error(`Unable to fetch Payload pages from ${payloadUrl} within ${payloadFetchTimeoutMs}ms.`)
   console.error("Make sure Payload is running with npm run payload:develop, then try again.")
   console.error(error.message)
-  process.exit(1)
+  process.exit(EXIT_CMS_UNREACHABLE)
 }
 
 if (!response.ok) {
   console.error(`Unable to fetch Payload pages from ${payloadUrl}: ${response.status} ${response.statusText}`)
   console.error(await response.text())
-  process.exit(1)
+  process.exit(EXIT_CMS_UNREACHABLE)
 }
 
 const payload = await response.json()
