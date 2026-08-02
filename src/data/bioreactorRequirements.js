@@ -110,7 +110,7 @@ export const BIOREACTOR_REQUIREMENT_VERSIONS = [
               { label: "Temp complaints", url: "https://forum.pioreactor.com/t/temperature-control-limitations-expectations/1014" },
             ],
             images: [
-              { src: "/hardware-notebook/requirements/image2.png", alt: "Heating" },
+              { src: "https://static.igem.wiki/teams/6187/wiki/hardware-notebook/pioreactor-heating-system.avif", alt: "Heating" },
             ],
             flags: ["important", "needs-quantify"],
           },
@@ -138,7 +138,7 @@ export const BIOREACTOR_REQUIREMENT_VERSIONS = [
               { label: "“How can I improve mixing and aeration” section", url: "https://docs.pioreactor.com/user-guide/common-questions" },
             ],
             images: [
-              { src: "/hardware-notebook/requirements/image1.png", alt: "Aeration for vials" },
+              { src: "https://static.igem.wiki/teams/6187/wiki/hardware-notebook/vial-cap-assembly-with-fluidic-ports.avif", alt: "Aeration for vials" },
             ],
             flags: ["important", "needs-quantify"],
           },
@@ -191,7 +191,7 @@ export const BIOREACTOR_REQUIREMENT_VERSIONS = [
               { label: "Uses for pumps", url: "https://docs.pioreactor.com/user-guide/dosing-automations" },
             ],
             images: [
-              { src: "/hardware-notebook/requirements/image3.png", alt: "Pumping Fluid (in and out)" },
+              { src: "https://static.igem.wiki/teams/6187/wiki/hardware-notebook/pump.avif", alt: "Pumping Fluid (in and out)" },
             ],
             flags: ["important", "needs-quantify"],
           },
