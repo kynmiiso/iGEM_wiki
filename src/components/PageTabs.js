@@ -32,10 +32,18 @@ export function PageTabs({ defaultTab, layout = "horizontal", children }) {
   if (tabs.length === 0) return null
 
   const activePanel = tabs.find((tab) => tab.props.id === activeId) || tabs[0]
+  /** Design sketchbook is full-bleed into the rail — sticky nav would paint over it. */
+  const sideSticky = isSide && activeId !== "design"
 
   return (
     <TabsRoot $side={isSide} $widePage={widePage} $pageSide={pageSide}>
-      <TabList role="tablist" aria-label="Page sections" $side={isSide} $pageSide={pageSide}>
+      <TabList
+        role="tablist"
+        aria-label="Page sections"
+        $side={isSide}
+        $pageSide={pageSide}
+        $sticky={sideSticky}
+      >
         {tabs.map((tab) => {
           const { id, label } = tab.props
           const selected = id === activeId
@@ -117,7 +125,7 @@ const TabList = styled.div`
   flex-wrap: wrap;
   gap: var(--space-sm);
 
-  ${({ $side, $pageSide }) =>
+  ${({ $side, $pageSide, $sticky }) =>
     $side
       ? css`
           flex-direction: column;
@@ -134,25 +142,37 @@ const TabList = styled.div`
             grid-row: 1 / -1;
             align-self: start;
 
-            @media (min-width: 721px) {
-              position: sticky;
-              top: 96px;
-              max-height: calc(100vh - 120px);
-              overflow-y: auto;
-              overscroll-behavior: contain;
-              padding-top: 0.25rem;
-            }
+            ${$sticky !== false &&
+            css`
+              @media (min-width: 721px) {
+                position: sticky;
+                top: 96px;
+                max-height: calc(100vh - 120px);
+                overflow-y: auto;
+                overscroll-behavior: contain;
+                padding-top: 0.25rem;
+              }
+            `}
           `}
 
           ${!$pageSide &&
           css`
             @media (min-width: 721px) {
-              position: sticky;
-              top: 96px;
               align-self: start;
-              max-height: calc(100vh - 120px);
-              overflow-y: auto;
-              overscroll-behavior: contain;
+              ${$sticky !== false
+                ? css`
+                    position: sticky;
+                    top: 96px;
+                    max-height: calc(100vh - 120px);
+                    overflow-y: auto;
+                    overscroll-behavior: contain;
+                    /* Stay clickable when full-bleed panels (e.g. sketchbook) overlap. */
+                    z-index: 2;
+                  `
+                : css`
+                    position: relative;
+                    z-index: 0;
+                  `}
             }
           `}
 

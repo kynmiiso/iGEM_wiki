@@ -181,7 +181,7 @@ const SHORE_BOTTLE_TRIGGER_FRAC = 1.02
 /** Shore top above this → reset so the drift can replay on the next pass. */
 const SHORE_BOTTLE_RESET_FRAC = 1.08
 /** Total drift duration (continuous path travel). */
-const SHORE_BOTTLE_DRIFT_MS = 20000
+const SHORE_BOTTLE_DRIFT_MS = 15000
 /** Sky bottle treated as sunk once fade opacity drops below this. */
 const SHORE_BOTTLE_SUNK_OPACITY = 0.2
 
@@ -755,12 +755,12 @@ const ShoreBottleLayer = styled.div`
 const shoreBottleDrift = keyframes`
   0% {
     left: 104%;
-    top: 4%;
+    top: 10%;
     opacity: 0;
   }
   4% {
     left: 102%;
-    top: 8%;
+    top: 14%;
     opacity: 1;
   }
   45% {
@@ -788,7 +788,7 @@ const shoreBottleDrift = keyframes`
 const ShoreBottleMount = styled.div`
   position: absolute;
   left: 104%;
-  top: 4%;
+  top: 10%;
   width: 25%;
   max-width: 12rem;
   transform: translate3d(-50%, -55%, 0);
