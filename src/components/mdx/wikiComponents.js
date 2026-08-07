@@ -3,6 +3,7 @@ import styled, { css } from "styled-components"
 import { ContributionTimeline } from "../contributionCalendar/ContributionTimeline.js"
 import { HardwareNotebookSandbox } from "../hardwareNotebook/HardwareNotebookSandbox.js"
 import { InteractiveGizmo } from "./interactive/InteractiveGizmo.js"
+import { PetAssayAnimation } from "./interactive/PetAssayAnimation.js"
 import Citation from "../Citation"
 import References from "../References"
 
@@ -52,6 +53,7 @@ export const mdxComponents = {
   ContributionTimeline,
   HardwareNotebookSandbox,
   InteractiveGizmo,
+  PetAssayAnimation,
   Citation,
   References,
 }
