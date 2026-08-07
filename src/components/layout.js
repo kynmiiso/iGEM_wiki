@@ -34,6 +34,7 @@ const nav = [
   { label: "Beyond the Bench", children: [
     { to: "/beyond-the-bench/education-toolkit/", label: "Education Toolkit" },
     { to: "/beyond-the-bench/human-practices/", label: "Human Practices" },
+    { to: "/beyond-the-bench/outreach/", label: "Outreach" },
     { to: "/beyond-the-bench/entrepreneurship/", label: "Entrepreneurship" },
     { to: "/beyond-the-bench/safety/", label: "Safety" },
   ]},
@@ -51,6 +52,7 @@ const WikiLayout = ({
   hideSiteChrome = false,
   hideTopBar = false,
   fullBleed = false,
+  wideSideTabs = false,
 }) => {
   return (
     <>
@@ -82,7 +84,7 @@ const WikiLayout = ({
         {hideSiteChrome || fullBleed ? (
           <MainFullBleed>{children}</MainFullBleed>
         ) : (
-          <Main>
+          <Main $wideSideTabs={wideSideTabs}>
             {pageTitle && (
               <PageHeader>
                 {sectionLabel && <SectionLabel>{sectionLabel}</SectionLabel>}
@@ -299,6 +301,13 @@ const Main = styled.main`
   width: 100%;
   margin: 0 auto;
   padding: var(--space-xl) var(--page-padding);
+
+  ${({ $wideSideTabs }) =>
+    $wideSideTabs &&
+    `
+    max-width: none;
+    width: 100%;
+  `}
 `
 
 const MainFullBleed = styled.main`

@@ -26,9 +26,7 @@ export function WeekDetailPanel({ week, activeIds }) {
           const href = content.link || track.href
           return (
             <SubteamBlock key={track.id} $accent={track.color}>
-              <SubteamHeader>
-                <h3>{track.label}</h3>
-              </SubteamHeader>
+              <SubteamHeader>{track.label}</SubteamHeader>
               <Summary>{content.summary}</Summary>
               {content.detail ? <Detail>{content.detail}</Detail> : null}
               <ReadMore to={href}>
@@ -110,6 +108,7 @@ const Detail = styled.p`
   line-height: 1.6;
   color: var(--color-muted);
   margin-bottom: var(--space-sm);
+  white-space: pre-line;
 `
 
 const ReadMore = styled(Link)`

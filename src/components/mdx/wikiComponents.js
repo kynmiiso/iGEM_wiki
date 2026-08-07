@@ -1,7 +1,13 @@
 import React from "react"
 import styled, { css } from "styled-components"
+import { BioreactorRequirements } from "../bioreactorRequirements/BioreactorRequirements.js"
+import { BioreactorSimulator } from "../bioreactorSim/BioreactorSimulator.js"
 import { ContributionTimeline } from "../contributionCalendar/ContributionTimeline.js"
+import { DesignSketchbook } from "../designSketchbook/DesignSketchbook.js"
+import { HardwareJournal } from "../hardwareJournal/HardwareJournal.js"
 import { HardwareNotebookSandbox } from "../hardwareNotebook/HardwareNotebookSandbox.js"
+import { HardwareArchitectureDiagram } from "../hardwareArchitecture/HardwareArchitectureDiagram.js"
+import { PageTab, PageTabs } from "../PageTabs.js"
 import { InteractiveGizmo } from "./interactive/InteractiveGizmo.js"
 import { PetAssayAnimation } from "./interactive/PetAssayAnimation.js"
 import Citation from "../Citation"
@@ -51,7 +57,14 @@ export const mdxComponents = {
   DataTable,
   ContributionCalendar,
   ContributionTimeline,
+  DesignSketchbook,
   HardwareNotebookSandbox,
+  HardwareJournal,
+  BioreactorRequirements,
+  BioreactorSimulator,
+  HardwareArchitectureDiagram,
+  PageTabs,
+  PageTab,
   InteractiveGizmo,
   PetAssayAnimation,
   Citation,

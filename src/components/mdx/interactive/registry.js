@@ -1,5 +1,7 @@
 import React from "react"
+import { BioreactorRequirements } from "../../bioreactorRequirements/BioreactorRequirements.js"
 import { GrowthCurveSimulator } from "./GrowthCurveSimulator.js"
+import { HardwareJournal } from "../../hardwareJournal/HardwareJournal.js"
 import { HardwareNotebookSandbox } from "../../hardwareNotebook/HardwareNotebookSandbox.js"
 import { ContributionTimeline } from "../../contributionCalendar/ContributionTimeline.js"
 
@@ -22,7 +24,9 @@ const EmbeddedContributionTimeline = (props) => (
 export const interactiveRegistry = {
   growthCurve: GrowthCurveSimulator,
   hardwareNotebook: HardwareNotebookSandbox,
+  hardwareJournal: HardwareJournal,
   contributionTimeline: EmbeddedContributionTimeline,
+  bioreactorRequirements: BioreactorRequirements,
 }
 
 export const interactiveKeys = Object.keys(interactiveRegistry)

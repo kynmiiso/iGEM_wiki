@@ -1,18 +1,32 @@
 import React, { useLayoutEffect, useRef } from "react"
-import styled from "styled-components"
+import styled, { css, keyframes } from "styled-components"
 import { ExplainTerm } from "./ExplainTermPopover.js"
+
+/** Used for popover accessibility; visible copy lives in the textbox image asset. */
+const PETASE_EXPLANATION =
+  "PETase breaks the chemical bonds in PET to free a compound called MHET. A second enzyme, MHETase, then cleaves this into environmentally friendly products (ethylene glycol and terephthalic acid)."
+
+const ARROW_SRC =
+  "https://static.igem.wiki/teams/6187/wiki/homepage-components/arrow.avif"
 
 /** Horizontal offset from the left edge of the mockup composition (%). */
 export const WATERFALL_TEXT_LEFT_PCT = 2
 
+/** Horizontal start for right-side copy (% from left); box fills to the right edge. */
+export const WATERFALL_TEXT_RIGHT_LEFT_PCT = 75
+
 /** Vertical offset from the top of the mockup composition (%). */
-export const WATERFALL_TEXT_TOP_PCT = 58
+export const WATERFALL_TEXT_TOP_PCT = 55
+
+/** Vertical offset for right-side copy — sits below the left block (%). */
+export const WATERFALL_TEXT_RIGHT_TOP_PCT = 74
 
 /**
- * Width as % of mockup composition. Type inside uses `cqw` so font size tracks this box
- * when the window (and artwork) get narrower.
+ * Preferred width as % of mockup composition (left column). Type inside uses `cqw`
+ * so font size tracks this box when the window (and artwork) get narrower.
+ * Right column uses left→right edge fill instead of a fixed %.
  */
-export const WATERFALL_TEXT_WIDTH_PCT = 26
+export const WATERFALL_TEXT_WIDTH_PCT = 30
 
 /** Viewport px from top where faded copy reaches full opacity. */
 export const WATERFALL_TEXT_FADE_FULL_AT_PX = 150
@@ -22,9 +36,6 @@ export const WATERFALL_TEXT_FADE_START_AT_PX = 0
 
 /** Mask alpha at the top of the fade band (0–1). */
 export const WATERFALL_TEXT_FADE_MIN_ALPHA = 0.28
-
-/** Screen-reader label for the labore popover (visual copy is in the PNG). */
-const LABORE_EXPLANATION = "Explanation for labore."
 
 function clearViewportTopFade(el) {
   el.style.maskImage = ""
@@ -39,10 +50,6 @@ function viewportFadeAlpha(viewportY, fadeStartVp, fadeEndVp, minA) {
   return minA + (1 - minA) * t
 }
 
-/**
- * Fades heading + body near the top of the viewport while scrolling.
- * No mask when the block’s top is at or below the fade band (resting on the mockup).
- */
 function applyViewportTopFade(el) {
   const rect = el.getBoundingClientRect()
   const fadeStartVp = WATERFALL_TEXT_FADE_START_AT_PX
@@ -67,13 +74,7 @@ function applyViewportTopFade(el) {
   el.style.webkitMaskImage = mask
 }
 
-/**
- * Waterfall-band copy on the home scroll mockup (left / brown side).
- * Positioning is percentage-based so it tracks the full-bleed art on resize.
- */
-export function WaterfallSideText() {
-  const mountRef = useRef(null)
-
+function useViewportTopFade(mountRef) {
   useLayoutEffect(() => {
     const el = mountRef.current
     if (!el || typeof window === "undefined") return undefined
@@ -103,20 +104,49 @@ export function WaterfallSideText() {
       window.removeEventListener("resize", schedule)
       clearViewportTopFade(el)
     }
-  }, [])
+  }, [mountRef])
+}
+
+/**
+ * Waterfall-band copy on the home scroll mockup (left + right of the fall).
+ * Positioning is percentage-based so it tracks the full-bleed art on resize.
+ */
+export function WaterfallSideText() {
+  const leftRef = useRef(null)
+  const rightRef = useRef(null)
+  useViewportTopFade(leftRef)
+  useViewportTopFade(rightRef)
 
   return (
-    <TextMount ref={mountRef}>
-      <Heading>Lorem ipsum</Heading>
-      <Body>
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-        labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-        laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-        voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-        non proident, sunt in culpa qui officia deserunt mollit anim id est{" "}
-        <ExplainTerm term="labore" explanation={LABORE_EXPLANATION} />.
-      </Body>
-    </TextMount>
+    <>
+      <TextMount ref={leftRef} $side="left">
+        <Heading>The problem</Heading>
+        <Body>
+          The world produces over 400 million tonnes of plastic each year, and as they degrade, it
+          breaks down into microplastics that can infiltrate our bodies—where they damage cells and
+          cause cancer-associated mechanisms.
+        </Body>
+        <Body $spaced>
+          To combat this, we are engineering plastic-degrading enzymes or{" "}
+          <TermHintWrap>
+            <ExplainTerm term="PETases..." explanation={PETASE_EXPLANATION} />
+            <PopupHint>
+              <ArrowImg src={ARROW_SRC} alt="" aria-hidden />
+              <HintText>
+                Hover red underlined words for a quick popup — or click to pin it open / click again
+                to close.
+              </HintText>
+            </PopupHint>
+          </TermHintWrap>
+        </Body>
+      </TextMount>
+
+      <TextMount ref={rightRef} $side="right">
+        <Body $large>
+          However, PETases currently in industry have a major limitation...
+        </Body>
+      </TextMount>
+    </>
   )
 }
 
@@ -124,12 +154,8 @@ export default WaterfallSideText
 
 const TextMount = styled.div`
   position: absolute;
-  left: ${WATERFALL_TEXT_LEFT_PCT}%;
-  top: ${WATERFALL_TEXT_TOP_PCT}%;
-  width: ${WATERFALL_TEXT_WIDTH_PCT}%;
-  max-width: 100%;
-  padding-right: 2%;
-  padding-left: max(env(safe-area-inset-left, 0px), 2%);
+  top: ${({ $side }) =>
+    $side === "right" ? WATERFALL_TEXT_RIGHT_TOP_PCT : WATERFALL_TEXT_TOP_PCT}%;
   box-sizing: border-box;
   container-type: inline-size;
   pointer-events: auto;
@@ -140,21 +166,39 @@ const TextMount = styled.div`
   mask-repeat: no-repeat;
   -webkit-mask-repeat: no-repeat;
 
-  @media (max-width: 720px) {
-    width: min(${WATERFALL_TEXT_WIDTH_PCT}%, 42vw);
-  }
+  ${({ $side }) =>
+    $side === "left"
+      ? css`
+          left: ${WATERFALL_TEXT_LEFT_PCT}%;
+          width: ${WATERFALL_TEXT_WIDTH_PCT}%;
+          max-width: 100%;
+          padding-right: 2%;
+          padding-left: max(env(safe-area-inset-left, 0px), 2%);
 
-  @media (max-width: 480px) {
-    width: min(24%, 38vw);
-  }
+          @media (max-width: 720px) {
+            width: min(${WATERFALL_TEXT_WIDTH_PCT}%, 42vw);
+          }
+
+          @media (max-width: 480px) {
+            width: min(24%, 38vw);
+          }
+        `
+      : css`
+          /* Pin to the right edge so the box shrinks with the window instead of clipping. */
+          left: ${WATERFALL_TEXT_RIGHT_LEFT_PCT}%;
+          right: max(env(safe-area-inset-right, 0px), 2%);
+          width: auto;
+          max-width: none;
+          padding-left: 2%;
+          padding-right: 0;
+        `}
 `
 
 const Heading = styled.h2`
-  margin: 0 0 0.65em;
+  margin: 0 0 0.55em;
   color: #fff;
   font-family: var(--font-body);
-  /* Scales with the text column (cqw), not raw viewport vw */
-  font-size: clamp(0.6rem, 7.5cqw, 1.35rem);
+  font-size: clamp(0.95rem, 9cqw, 1.7rem);
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.15;
@@ -162,12 +206,68 @@ const Heading = styled.h2`
 `
 
 const Body = styled.p`
-  margin: 0;
+  margin: ${({ $spaced }) => ($spaced ? "0.75em 0 0" : "0")};
   color: rgba(255, 255, 255, 0.92);
   font-family: var(--font-body);
-  font-size: clamp(0.5rem, 4.4cqw, 1.05rem);
+  font-size: ${({ $large }) =>
+    $large ? "clamp(1.1rem, 11cqw, 2.15rem)" : "clamp(0.8rem, 7cqw, 1.3rem)"};
   font-weight: 400;
-  line-height: 1.45;
+  line-height: ${({ $large }) => ($large ? 1.4 : 1.4)};
   overflow-wrap: break-word;
   overflow: visible;
+`
+
+const arrowFloat = keyframes`
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+`
+
+/** Keeps the arrow + hint tucked under the red-underlined term. */
+const TermHintWrap = styled.span`
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  vertical-align: baseline;
+  max-width: 100%;
+`
+
+const PopupHint = styled.span`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2em;
+  margin-top: 0.15em;
+  margin-left: -0.35em;
+  max-width: min(14rem, 90cqw);
+`
+
+const ArrowImg = styled.img`
+  display: block;
+  width: min(5.5rem, 55%);
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+  transform-origin: center bottom;
+  animation: ${arrowFloat} 1.8s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`
+
+const HintText = styled.span`
+  display: block;
+  width: 100%;
+  text-align: center;
+  color: #e63946;
+  font-family: var(--font-body);
+  font-size: clamp(0.65rem, 5.5cqw, 0.95rem);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: break-word;
 `
