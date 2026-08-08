@@ -5,7 +5,7 @@ import {
   PAGE_FLIP_ATTRIBUTION,
 } from "../../data/designSketchbookPages.js"
 
-import "page-flip/src/Style/stPageFlip.css"
+// import "page-flip/src/Style/stPageFlip.css"
 
 const FLIP_SETTINGS = {
   width: 520,
