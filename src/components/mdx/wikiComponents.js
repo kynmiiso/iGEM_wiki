@@ -9,6 +9,7 @@ import { HardwareNotebookSandbox } from "../hardwareNotebook/HardwareNotebookSan
 import { HardwareArchitectureDiagram } from "../hardwareArchitecture/HardwareArchitectureDiagram.js"
 import { PageTab, PageTabs } from "../PageTabs.js"
 import { InteractiveGizmo } from "./interactive/InteractiveGizmo.js"
+import { PetAssayAnimation } from "./interactive/PetAssayAnimation.js"
 import Citation from "../Citation"
 import References from "../References"
 
@@ -65,6 +66,7 @@ export const mdxComponents = {
   PageTabs,
   PageTab,
   InteractiveGizmo,
+  PetAssayAnimation,
   Citation,
   References,
 }
