@@ -22,11 +22,20 @@ export const WATERFALL_TEXT_TOP_PCT = 55
 export const WATERFALL_TEXT_RIGHT_TOP_PCT = 74
 
 /**
- * Preferred width as % of mockup composition (left column). Type inside uses `cqw`
- * so font size tracks this box when the window (and artwork) get narrower.
+ * Preferred width as % of mockup composition (left column).
  * Right column uses left→right edge fill instead of a fixed %.
  */
 export const WATERFALL_TEXT_WIDTH_PCT = 30
+
+/**
+ * Type scales with the full-bleed art (`vw`) so proportions track the waterfall.
+ * Left copy is smaller (longer paragraphs); right stays larger (short line).
+ */
+const WATERFALL_BODY_SIZE_LEFT = "clamp(0.95rem, 1.65vw, 1.85rem)"
+const WATERFALL_HEADING_SIZE = "clamp(1.15rem, 2.1vw, 2.35rem)"
+const WATERFALL_BODY_SIZE_RIGHT = "clamp(1.2rem, 2.4vw, 2.75rem)"
+const WATERFALL_HINT_SIZE = "clamp(0.85rem, 1.25vw, 1.15rem)"
+const WATERFALL_ARROW_WIDTH = "min(9rem, 12vw)"
 
 /** Viewport px from top where faded copy reaches full opacity. */
 export const WATERFALL_TEXT_FADE_FULL_AT_PX = 150
@@ -142,7 +151,7 @@ export function WaterfallSideText() {
       </TextMount>
 
       <TextMount ref={rightRef} $side="right">
-        <Body $large>
+        <Body $side="right">
           However, PETases currently in industry have a major limitation...
         </Body>
       </TextMount>
@@ -198,7 +207,7 @@ const Heading = styled.h2`
   margin: 0 0 0.55em;
   color: #fff;
   font-family: var(--font-body);
-  font-size: clamp(0.95rem, 9cqw, 1.7rem);
+  font-size: ${WATERFALL_HEADING_SIZE};
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.15;
@@ -209,10 +218,10 @@ const Body = styled.p`
   margin: ${({ $spaced }) => ($spaced ? "0.75em 0 0" : "0")};
   color: rgba(255, 255, 255, 0.92);
   font-family: var(--font-body);
-  font-size: ${({ $large }) =>
-    $large ? "clamp(1.1rem, 11cqw, 2.15rem)" : "clamp(0.8rem, 7cqw, 1.3rem)"};
+  font-size: ${({ $side }) =>
+    $side === "right" ? WATERFALL_BODY_SIZE_RIGHT : WATERFALL_BODY_SIZE_LEFT};
   font-weight: 400;
-  line-height: ${({ $large }) => ($large ? 1.4 : 1.4)};
+  line-height: 1.4;
   overflow-wrap: break-word;
   overflow: visible;
 `
@@ -223,7 +232,7 @@ const arrowFloat = keyframes`
     transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translate3d(0, -8px, 0);
+    transform: translate3d(0, -10px, 0);
   }
 `
 
@@ -240,15 +249,15 @@ const PopupHint = styled.span`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2em;
-  margin-top: 0.15em;
+  gap: 0.25em;
+  margin-top: 0.25em;
   margin-left: -0.35em;
-  max-width: min(14rem, 90cqw);
+  max-width: min(18rem, 28vw);
 `
 
 const ArrowImg = styled.img`
   display: block;
-  width: min(5.5rem, 55%);
+  width: ${WATERFALL_ARROW_WIDTH};
   height: auto;
   user-select: none;
   pointer-events: none;
@@ -266,7 +275,7 @@ const HintText = styled.span`
   text-align: center;
   color: #e63946;
   font-family: var(--font-body);
-  font-size: clamp(0.65rem, 5.5cqw, 0.95rem);
+  font-size: ${WATERFALL_HINT_SIZE};
   font-weight: 600;
   line-height: 1.4;
   overflow-wrap: break-word;

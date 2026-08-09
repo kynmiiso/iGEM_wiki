@@ -28,11 +28,68 @@ export const BOTTLE_STAGES = {
 const ASSETS = {
   back: "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-back.avif",
   front: withPrefix("/wiki-mockup/wiki-front-front.png"),
-  logo: "https://static.igem.wiki/teams/6187/wiki/homepage-components/logo-draft-5.avif",
   /** Waterfall / sky section bottle (current homepage stage). */
   bottle: BOTTLE_STAGES.sky,
   water: withPrefix("/wiki-mockup/wiki-front-water.png"),
 }
+
+/** Nine-frame PETABITE logo loop (same slot + idle float as the old static logo). */
+const LOGO_FRAME_COUNT = 9
+/** Base hold for frames 1–7. */
+const LOGO_FRAME_MS = 170
+/** Longer hold for the last two frames (8–9). */
+const LOGO_LAST_FRAME_MS = 450
+const LOGO_FRAMES = Array.from(
+  { length: LOGO_FRAME_COUNT },
+  (_, i) =>
+    `https://static.igem.wiki/teams/6187/wiki/homepage-components/logo-animation-files/untitled-artwork-${i + 1}.avif`
+)
+
+/** Per-frame visibility windows so the last two frames linger longer. */
+const LOGO_FRAME_TIMING = (() => {
+  const durations = Array.from({ length: LOGO_FRAME_COUNT }, (_, i) =>
+    i >= LOGO_FRAME_COUNT - 2 ? LOGO_LAST_FRAME_MS : LOGO_FRAME_MS
+  )
+  const cycleMs = durations.reduce((sum, ms) => sum + ms, 0)
+  let acc = 0
+  const windows = durations.map((ms) => {
+    const start = acc / cycleMs
+    acc += ms
+    return { start, end: acc / cycleMs }
+  })
+  return { cycleMs, windows }
+})()
+
+const LOGO_FRAME_KEYFRAMES = LOGO_FRAME_TIMING.windows.map(({ start, end }) => {
+  const s = start * 100
+  const e = end * 100
+  if (start <= 0) {
+    return keyframes`
+      0%,
+      ${e}% {
+        opacity: 1;
+      }
+      ${e + 0.001}%,
+      100% {
+        opacity: 0;
+      }
+    `
+  }
+  return keyframes`
+    0%,
+    ${Math.max(0, s - 0.001)}% {
+      opacity: 0;
+    }
+    ${s}%,
+    ${e}% {
+      opacity: 1;
+    }
+    ${e + 0.001}%,
+    100% {
+      opacity: 0;
+    }
+  `
+})
 
 /**
  * New back art is taller than the previous plate — extra canvas was added at the top.
@@ -154,22 +211,26 @@ const WATER_RIPPLE_FRAC = 0.98
 
 /**
  * Visible bottle band as a fraction of its layer height.
- * The bottle fades from opaque→hidden as the ripple sweeps
- * from BOT_FRAC up to TOP_FRAC — a narrow gap makes the fade snap 100→0 fast.
+ * Higher fracs = fade finishes sooner (before deep water / shore overlap).
  */
-const BOTTLE_SUBMERGE_TOP_FRAC = 0.49
-const BOTTLE_SUBMERGE_BOT_FRAC = 0.52
-
+const BOTTLE_SUBMERGE_TOP_FRAC = 0.42
+const BOTTLE_SUBMERGE_BOT_FRAC = 0.72
+/** Extra downward slide (px) as the bottle fades under the water. */
+const BOTTLE_SINK_SLIDE_PX = 36
+/** CSS splash duration (ms) when the bottle hits the water. */
+const BOTTLE_SPLASH_MS = 920
+/** Fire splash once the bottle is mostly faded (after fade starts, before full hide). */
+const BOTTLE_SPLASH_TRIGGER_OPACITY = 0.35
 /**
- * Conditions card: enter late on the waterfall (near the puddle),
- * exit early once the sand comes into view.
+ * Shore-approach fade: start clearing the pinned sky bottle before the shore
+ * enters the viewport so it never overlaps the second art section.
+ * Values are shore-top as a fraction of viewport height.
  */
-const CONDITIONS_ENTER_VH = 0.95
-const CONDITIONS_EXIT_SAND_FRAC = 0.2
-const CONDITIONS_EXIT_VH = 0.35
-/** Continuous left→right pass (no centered hold) so the card covers less screen time. */
-const CONDITIONS_ENTER_END = 1
-const CONDITIONS_HOLD_END = 0.3
+const BOTTLE_SHORE_FADE_START_VH = 0.75
+const BOTTLE_SHORE_FADE_END_VH = 0.6
+/** Splash anchor on the first (waterfall) art band — puddle / river start. */
+const WATERFALL_SPLASH_TOP_PCT = 92
+const WATERFALL_SPLASH_LEFT_PCT = 50
 
 /**
  * Autonomous shore-bottle rematch (section1).
@@ -185,10 +246,9 @@ const SHORE_BOTTLE_DRIFT_MS = 15000
 /** Sky bottle treated as sunk once fade opacity drops below this. */
 const SHORE_BOTTLE_SUNK_OPACITY = 0.2
 
-const clamp01 = (v) => Math.max(0, Math.min(1, v))
-
 /**
- * Full-page wiki front compositing: layered mockup PNGs plus a gentle idle float on the logo.
+ * Full-page wiki front compositing: layered mockup PNGs plus a gentle idle float
+ * on the 9-frame cycling logo.
  *
  * Site nav uses scroll-driven `position: fixed` while the mockup is on-screen.
  *
@@ -213,37 +273,69 @@ export function HomeScrollPrototype() {
   const shoreBottlePlayedRef = useRef(false)
   /** True after the sky bottle finishes its waterfall sink (near-bottom unpin). */
   const skyBottleHasSunkRef = useRef(false)
+  /** Keep the overlay bottle hidden after sink so it cannot reappear through the fall. */
+  const skyBottleHiddenRef = useRef(false)
+  /** Splash plays once per sink; reset when the sky bottle is restored. */
+  const splashPlayedRef = useRef(false)
+  const bottleSinkMotionRef = useRef(null)
+  const bottleVisualRef = useRef(null)
   const [navPinned, setNavPinned] = useState(false)
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
   const [shoreBottlePlaying, setShoreBottlePlaying] = useState(false)
+  const [splashPlaying, setSplashPlaying] = useState(false)
   const reduceMotionParallaxRef = useRef(false)
   const petadexRef = useRef(null)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
 
-  /** 0–1 progress from past the puddle → a little into the sand. */
-  const getConditionsProgress = useCallback(() => {
-    const comp = compositionRef.current
-    const shore = shoreRef.current
-    if (!comp || !shore || typeof window === "undefined") return 0
-
-    const vh = window.innerHeight
-    const y = window.scrollY
-    const compBottomDoc = y + comp.getBoundingClientRect().bottom
-    const shoreRect = shore.getBoundingClientRect()
-    const shoreTopDoc = y + shoreRect.top
-
-    const enterScroll = compBottomDoc - vh * CONDITIONS_ENTER_VH
-    const exitScroll =
-      shoreTopDoc + shoreRect.height * CONDITIONS_EXIT_SAND_FRAC - vh * CONDITIONS_EXIT_VH
-
-    return clamp01((y - enterScroll) / Math.max(1, exitScroll - enterScroll))
+  const applyBottleSinkVisual = useCallback((opacity) => {
+    const visual = bottleVisualRef.current
+    const sink = bottleSinkMotionRef.current
+    const op = Math.max(0, Math.min(1, opacity))
+    if (visual) {
+      visual.style.opacity = String(op)
+    }
+    if (sink) {
+      const slide = (1 - op) * BOTTLE_SINK_SLIDE_PX
+      sink.style.transform = slide > 0.1 ? `translate3d(0, ${slide}px, 0)` : ""
+    }
   }, [])
 
-  useEffect(() => {
+  const triggerBottleSplash = useCallback(() => {
+    if (splashPlayedRef.current) return
+    splashPlayedRef.current = true
+    setSplashPlaying(true)
+  }, [])
+
+  const hideSkyBottle = useCallback(() => {
+    skyBottleHasSunkRef.current = true
+    skyBottleHiddenRef.current = true
+    applyBottleSinkVisual(0)
+    triggerBottleSplash()
+  }, [applyBottleSinkVisual, triggerBottleSplash])
+
+  const restoreSkyBottle = useCallback(() => {
+    skyBottleHasSunkRef.current = false
+    skyBottleHiddenRef.current = false
+    splashPlayedRef.current = false
+    setSplashPlaying(false)
+    applyBottleSinkVisual(1)
+  }, [applyBottleSinkVisual])
+
+  // Reset scroll before paint so a restored mid-page scroll cannot flash a pinned/sunk bottle.
+  useLayoutEffect(() => {
     if (typeof window === "undefined") return
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual"
+    }
     window.scrollTo(0, 0)
-  }, [])
+    skyBottleHasSunkRef.current = false
+    skyBottleHiddenRef.current = false
+    splashPlayedRef.current = false
+    bottleTouchPinnedRef.current = false
+    bottlePinEnterScrollYRef.current = null
+    applyBottleSinkVisual(1)
+  }, [applyBottleSinkVisual])
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -286,7 +378,7 @@ export function HomeScrollPrototype() {
         const flip = bottleFlipRef.current
         if (flip) flipUnpinFirstRef.current = flip.getBoundingClientRect()
         else flipUnpinFirstRef.current = null
-        skyBottleHasSunkRef.current = true
+        hideSkyBottle()
         bottleTouchPinnedRef.current = false
         bottlePinEnterScrollYRef.current = null
         setBottleTouchPinned(false)
@@ -323,48 +415,82 @@ export function HomeScrollPrototype() {
         rippleY = wr.top + wr.height * WATER_RIPPLE_FRAC
       }
 
+      // Clear the sky bottle before the shore (2nd section) overlaps the pinned bottle.
+      let shoreApproachOp = 1
+      const shoreEl = shoreRef.current
+      if (shoreEl) {
+        const shoreTop = shoreEl.getBoundingClientRect().top
+        const vh = window.innerHeight
+        const fadeStart = vh * BOTTLE_SHORE_FADE_START_VH
+        const fadeEnd = vh * BOTTLE_SHORE_FADE_END_VH
+        shoreApproachOp = Math.max(
+          0,
+          Math.min(1, (shoreTop - fadeEnd) / Math.max(1, fadeStart - fadeEnd))
+        )
+      }
+
       if (bottleTouchPinnedRef.current) {
         const pin0 = bottlePinEnterScrollYRef.current
         if (pin0 != null && y < pin0 - BOTTLE_PIN_SCROLL_UP_LEAVE) {
           const flip = bottleFlipRef.current
           if (flip) {
             flipUnpinFirstRef.current = flip.getBoundingClientRect()
-            flip.style.opacity = ""
           } else {
             flipUnpinFirstRef.current = null
           }
+          restoreSkyBottle()
           bottleTouchPinnedRef.current = false
           bottlePinEnterScrollYRef.current = null
           setBottleTouchPinned(false)
         } else {
-          // Anchored at the barrier: fade the bottle out as the rising water sweeps
-          // up over it, so it disappears behind the water and stays hidden past this
-          // point. Fades back in (and later unpins) only when the user scrolls up.
-          const flip = bottleFlipRef.current
-          if (flip && rippleY != null) {
-            const fr = flip.getBoundingClientRect()
-            const topY = fr.top + BOTTLE_SUBMERGE_TOP_FRAC * fr.height
-            const botY = fr.top + BOTTLE_SUBMERGE_BOT_FRAC * fr.height
-            const span = Math.max(1, botY - topY)
-            const op = Math.max(0, Math.min(1, (rippleY - topY) / span))
-            flip.style.opacity = String(op)
+          // Fade from water ripple + shore approach (whichever clears the bottle first).
+          if (skyBottleHiddenRef.current) {
+            applyBottleSinkVisual(0)
+          } else {
+            const flip = bottleFlipRef.current
+            let rippleOp = 1
+            if (flip && rippleY != null) {
+              const fr = flip.getBoundingClientRect()
+              const topY = fr.top + BOTTLE_SUBMERGE_TOP_FRAC * fr.height
+              const botY = fr.top + BOTTLE_SUBMERGE_BOT_FRAC * fr.height
+              const span = Math.max(1, botY - topY)
+              rippleOp = Math.max(0, Math.min(1, (rippleY - topY) / span))
+            }
+            const op = Math.min(rippleOp, shoreApproachOp)
+            applyBottleSinkVisual(op)
+            // Splash after fade is underway, still on the waterfall section.
+            if (op < BOTTLE_SPLASH_TRIGGER_OPACITY) {
+              triggerBottleSplash()
+            }
             if (op < SHORE_BOTTLE_SUNK_OPACITY) {
-              skyBottleHasSunkRef.current = true
+              hideSkyBottle()
             }
           }
         }
       } else if (bottleSpot) {
         const flip = bottleFlipRef.current
-        if (flip) flip.style.opacity = ""
         const br = bottleSpot.getBoundingClientRect()
         const bottleMidY = br.top + br.height / 2
         const viewMidY = window.innerHeight / 2
-        if (!nearBottom && bottleMidY <= viewMidY && br.bottom > 32) {
-          if (flip) flipPinFirstRef.current = flip.getBoundingClientRect()
-          else flipPinFirstRef.current = null
-          bottlePinEnterScrollYRef.current = y
-          bottleTouchPinnedRef.current = true
-          setBottleTouchPinned(true)
+
+        if (skyBottleHiddenRef.current) {
+          // Stay hidden after sink. Restore only once scrolled back up past the pin zone.
+          applyBottleSinkVisual(0)
+          if (!nearBottom && shoreApproachOp >= 0.98 && (bottleMidY > viewMidY + 24 || y < 64)) {
+            restoreSkyBottle()
+          }
+        } else {
+          if (flip && !skyBottleHiddenRef.current) {
+            // Idle / pre-pin: fully visible (do not clear a mid-fade if somehow present).
+            applyBottleSinkVisual(1)
+          }
+          if (!nearBottom && bottleMidY <= viewMidY && br.bottom > 32) {
+            if (flip) flipPinFirstRef.current = flip.getBoundingClientRect()
+            else flipPinFirstRef.current = null
+            bottlePinEnterScrollYRef.current = y
+            bottleTouchPinnedRef.current = true
+            setBottleTouchPinned(true)
+          }
         }
       }
 
@@ -397,7 +523,7 @@ export function HomeScrollPrototype() {
       window.removeEventListener("scroll", tick)
       window.removeEventListener("resize", tick)
     }
-  }, [])
+  }, [applyBottleSinkVisual, hideSkyBottle, restoreSkyBottle, triggerBottleSplash])
 
   // Reduced-motion path has no CSS animationend — clear the quiet mid-pose after a beat.
   useEffect(() => {
@@ -559,7 +685,17 @@ export function HomeScrollPrototype() {
               <OverlaySlice $z={Z.logo}>
                 <LogoShiftWrap>
                   <LogoFloatWrap>
-                    <RailImg src={ASSETS.logo} alt="PETABITE" />
+                    <LogoFlapper aria-label="PETABITE">
+                      {LOGO_FRAMES.map((src, i) => (
+                        <LogoFrame
+                          key={src}
+                          src={src}
+                          alt={i === 0 ? "PETABITE" : ""}
+                          aria-hidden={i !== 0}
+                          $index={i}
+                        />
+                      ))}
+                    </LogoFlapper>
                   </LogoFloatWrap>
                 </LogoShiftWrap>
               </OverlaySlice>
@@ -568,9 +704,13 @@ export function HomeScrollPrototype() {
                   <BottleFlipSurface ref={bottleFlipRef}>
                     <BottleStickyRock $active={bottleTouchPinned}>
                       <BottleShiftWrap>
-                        <BottleFloatWrap>
-                          <RailImg src={ASSETS.bottle} alt="" />
-                        </BottleFloatWrap>
+                        <BottleSinkMotion ref={bottleSinkMotionRef}>
+                          <BottleFloatWrap>
+                            <BottleVisual ref={bottleVisualRef}>
+                              <RailImg src={ASSETS.bottle} alt="" />
+                            </BottleVisual>
+                          </BottleFloatWrap>
+                        </BottleSinkMotion>
                       </BottleShiftWrap>
                     </BottleStickyRock>
                   </BottleFlipSurface>
@@ -579,25 +719,33 @@ export function HomeScrollPrototype() {
               <OverlaySlice $z={Z.water}>
                 <RailImg ref={waterRef} src={ASSETS.water} alt="" />
               </OverlaySlice>
+              {/* Splash lives on the waterfall band (river start), not the shore section. */}
+              <OverlaySlice $z={Z.text}>
+                {splashPlaying ? (
+                  <WaterfallSplashAnchor
+                    key="bottle-splash"
+                    aria-hidden="true"
+                    onAnimationEnd={(e) => {
+                      if (e.target !== e.currentTarget) return
+                      setSplashPlaying(false)
+                    }}
+                  >
+                    <SplashRipple $delay={0} />
+                    <SplashRipple $delay={120} $large />
+                    <SplashDrop $n={0} />
+                    <SplashDrop $n={1} />
+                    <SplashDrop $n={2} />
+                    <SplashDrop $n={3} />
+                    <SplashDrop $n={4} />
+                    <SplashDrop $n={5} />
+                    <SplashDrop $n={6} />
+                    <SplashFoam />
+                  </WaterfallSplashAnchor>
+                ) : null}
+              </OverlaySlice>
             </OverlayStack>
           </ForegroundBand>
         </CompositionRoot>
-
-        <SwipeInBox
-          getProgress={getConditionsProgress}
-          enterEnd={CONDITIONS_ENTER_END}
-          holdEnd={CONDITIONS_HOLD_END}
-          title="... we need 3 specific conditions:"
-        >
-          <ConditionImageRow>
-            {CONDITION_CARD_IMAGES.map((image) => (
-              <ConditionFigure key={image.alt}>
-                <ConditionImage src={image.src} alt={image.alt} />
-                <ConditionCaption>{image.alt}</ConditionCaption>
-              </ConditionFigure>
-            ))}
-          </ConditionImageRow>
-        </SwipeInBox>
 
         <DrawnShoreSection ref={shoreRef}>
           <ShoreFlowSizer>
@@ -628,6 +776,18 @@ export function HomeScrollPrototype() {
                 </ShoreBottleSize>
               </ShoreBottleMount>
             </ShoreBottleLayer>
+            <ShoreCardsLayer $z={5}>
+              <SwipeInBox stationary title="... we need 3 specific conditions:">
+                <ConditionImageRow>
+                  {CONDITION_CARD_IMAGES.map((image) => (
+                    <ConditionFigure key={image.alt}>
+                      <ConditionImage src={image.src} alt={image.alt} />
+                      <ConditionCaption>{image.alt}</ConditionCaption>
+                    </ConditionFigure>
+                  ))}
+                </ConditionImageRow>
+              </SwipeInBox>
+            </ShoreCardsLayer>
             <ShoreTextLayer $z={4}>
               <ShoreTextMount>
                 <ShoreBody>
@@ -732,6 +892,14 @@ const ShoreLayer = styled.div`
 `
 
 const ShoreTextLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: ${({ $z }) => $z};
+  pointer-events: none;
+`
+
+/** Conditions cards anchored on the shore art (scroll with the page, no blank section). */
+const ShoreCardsLayer = styled.div`
   position: absolute;
   inset: 0;
   z-index: ${({ $z }) => $z};
@@ -1235,9 +1403,50 @@ const LogoFloatWrap = styled.div`
   }
 `
 
+/** Stacked frames; first image stays in-flow so the rail keeps its height. */
+const LogoFlapper = styled.div`
+  position: relative;
+  width: 100%;
+`
+
+const LogoFrame = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  user-select: none;
+  pointer-events: none;
+  opacity: 0;
+  animation-name: ${({ $index }) => LOGO_FRAME_KEYFRAMES[$index] || LOGO_FRAME_KEYFRAMES[0]};
+  animation-duration: ${LOGO_FRAME_TIMING.cycleMs}ms;
+  animation-timing-function: steps(1, end);
+  animation-iteration-count: infinite;
+
+  ${({ $index }) =>
+    $index > 0 &&
+    css`
+      position: absolute;
+      left: 0;
+      top: 0;
+    `}
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: ${({ $index }) => ($index === 0 ? 1 : 0)};
+  }
+`
+
 /** Owns FLIP `transform` so parent pin spot can stay `position: fixed` without fighting this layer. */
 const BottleFlipSurface = styled.div`
   width: 100%;
+`
+
+/** Scroll-driven sink slide (separate from FLIP transform on BottleFlipSurface). */
+const BottleSinkMotion = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  will-change: transform;
 `
 
 /** Scroll touch: pins bottle to viewport center while stack scrolls; releases near page bottom. */
@@ -1271,6 +1480,7 @@ const BottleShiftWrap = styled.div`
 `
 
 const BottleFloatWrap = styled.div`
+  position: relative;
   width: 25%;
   max-width: 12rem;
   animation: ${bottleIdleFloat} 1.5s ease-in-out infinite;
@@ -1279,4 +1489,140 @@ const BottleFloatWrap = styled.div`
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
+`
+
+/** Opacity target for the sky bottle image (splash stays as a sibling so it can play). */
+const BottleVisual = styled.div`
+  width: 100%;
+  will-change: opacity;
+`
+
+const splashBurst = keyframes`
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.55);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+`
+
+const splashRipple = keyframes`
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.85);
+    opacity: 0;
+  }
+`
+
+const splashDrop = keyframes`
+  0% {
+    transform: translate(-50%, -50%) scale(0.55);
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.2);
+    opacity: 0;
+  }
+`
+
+const splashFoam = keyframes`
+  0% {
+    transform: translate(-50%, -40%) scale(0.4);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -70%) scale(1.35);
+    opacity: 0;
+  }
+`
+
+/** Splash anchored on the first art band at the river / puddle start. */
+const WaterfallSplashAnchor = styled.div`
+  position: absolute;
+  left: ${WATERFALL_SPLASH_LEFT_PCT}%;
+  top: ${WATERFALL_SPLASH_TOP_PCT}%;
+  z-index: 6;
+  width: min(28vw, 14rem);
+  height: min(16vw, 8rem);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  overflow: visible;
+  animation: ${splashBurst} ${BOTTLE_SPLASH_MS}ms ease-out forwards;
+
+  @media (prefers-reduced-motion: reduce) {
+    display: none;
+  }
+`
+
+const SplashRipple = styled.span`
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: ${({ $large }) => ($large ? "95%" : "70%")};
+  aspect-ratio: 2.2 / 1;
+  border: ${({ $large }) => ($large ? "3px" : "2.5px")} solid
+    rgba(230, 248, 255, ${({ $large }) => ($large ? 0.55 : 0.95)});
+  border-radius: 50%;
+  box-shadow:
+    0 0 18px rgba(190, 230, 255, 0.65),
+    inset 0 0 12px rgba(255, 255, 255, 0.35);
+  animation: ${splashRipple} ${BOTTLE_SPLASH_MS}ms ease-out forwards;
+  animation-delay: ${({ $delay }) => `${$delay || 0}ms`};
+`
+
+const SPLASH_DROP_OFFSETS = [
+  { dx: "-28px", dy: "-42px" },
+  { dx: "24px", dy: "-46px" },
+  { dx: "-42px", dy: "-14px" },
+  { dx: "40px", dy: "-12px" },
+  { dx: "0px", dy: "-54px" },
+  { dx: "-16px", dy: "-30px" },
+  { dx: "18px", dy: "-28px" },
+]
+
+const SplashDrop = styled.span`
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 14px;
+  height: 20px;
+  border-radius: 50% 50% 45% 45%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #b7e6f8 50%, #4a9fc4 100%);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+  --dx: ${({ $n }) => SPLASH_DROP_OFFSETS[$n]?.dx || "0px"};
+  --dy: ${({ $n }) => SPLASH_DROP_OFFSETS[$n]?.dy || "-36px"};
+  animation: ${splashDrop} ${BOTTLE_SPLASH_MS}ms ease-out forwards;
+  animation-delay: ${({ $n }) => `${($n || 0) * 30}ms`};
+`
+
+const SplashFoam = styled.span`
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 78%;
+  height: 42%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(180, 225, 245, 0.55) 42%,
+    rgba(120, 190, 220, 0) 72%
+  );
+  filter: blur(1px);
+  animation: ${splashFoam} ${BOTTLE_SPLASH_MS}ms ease-out forwards;
 `
