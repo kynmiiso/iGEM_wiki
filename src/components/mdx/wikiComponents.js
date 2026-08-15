@@ -10,6 +10,7 @@ import { HardwareArchitectureDiagram } from "../hardwareArchitecture/HardwareArc
 import { PageTab, PageTabs } from "../PageTabs.js"
 import { InteractiveGizmo } from "./interactive/InteractiveGizmo.js"
 import { PetAssayAnimation } from "./interactive/PetAssayAnimation.js"
+import { AntibioticSelectionAnimation, GfpBiosensorAnimation } from "./interactive/CopperReleaseAnimation.js"
 import Citation from "../Citation"
 import References from "../References"
 
@@ -67,6 +68,8 @@ export const mdxComponents = {
   PageTab,
   InteractiveGizmo,
   PetAssayAnimation,
+  AntibioticSelectionAnimation,
+  GfpBiosensorAnimation,
   Citation,
   References,
 }
