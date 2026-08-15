@@ -1,0 +1,43 @@
+name: Sync main to iGEM GitLab
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-igem-gitlab
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out GitHub main
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Merge GitHub main into GitLab main
+        env:
+          GITLAB_TOKEN: ${{ secrets.IGEM_GITLAB_TOKEN }}
+        run: |
+          set -eu
+
+          if [ -z "$GITLAB_TOKEN" ]; then
+            echo "IGEM_GITLAB_TOKEN is not configured."
+            exit 1
+          fi
+
+          git config user.name "iGEM Toronto Sync Bot"
+          git config user.email "igem-toronto-sync@users.noreply.github.com"
+          git branch github-main "$GITHUB_SHA"
+          git remote add igem "https://oauth2:${GITLAB_TOKEN}@gitlab.igem.org/2026/toronto.git"
+          git fetch igem main
+          git switch -c igem-main-sync igem/main
+          git merge --no-edit github-main
+          git push igem HEAD:main

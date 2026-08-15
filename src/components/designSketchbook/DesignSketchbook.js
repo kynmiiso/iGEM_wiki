@@ -1,20 +1,25 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import styled from "styled-components"
 import {
   DESIGN_SKETCHBOOK_PAGES,
+  DESIGN_SKETCHBOOK_SECTIONS,
   PAGE_FLIP_ATTRIBUTION,
+  getSectionStartIndex,
+  getTocSections,
 } from "../../data/designSketchbookPages.js"
 
 // import "page-flip/src/Style/stPageFlip.css"
 
 const FLIP_SETTINGS = {
-  width: 520,
-  height: 680,
+  // Tall page aspect: stretch sizes by width first, then height = width / (w/h).
+  // Midway between the earlier short pages and the too-tall pass.
+  width: 490,
+  height: 950,
   size: "stretch",
-  minWidth: 320,
-  maxWidth: 900,
-  minHeight: 440,
-  maxHeight: 900,
+  minWidth: 300,
+  maxWidth: 800,
+  minHeight: 580,
+  maxHeight: 1500,
   showCover: true,
   drawShadow: true,
   flippingTime: 700,
@@ -23,12 +28,53 @@ const FLIP_SETTINGS = {
   autoSize: true,
 }
 
+const FLIP_WAIT_MS = FLIP_SETTINGS.flippingTime + 80
+
 function prefersReducedMotion() {
   if (typeof window === "undefined" || !window.matchMedia) return false
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches
 }
 
 function SketchPageContent({ page }) {
+  if (page.variant === "toc") {
+    const sections = getTocSections(page.tocHalf)
+    return (
+      <SketchPageInner $variant="toc">
+        <SketchTitle>{page.title}</SketchTitle>
+        {page.subtitle && <SketchSubtitle>{page.subtitle}</SketchSubtitle>}
+        <TocList>
+          {sections.map((section) => (
+            <TocItem key={section.id}>
+              <TocButton
+                type="button"
+                $color={section.color}
+                data-toc-section={section.id}
+              >
+                <TocSwatch $color={section.color} aria-hidden />
+                <TocText>
+                  <TocLabel>{section.label}</TocLabel>
+                  <TocProgress>{section.progress}</TocProgress>
+                </TocText>
+              </TocButton>
+            </TocItem>
+          ))}
+        </TocList>
+      </SketchPageInner>
+    )
+  }
+
+  if (page.variant === "notes") {
+    return (
+      <SketchPageInner $variant="notes">
+        <SketchTitle>{page.title}</SketchTitle>
+        {page.body && <SketchBody>{page.body}</SketchBody>}
+        <SketchPlaceholder aria-hidden={false}>
+          <SketchPlaceholderLabel>Notes / image slot</SketchPlaceholderLabel>
+        </SketchPlaceholder>
+      </SketchPageInner>
+    )
+  }
+
   const showMedia = page.variant === "spread"
   return (
     <SketchPageInner $variant={page.variant}>
@@ -55,14 +101,264 @@ function SketchPageContent({ page }) {
 
 export function DesignSketchbook() {
   const bookHostRef = useRef(null)
+  const bookStageRef = useRef(null)
   const pageFlipRef = useRef(null)
+  const flipRunIdRef = useRef(0)
   const [ready, setReady] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
+  const [spreadIndex, setSpreadIndex] = useState(0)
   const [pageCount, setPageCount] = useState(DESIGN_SKETCHBOOK_PAGES.length)
   const [reducedMotion, setReducedMotion] = useState(false)
+  const [navigating, setNavigating] = useState(false)
+  const [selectedSectionId, setSelectedSectionId] = useState(null)
+  /** Pixel offsets from BookStage to the visible notebook face. */
+  const [tabAnchor, setTabAnchor] = useState({
+    top: 48,
+    right: 0,
+    left: 0,
+    bookWidth: 0,
+  })
+
+  const navigatingRef = useRef(false)
+
+  const measureTabAnchor = useCallback(() => {
+    const stage = bookStageRef.current
+    const host = bookHostRef.current
+    if (!stage || !host) return
+
+    const stageRect = stage.getBoundingClientRect()
+
+    // Prefer the union of visible page faces so open spreads get the full width.
+    let bookLeft = Infinity
+    let bookTop = Infinity
+    let bookRight = -Infinity
+    let bookBottom = -Infinity
+    host.querySelectorAll(".stf__item").forEach((el) => {
+      const r = el.getBoundingClientRect()
+      if (r.width < 2 || r.height < 2) return
+      bookLeft = Math.min(bookLeft, r.left)
+      bookTop = Math.min(bookTop, r.top)
+      bookRight = Math.max(bookRight, r.right)
+      bookBottom = Math.max(bookBottom, r.bottom)
+    })
+
+    let useRect
+    if (bookLeft < Infinity) {
+      useRect = {
+        left: bookLeft,
+        top: bookTop,
+        right: bookRight,
+        bottom: bookBottom,
+        height: bookBottom - bookTop,
+        width: bookRight - bookLeft,
+      }
+    } else {
+      const fallback = host.querySelector(".stf__wrapper") || host
+      useRect = fallback.getBoundingClientRect()
+    }
+
+    if (useRect.height < 40) {
+      useRect = host.getBoundingClientRect()
+    }
+
+    // Tabs start below the notebook top so the page edge leads the tab stack.
+    const top = Math.max(12, useRect.top - stageRect.top + 28)
+    const right = Math.max(0, stageRect.right - useRect.right)
+    const left = Math.max(0, useRect.left - stageRect.left)
+    const bookWidth = Math.max(0, useRect.width ?? useRect.right - useRect.left)
+    setTabAnchor({ top, right, left, bookWidth })
+  }, [])
 
   useEffect(() => {
     setReducedMotion(prefersReducedMotion())
+  }, [])
+
+  useEffect(() => {
+    if (!ready) return undefined
+    measureTabAnchor()
+    const raf = window.requestAnimationFrame(() => {
+      measureTabAnchor()
+      window.requestAnimationFrame(measureTabAnchor)
+    })
+    const onResize = () => measureTabAnchor()
+    window.addEventListener("resize", onResize)
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => measureTabAnchor())
+        : null
+    if (bookHostRef.current && ro) ro.observe(bookHostRef.current)
+    if (bookStageRef.current && ro) ro.observe(bookStageRef.current)
+    return () => {
+      window.cancelAnimationFrame(raf)
+      window.removeEventListener("resize", onResize)
+      ro?.disconnect()
+    }
+  }, [ready, pageIndex, measureTabAnchor])
+
+  const syncIndicesFromFlip = useCallback((flip) => {
+    if (!flip) return
+    const nextPage = flip.getCurrentPageIndex()
+    setPageIndex(nextPage)
+    const collection = flip.getPageCollection?.()
+    if (collection) {
+      setSpreadIndex(collection.getCurrentSpreadIndex())
+    }
+  }, [])
+
+  const activeSectionId = useMemo(() => {
+    if (selectedSectionId) return selectedSectionId
+    return DESIGN_SKETCHBOOK_PAGES[pageIndex]?.sectionId || null
+  }, [pageIndex, selectedSectionId])
+
+  /** Landscape spread index for a section start page (cover=0, toc=1, sections from 2…). */
+  const getSectionSpreadIndex = useCallback((sectionId) => {
+    const start = getSectionStartIndex(sectionId)
+    if (start < 0) return -1
+    // With showCover: spread 0 = [0], then pairs [1,2], [3,4], …
+    if (start === 0) return 0
+    return Math.floor((start - 1) / 2) + 1
+  }, [])
+
+  const { rightSections, leftSections } = useMemo(() => {
+    if (pageIndex === 0) {
+      return { rightSections: DESIGN_SKETCHBOOK_SECTIONS, leftSections: [] }
+    }
+    const right = []
+    const left = []
+    for (const section of DESIGN_SKETCHBOOK_SECTIONS) {
+      const sectionSpread = getSectionSpreadIndex(section.id)
+      if (sectionSpread >= 0 && sectionSpread < spreadIndex) {
+        left.push(section)
+      } else {
+        right.push(section)
+      }
+    }
+    return { rightSections: right, leftSections: left }
+  }, [getSectionSpreadIndex, pageIndex, spreadIndex])
+
+  const waitForFlipSettle = useCallback((flipInstance, runId) => {
+    return new Promise((resolve) => {
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        flipInstance.off("changeState")
+        window.clearTimeout(timeout)
+        resolve()
+      }
+
+      const onState = (e) => {
+        if (flipRunIdRef.current !== runId) {
+          finish()
+          return
+        }
+        if (e.data === "read") finish()
+      }
+
+      flipInstance.on("changeState", onState)
+      const timeout = window.setTimeout(finish, FLIP_WAIT_MS)
+    })
+  }, [])
+
+  const isPageInCurrentSpread = useCallback((flip, targetIndex) => {
+    const collection = flip.getPageCollection?.()
+    if (!collection) return flip.getCurrentPageIndex() === targetIndex
+    return (
+      collection.getSpreadIndexByPage(targetIndex) === collection.getCurrentSpreadIndex()
+    )
+  }, [])
+
+  const flipToPageAnimated = useCallback(
+    async (targetIndex) => {
+      if (targetIndex < 0) return
+
+      if (reducedMotion) {
+        const page = DESIGN_SKETCHBOOK_PAGES[targetIndex]
+        if (page) {
+          document.getElementById(`sketch-${page.id}`)?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          })
+        }
+        setPageIndex(targetIndex)
+        return
+      }
+
+      const flip = pageFlipRef.current
+      if (!flip || !ready) return
+
+      if (isPageInCurrentSpread(flip, targetIndex)) {
+        syncIndicesFromFlip(flip)
+        return
+      }
+
+      const runId = flipRunIdRef.current + 1
+      flipRunIdRef.current = runId
+      navigatingRef.current = true
+      setNavigating(true)
+
+      try {
+        let guard = 0
+        const maxSteps = Math.max(pageCount * 2, 24)
+
+        while (!isPageInCurrentSpread(flip, targetIndex) && guard < maxSteps) {
+          if (flipRunIdRef.current !== runId) return
+
+          const current = flip.getCurrentPageIndex()
+          if (current < targetIndex) {
+            flip.flipNext("bottom")
+          } else {
+            flip.flipPrev("bottom")
+          }
+
+          await waitForFlipSettle(flip, runId)
+          if (flipRunIdRef.current !== runId) return
+
+          syncIndicesFromFlip(flip)
+          guard += 1
+        }
+      } finally {
+        if (flipRunIdRef.current === runId) {
+          navigatingRef.current = false
+          setNavigating(false)
+          syncIndicesFromFlip(flip)
+        }
+      }
+    },
+    [isPageInCurrentSpread, pageCount, ready, reducedMotion, syncIndicesFromFlip, waitForFlipSettle]
+  )
+
+  const goToSection = useCallback(
+    (sectionId) => {
+      const index = getSectionStartIndex(sectionId)
+      if (index < 0) return
+      setSelectedSectionId(sectionId)
+      flipToPageAnimated(index)
+    },
+    [flipToPageAnimated]
+  )
+
+  const sketchRootRef = useRef(null)
+  const goToSectionRef = useRef(goToSection)
+  goToSectionRef.current = goToSection
+
+  // TOC buttons live inside page-flip's reparented DOM — use capture delegation.
+  useEffect(() => {
+    const root = sketchRootRef.current
+    if (!root) return undefined
+
+    const onTocClick = (event) => {
+      const target = event.target instanceof Element ? event.target : null
+      const button = target?.closest?.("[data-toc-section]")
+      if (!button || !root.contains(button)) return
+      event.preventDefault()
+      event.stopPropagation()
+      const sectionId = button.getAttribute("data-toc-section")
+      if (sectionId) goToSectionRef.current(sectionId)
+    }
+
+    root.addEventListener("click", onTocClick, true)
+    return () => root.removeEventListener("click", onTocClick, true)
   }, [])
 
   useEffect(() => {
@@ -86,12 +382,18 @@ export function DesignSketchbook() {
         pageFlipRef.current = flipInstance
 
         flipInstance.on("flip", (e) => {
-          setPageIndex(typeof e.data === "number" ? e.data : flipInstance.getCurrentPageIndex())
+          const nextIndex =
+            typeof e.data === "number" ? e.data : flipInstance.getCurrentPageIndex()
+          setPageIndex(nextIndex)
+          const collection = flipInstance.getPageCollection?.()
+          if (collection) setSpreadIndex(collection.getCurrentSpreadIndex())
+          if (navigatingRef.current) return
+          setSelectedSectionId(DESIGN_SKETCHBOOK_PAGES[nextIndex]?.sectionId || null)
         })
 
         flipInstance.loadFromHTML(pages)
         setPageCount(flipInstance.getPageCount())
-        setPageIndex(flipInstance.getCurrentPageIndex())
+        syncIndicesFromFlip(flipInstance)
         setReady(true)
       } catch {
         setReady(false)
@@ -102,29 +404,110 @@ export function DesignSketchbook() {
 
     return () => {
       cancelled = true
+      flipRunIdRef.current += 1
+      navigatingRef.current = false
       window.clearTimeout(timer)
       if (pageFlipRef.current) {
         pageFlipRef.current.destroy()
         pageFlipRef.current = null
       }
       setReady(false)
+      setNavigating(false)
     }
   }, [reducedMotion])
 
   const goPrev = () => {
+    if (navigating) return
+    flipRunIdRef.current += 1
+    setSelectedSectionId(null)
     pageFlipRef.current?.flipPrev("bottom")
   }
 
   const goNext = () => {
+    if (navigating) return
+    flipRunIdRef.current += 1
+    setSelectedSectionId(null)
     pageFlipRef.current?.flipNext("bottom")
+  }
+
+  const bookOpen = pageIndex > 0
+
+  const renderRightTabs = (mode, { embedded = false } = {}) => (
+    <TabRail
+      role="tablist"
+      aria-label="Sketchbook sections"
+      $side="right"
+      $mode={mode}
+      $embedded={embedded}
+      $anchored={embedded ? tabAnchor.bookWidth > 0 : true}
+    >
+      {rightSections.map((section) => {
+        const selected = activeSectionId === section.id
+        return (
+          <SectionTab
+            key={section.id}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            title={section.progress}
+            $color={section.color}
+            $active={selected && mode === "open"}
+            $mode={mode}
+            $compact={false}
+            disabled={!reducedMotion && !ready}
+            onClick={() => goToSection(section.id)}
+          >
+            <SectionTabLabel $mode={mode}>{section.label}</SectionTabLabel>
+            {mode === "open" && (
+              <SectionTabProgress>{section.progress}</SectionTabProgress>
+            )}
+          </SectionTab>
+        )
+      })}
+    </TabRail>
+  )
+
+  const renderLeftStubs = () => {
+    if (!bookOpen || leftSections.length === 0) return null
+    return (
+      <TabRail
+        role="tablist"
+        aria-label="Previous sketchbook sections"
+        $side="left"
+        $mode="open"
+        $embedded
+        $anchored={tabAnchor.bookWidth > 0}
+      >
+        {leftSections.map((section) => (
+          <SectionTab
+            key={section.id}
+            type="button"
+            role="tab"
+            aria-label={`Go back to ${section.label}`}
+            title={`${section.label}: ${section.progress}`}
+            $color={section.color}
+            $active={false}
+            $mode="open"
+            $compact
+            disabled={!ready}
+            onClick={() => goToSection(section.id)}
+          />
+        ))}
+      </TabRail>
+    )
   }
 
   if (reducedMotion) {
     return (
-      <SketchbookRoot>
+      <SketchbookRoot ref={sketchRootRef}>
+        {renderRightTabs("open")}
         <ReducedMotionList aria-label="Design sketchbook pages">
           {DESIGN_SKETCHBOOK_PAGES.map((page) => (
-            <ReducedMotionPage key={page.id} $variant={page.variant}>
+            <ReducedMotionPage
+              key={page.id}
+              id={`sketch-${page.id}`}
+              $variant={page.variant}
+            >
               <SketchPageContent page={page} />
             </ReducedMotionPage>
           ))}
@@ -135,8 +518,19 @@ export function DesignSketchbook() {
   }
 
   return (
-    <SketchbookRoot>
-      <BookStage aria-label="Design team sketchbook — drag corners or use controls to flip pages">
+    <SketchbookRoot ref={sketchRootRef}>
+      <BookStage
+        ref={bookStageRef}
+        style={{
+          "--sketch-tab-top": `${tabAnchor.top}px`,
+          "--sketch-tab-right": `${tabAnchor.right}px`,
+          "--sketch-tab-left": `${tabAnchor.left}px`,
+          "--sketch-tab-book-width": `${tabAnchor.bookWidth}px`,
+        }}
+        aria-label="Design team sketchbook — drag corners or use controls to flip pages"
+      >
+        {renderLeftStubs()}
+        {renderRightTabs(bookOpen ? "open" : "closed", { embedded: true })}
         <BookHost ref={bookHostRef} className="stf__parent">
           {DESIGN_SKETCHBOOK_PAGES.map((page) => (
             <SketchPage
@@ -152,22 +546,33 @@ export function DesignSketchbook() {
       </BookStage>
 
       <Controls>
-        <ControlButton type="button" onClick={goPrev} disabled={!ready || pageIndex <= 0}>
+        <ControlButton
+          type="button"
+          onClick={goPrev}
+          disabled={!ready || navigating || pageIndex <= 0}
+        >
           Previous
         </ControlButton>
         <PageIndicator aria-live="polite">
-          {ready ? `Page ${pageIndex + 1} of ${pageCount}` : "Loading sketchbook…"}
+          {!ready
+            ? "Loading sketchbook…"
+            : navigating
+              ? "Turning pages…"
+              : `Page ${pageIndex + 1} of ${pageCount}`}
         </PageIndicator>
         <ControlButton
           type="button"
           onClick={goNext}
-          disabled={!ready || pageIndex >= pageCount - 1}
+          disabled={!ready || navigating || pageIndex >= pageCount - 1}
         >
           Next
         </ControlButton>
       </Controls>
 
-      <Hint>Drag a page corner or click the edges to flip. Keyboard users can use Previous / Next.</Hint>
+      <Hint>
+        Named tabs sit on the right. After you pass a section, its tab moves to the left as a
+        color stub — tap to flip back. Open the cover for the table of contents.
+      </Hint>
 
       <AttributionFooter />
     </SketchbookRoot>
@@ -199,18 +604,215 @@ export default DesignSketchbook
 
 const SketchbookRoot = styled.div`
   width: 100%;
-  max-width: 72rem;
+  max-width: none;
   margin: var(--space-lg) 0;
+  overflow: visible;
+
+  /*
+   * Side PageTabs leave an ~11–14rem rail for the tab list. Pull the book into
+   * that column so it can use the full article width (and grow taller with it).
+   */
+  @media (min-width: 721px) {
+    width: calc(100% + 14rem + var(--space-xl));
+    max-width: calc(100% + 14rem + var(--space-xl));
+    margin-left: calc(-14rem - var(--space-xl));
+    position: relative;
+    z-index: 0;
+  }
+`
+
+const TabRail = styled.div`
+  z-index: 4;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  transition: inset 0.2s ease, width 0.2s ease, opacity 0.15s ease;
+  opacity: ${({ $anchored }) => ($anchored === false ? 0 : 1)};
+
+  ${({ $embedded, $side, $mode }) =>
+    $embedded
+      ? $side === "left"
+        ? `
+    /* Flush with notebook left edge — stubs sit outside the page */
+    position: absolute;
+    top: var(--sketch-tab-top, 18%);
+    bottom: auto;
+    left: var(--sketch-tab-left, 0px);
+    width: 1.1rem;
+    height: auto;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    transform: translateX(-100%);
+  `
+        : `
+    /* Flush with notebook right edge — only the active tab tucks onto the page */
+    position: absolute;
+    top: var(--sketch-tab-top, 12%);
+    bottom: auto;
+    left: calc(var(--sketch-tab-left, 0px) + var(--sketch-tab-book-width, 0px));
+    right: auto;
+    width: ${$mode === "open" ? "7.75rem" : "6.5rem"};
+    height: auto;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    transform: none;
+  `
+      : `
+    position: relative;
+    width: 100%;
+    margin: 0 0 0.5rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.35rem;
+    transform: none;
+  `}
+
+  > * {
+    pointer-events: auto;
+  }
+
+  @media (max-width: 720px) {
+    ${({ $embedded, $side, $mode }) =>
+      $embedded && $side === "right"
+        ? `
+      width: ${$mode === "open" ? "6.5rem" : "5.25rem"};
+    `
+        : $embedded && $side === "left"
+          ? `
+      width: 0.9rem;
+    `
+          : ""}
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`
+
+const SectionTab = styled.button`
+  appearance: none;
+  border: 1px solid color-mix(in srgb, ${({ $color }) => $color} 55%, #222);
+  background: ${({ $color, $active }) =>
+    $active
+      ? `color-mix(in srgb, ${$color} 90%, #fff)`
+      : `color-mix(in srgb, ${$color} 74%, #f5f0e6)`};
+  color: #1a1a1a;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(34, 34, 34, 0.12);
+  flex: 0 0 auto;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    padding 0.2s ease,
+    width 0.2s ease;
+
+  ${({ $compact, $mode }) =>
+    $compact
+      ? `
+    /* Fixed mini stubs — never grow with the notebook */
+    border-radius: 5px 0 0 5px;
+    border-right: none;
+    width: 100%;
+    height: 1.35rem;
+    min-height: 1.35rem;
+    max-height: 1.35rem;
+    padding: 0;
+  `
+      : `
+    border-radius: 0 7px 7px 0;
+    border-left: none;
+    width: 100%;
+    padding: ${$mode === "open" ? "0.35rem 0.45rem 0.4rem 0.4rem" : "0.35rem 0.5rem"};
+    /* Fixed tab height — do not flex-grow with the stage */
+    height: ${$mode === "open" ? "3.15rem" : "2.35rem"};
+    min-height: ${$mode === "open" ? "3.15rem" : "2.35rem"};
+    max-height: ${$mode === "open" ? "3.15rem" : "2.35rem"};
+    overflow: hidden;
+  `}
+
+  /* Active section: tuck onto the page face; others stay flush at the edge */
+  ${({ $active, $compact }) =>
+    $active && !$compact
+      ? `
+    transform: translateX(-14px);
+    z-index: 1;
+    box-shadow: -2px 1px 0 rgba(34, 34, 34, 0.08);
+  `
+      : `
+    transform: translateX(0);
+  `}
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, ${({ $color }) => $color} 92%, #fff);
+    ${({ $compact, $active }) =>
+      $compact
+        ? `transform: translateX(-3px);`
+        : `transform: translateX(${$active ? "-16px" : "-4px"});`}
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`
+
+const SectionTabLabel = styled.span`
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  font-size: ${({ $mode }) => ($mode === "closed" ? "0.68rem" : "0.72rem")};
+  margin-bottom: ${({ $mode }) => ($mode === "closed" ? "0" : "0.15rem")};
+`
+
+const SectionTabProgress = styled.span`
+  display: -webkit-box;
+  font-family: var(--font-body);
+  font-size: 0.58rem;
+  line-height: 1.25;
+  opacity: 0.88;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 `
 
 const BookStage = styled.div`
+  position: relative;
   width: 100%;
-  min-height: 28rem;
+  /* Stage height matched to mid-tall notebook pages */
+  height: min(90vh, 60rem);
+  min-height: 43rem;
+  overflow: visible;
+  /* Room for left overpassed stubs + right named tabs */
+  padding-left: 3.25rem;
+  padding-right: 5.5rem;
+  box-sizing: border-box;
+
+  @media (max-width: 720px) {
+    padding-left: 2.25rem;
+    padding-right: 4rem;
+    min-height: 36rem;
+    height: min(86vh, 50rem);
+  }
 `
 
 const BookHost = styled.div`
   width: 100%;
+  height: 100%;
   margin: 0 auto;
+  max-width: 100%;
 `
 
 const SketchPage = styled.div`
@@ -268,14 +870,83 @@ const SketchBody = styled.p`
   line-height: 1.55;
   color: var(--color-muted);
   margin: 0;
-  max-width: 26rem;
+  max-width: 36rem;
+`
+
+const TocList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+`
+
+const TocItem = styled.li`
+  margin: 0;
+`
+
+const TocButton = styled.button`
+  appearance: none;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  border: 1px solid color-mix(in srgb, ${({ $color }) => $color} 40%, var(--color-border));
+  border-left: 4px solid ${({ $color }) => $color};
+  border-radius: 6px;
+  padding: 0.55rem 0.65rem;
+  background: color-mix(in srgb, ${({ $color }) => $color} 10%, #fff);
+  cursor: pointer;
+  text-align: left;
+  pointer-events: auto;
+
+  &:hover {
+    background: color-mix(in srgb, ${({ $color }) => $color} 18%, #fff);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+`
+
+const TocSwatch = styled.span`
+  flex: 0 0 auto;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-top: 0.2rem;
+  border-radius: 2px;
+  background: ${({ $color }) => $color};
+`
+
+const TocText = styled.span`
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+`
+
+const TocLabel = styled.span`
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+`
+
+const TocProgress = styled.span`
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--color-muted);
 `
 
 const SketchPlaceholder = styled.div`
   margin-top: var(--space-md);
   width: 100%;
-  max-width: 20rem;
-  min-height: 7rem;
+  max-width: 28rem;
+  min-height: 10rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -303,7 +974,7 @@ const SketchPlaceholderLabel = styled.span`
 const SketchFigure = styled.figure`
   margin: var(--space-md) 0 0;
   width: 100%;
-  max-width: 20rem;
+  max-width: 28rem;
 `
 
 const SketchImage = styled.img`

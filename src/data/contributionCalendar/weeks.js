@@ -1,4 +1,4 @@
-import { SUBTEAM_IDS } from "../subteamTracks.js"
+import { SUBTEAM_BY_ID, SUBTEAM_IDS } from "../subteamTracks.js"
 import { buildWeekSkeleton } from "./calendarUtils.js"
 
 /** @typedef {import('../subteamTracks.js').SubteamId} SubteamId */
@@ -44,25 +44,26 @@ function defaultSubteams() {
 const WEEK_CONTENT_OVERRIDES = {
   "week-2026-04-05": {
     overview:
-      "Kickoff month: safety training, workspace setup, and parallel planning across wet lab, dry lab, and hardware. Web begins wiki scaffolding.",
+      "Kickoff month: safety training, workspace setup, and parallel planning across wet lab, dry lab, and hardware. Web begins building the wiki.",
     milestones: [
       { date: "2026-04-08", label: "Lab safety orientation", subteamId: "wetLab" },
-      { date: "2026-04-10", label: "Wiki IA draft", subteamId: "web" },
+      { date: "2026-04-10", label: "Wiki site-structure draft", subteamId: "web" },
     ],
     subteams: {
       wetLab: {
         summary: "Safety onboarding and inventory audit.",
         detail:
-          "All members completed BSL-1 training; starter strains ordered and storage mapped for the season.",
+          "All members completed basic lab-safety training; starter bacteria ordered and storage mapped for the season.",
       },
       dryLab: {
-        summary: "PETadex data schema v0.1.",
-        detail: "Defined sequence metadata fields and first-pass filtering thresholds for candidate PETases.",
+        summary: "Enzyme database fields drafted.",
+        detail:
+          "Defined what metadata to store for each candidate plastic-degrading enzyme (PETase) and first filtering rules for PETadex, our enzyme sequence database.",
       },
       hardware: {
-        summary: "Pioreactor onboarding and early requirements work.",
+        summary: "Starter bioreactor kit build and early requirements.",
         detail:
-          "• Completed first pioreactor build sprint; documented screw, hat-PCB, and instruction pain points.\n• Patricia’s accessibility talk set user-friendly design criteria; shared requirements with wet lab on assay integration.",
+          "• Completed first build of a Pioreactor (open-source small bioreactor kit); noted assembly pain points.\n• Accessibility talk set user-friendly design criteria; shared measurement needs with wet lab.",
         link: "/hardware/notebook/#journal-2026-03-27",
       },
       humanPractices: {
@@ -75,11 +76,11 @@ const WEEK_CONTENT_OVERRIDES = {
       },
       venture: {
         summary: "Market landscape scan.",
-        detail: "Collected public reports on mechanical vs. enzymatic recycling economics.",
+        detail: "Collected public reports on mechanical vs. enzyme-based plastic recycling economics.",
       },
       web: {
-        summary: "Gatsby wiki skeleton merged.",
-        detail: "Navigation, layout shell, and contribution timeline placeholder routes in place.",
+        summary: "Wiki site skeleton merged.",
+        detail: "Navigation, page layout shell, and contribution timeline placeholder routes in place.",
         link: "/dry-lab/software/",
       },
     },
@@ -87,85 +88,86 @@ const WEEK_CONTENT_OVERRIDES = {
   "week-2026-04-12": {
     subteams: {
       hardware: {
-        summary: "Pioreactor CEO debrief and BOM kickoff.",
+        summary: "Kit vendor debrief and parts-list kickoff.",
         detail:
-          "• Debriefed with Pioreactor CEO — confirmed Stemma QT connectors and shifted away from Raspberry Pi toward cheaper MCUs.\n• Assigned BOM owners per component (pump, OD, pH, temp, fan, glassware) and reviewed requirement strings by section.",
+          "• Met with the Pioreactor CEO; chose cheaper microcontrollers over Raspberry Pi for sensing boards.\n• Assigned owners for the bill of materials (parts list) — pumps, optical density (growth) sensors, pH, temperature, fan, glassware — and reviewed written requirements.",
         link: "/hardware/notebook/#journal-2026-04-15",
       },
     },
     milestones: [
-      { date: "2026-04-15", label: "BOM kickoff + requirement strings", subteamId: "hardware" },
+      { date: "2026-04-15", label: "Hardware parts-list kickoff", subteamId: "hardware" },
     ],
   },
   "week-2026-04-26": {
     subteams: {
       hardware: {
-        summary: "BOM research and requirement flagging.",
+        summary: "Parts research and clearer requirements.",
         detail:
-          "• Continued Digikey/Adafruit evaluation for pumps, sensors, and MCU options on the shared BOM sheet.\n• Leads synced with dry lab and wet lab on what the bioreactor needs to measure; flagged ambiguous requirement strings.",
+          "• Compared pumps, sensors, and microcontroller options on the shared parts list (Digikey/Adafruit).\n• Synced with dry lab and wet lab on what the bioreactor must measure; flagged unclear requirement wording.",
         link: "/hardware/notebook/#journal-2026-04-29",
       },
     },
   },
   "week-2026-05-03": {
     overview:
-      "First experimental cycles: assay pilots in wet lab, metagenomic mining jobs on cluster, and early BOM evaluation.",
+      "First experimental cycles: assay pilots in wet lab, enzyme-sequence mining on the cluster, and early hardware parts evaluation.",
     milestones: [
       { date: "2026-05-08", label: "First assay plate pilot", subteamId: "wetLab" },
     ],
     subteams: {
       wetLab: {
-        summary: "Pilot plate reader assay.",
-        detail: "Ran colorimetric controls; identified buffer interference to fix in week 2.",
+        summary: "First plate-reader enzyme test.",
+        detail: "Ran color-based control wells; spotted buffer interference to fix next week.",
         link: "/wet-lab/notebook/",
       },
       dryLab: {
-        summary: "Batch mining job #1 queued.",
-        detail: "Submitted 12 metagenome slices to HPC; expect hits catalogued by mid-May.",
+        summary: "First sequence-mining batch queued.",
+        detail:
+          "Submitted 12 environmental DNA data slices to the university cluster; expect candidate enzyme hits by mid-May.",
         link: "/dry-lab/overview/",
       },
       hardware: {
-        summary: "BOM evaluation before May ordering.",
+        summary: "Parts evaluation before May ordering.",
         detail:
-          "• Compared Stemma QT (I2C) vs PWM pump wiring and cable costs for multi-sensor setups.\n• Team assigned to review pioreactor source code ahead of prototyping sprint.",
+          "• Compared sensor wiring options and cable costs for multi-sensor setups.\n• Team assigned to review Pioreactor source code ahead of prototyping.",
       },
       humanPractices: {
         summary: "First expert interview.",
-        detail: "Interviewed recycling facility operator; insights fed to hardware specs.",
+        detail: "Interviewed a recycling facility operator; insights fed to hardware specs.",
       },
       outreach: {
         summary: "Classroom demo storyboard.",
-        detail: "Storyboard approved for 20-minute module; printing handouts.",
+        detail: "Storyboard approved for a 20-minute module; printing handouts.",
       },
       venture: {
-        summary: "Value proposition canvas.",
-        detail: "Drafted problem/solution fit for enzymatic recycling vs. incumbent methods.",
+        summary: "Problem–solution pitch draft.",
+        detail: "Drafted how enzyme recycling differs from current industrial methods.",
       },
       web: {
-        summary: "Atlas map prototype linked.",
-        detail: "Embedded interactive map on dry lab overview with performance pass.",
+        summary: "Interactive enzyme map prototype linked.",
+        detail: "Embedded an interactive map on the dry lab overview and tuned performance.",
       },
     },
   },
   "week-2026-05-10": {
     subteams: {
       hardware: {
-        summary: "BOM ordering decisions and prototyping assignments.",
+        summary: "Parts orders decided; prototyping assigned.",
         detail:
-          "• May 12: finalized ordering path for Stemma QT, external temp sensor, and manual pH via wet-lab probe.\n• May 16: split OD, heater, and MCU connectivity prototyping across owners; OD blackout-box and calibration work started.",
+          "• May 12: locked ordering path for connectors, an external temperature sensor, and manual pH via a wet-lab probe.\n• May 16: split optical density (culture growth) sensing, heater, and microcontroller connectivity across owners; calibration box work started.",
         link: "/hardware/notebook/#journal-2026-05-16",
       },
     },
     milestones: [
-      { date: "2026-05-16", label: "OD/MCU prototyping assigned", subteamId: "hardware" },
+      { date: "2026-05-16", label: "Sensor and controller prototyping assigned", subteamId: "hardware" },
     ],
   },
   "week-2026-05-17": {
     subteams: {
       hardware: {
-        summary: "Pump and OD bench tests.",
+        summary: "Pump and growth-sensor bench tests.",
         detail:
-          "• Ran peristaltic pump test with red/blue water; plumbing validated visually.\n• OD readings were noisy — calibration work continues; real-time pH sensing deprioritized after wet-lab discussion.",
+          "• Ran a peristaltic pump test with dyed water; plumbing looked good.\n• Optical density (growth) readings were noisy — calibration continues; real-time pH sensing deprioritized after wet-lab discussion.",
         link: "/hardware/notebook/#journal-2026-05-19",
       },
     },
@@ -173,9 +175,9 @@ const WEEK_CONTENT_OVERRIDES = {
   "week-2026-05-24": {
     subteams: {
       hardware: {
-        summary: "Cross-subteam requirements alignment.",
+        summary: "Cross-subteam bioreactor requirements aligned.",
         detail:
-          "• Filmed pioreactor demo; dry-lab leads confirmed temperature sweeps matter more than pH sweeps (25–70 °C target).\n• Agreed on continuous flow, OD600 feedback loop, and 3-pump layout; documented heater wattage and heat-up time estimates.",
+          "• Filmed a Pioreactor demo; dry lab confirmed temperature sweeps matter more than pH (25–70 °C target).\n• Agreed on continuous flow, growth-sensor feedback, and a 3-pump layout; documented heater power and warm-up time.",
         link: "/hardware/notebook/#journal-2026-05-26",
       },
     },
@@ -186,60 +188,72 @@ const WEEK_CONTENT_OVERRIDES = {
   "week-2026-05-31": {
     subteams: {
       hardware: {
-        summary: "System architecture v1 and OD parts ordered.",
+        summary: "System architecture drafted; growth-sensor parts ordered.",
         detail:
-          "• Drafted sensor → MCU → cloud hierarchy; split physical controls (temp, runtime, OD) from cloud analytics.\n• Selected combined photodiode + TIA for OD600; ordered parts and assigned per-subsystem validation experiments.",
+          "• Drafted how sensors talk to a microcontroller and then to cloud analytics; split on-device controls (temp, runtime, growth) from cloud charts.\n• Chose a photodiode-based optical density sensor for culture growth; ordered parts and assigned validation experiments.",
         link: "/hardware/notebook/#journal-2026-06-02",
+      },
+      wetLab: {
+        summary: "Reagents organized; growth media and plates prepped.",
+        detail:
+          "Picked up orders, labeled reagents, then made liquid and solid bacterial growth media (LB), sterilized them in an autoclave, and poured plates for later cloning work.",
       },
     },
     milestones: [
       { date: "2026-06-02", label: "System architecture drafted", subteamId: "hardware" },
       { date: "2026-06-03", label: "Pickup orders and organize and label reagents", subteamId: "wetLab" },
-      { date: "2026-06-04", label: "Prep LB broth and LB agar, autoclave, pouring plates", subteamId: "wetLab" },
+      { date: "2026-06-04", label: "Prep growth media and pour plates", subteamId: "wetLab" },
     ],
   },
   "week-2026-06-07": {
     subteams: {
       hardware: {
-        summary: "Subsystem DoE and CAD progress.",
+        summary: "Validation experiments defined; CAD underway.",
         detail:
-          "• Defined design-of-experiment variables for flow rate, temperature accuracy, autoclave path, and sourcing feasibility.\n• CAD underway for self-healing caps and OD components; power budgeting and I2C daisy-chain options documented.",
+          "• Defined design-of-experiment checks for flow rate, temperature accuracy, autoclave (sterilization) path, and sourcing.\n• 3D design underway for caps and optical-density (growth) sensor parts; power budget documented.",
         link: "/hardware/notebook/#journal-2026-06-09",
+      },
+      wetLab: {
+        summary: "Teaching-lab tour and competent-cell prep.",
+        detail:
+          "Competent cells are bacteria prepared so they can take up DNA. Picked up cells and liquid culture, toured the BME teaching lab, made rich growth media (SOB), and prepared competent cells with a Mix & Go kit.",
       },
     },
     milestones: [
-      { date: "2026-06-11", label: "Pickup cells and liquid culture for comp cells", subteamId: "wetLab" },
-      { date: "2026-06-12", label: "BME Teaching Lab tour, prepare SOB media, prepare Mix&Go comp cells", subteamId: "wetLab" },
+      { date: "2026-06-11", label: "Pickup cells for competent-cell prep", subteamId: "wetLab" },
+      { date: "2026-06-12", label: "Teaching-lab tour; make competent cells", subteamId: "wetLab" },
     ],
   },
   "week-2026-06-14": {
     overview:
-      "Mid-season integration: validated hits list, bioreactor bring-up, and public engagement at local outreach event.",
+      "Mid-season integration: enzyme shortlist, bioreactor prototyping, and wet-lab cloning practice.",
     milestones: [
-      { date: "2026-06-16", label: "OD CAD prototype ordered", subteamId: "hardware" },
-      { date: "2026-06-20", label: "Top-50 PETase shortlist", subteamId: "dryLab" },
-      { date: "2026-06-15", label: "Make 0.5mL DH5a liquid culture, Transform BL21 with pUC19", subteamId: "wetLab" },
-      { date: "2026-06-16", label: "Inoculate 50mL SOB with DH5a culture, put into shaking incubator, Redo BL21 transformations with pUC19", subteamId: "wetLab" },
-      { date: "2026-06-16", label: "Make DH5a competent cells, Transform DH5a with distro plasmids", subteamId: "wetLab" },
-      { date: "2026-06-17", label: "Redo DH5a transformations", subteamId: "wetLab" },
-      { date: "2026-06-17", label: "5mL liquid cultures of transformed BL21", subteamId: "wetLab" },
-      { date: "2026-06-18", label: "Glycerol stock BL21, Miniprep BL21", subteamId: "wetLab" },
-      { date: "2026-06-19", label: "Pour 5 chlor, 15 amp plates", subteamId: "wetLab" }
+      { date: "2026-06-16", label: "Optical-sensor housing prototype ordered", subteamId: "hardware" },
+      { date: "2026-06-20", label: "Top plastic-degrading enzyme shortlist", subteamId: "dryLab" },
+      { date: "2026-06-15", label: "Grow starter culture; insert DNA into lab bacteria", subteamId: "wetLab" },
+      { date: "2026-06-16", label: "Scale up culture; retry DNA insertion", subteamId: "wetLab" },
+      { date: "2026-06-16", label: "Make competent cells; insert team plasmids", subteamId: "wetLab" },
+      { date: "2026-06-17", label: "Retry DNA insertion into cloning bacteria", subteamId: "wetLab" },
+      { date: "2026-06-17", label: "Grow cultures of transformed bacteria", subteamId: "wetLab" },
+      { date: "2026-06-18", label: "Save freezer stocks; purify plasmid DNA", subteamId: "wetLab" },
+      { date: "2026-06-19", label: "Pour antibiotic selection plates", subteamId: "wetLab" },
     ],
     subteams: {
       wetLab: {
-        summary: "Expression trials for top candidates.",
-        detail: "Transformed three priority constructs; induction conditions A/B testing.",
+        summary: "Cloning practice and competent-cell prep.",
+        detail:
+          "Competent cells are bacteria treated so they can take up DNA. This week: starter cultures (DH5α / BL21), DNA insertion (transformation) with test and distribution plasmids, freezer glycerol stocks, plasmid DNA cleanup (miniprep), and antibiotic plates (chloramphenicol / ampicillin) to select successful transformants.",
       },
       dryLab: {
-        summary: "Shortlist published internally.",
-        detail: "Applied stability and active-site filters; handed sequences to wet lab.",
+        summary: "Top enzyme shortlist shared internally.",
+        detail:
+          "Filtered PETase (plastic-degrading enzyme) candidates for stability and active-site quality; handed sequences to wet lab.",
         link: "/dry-lab/model/",
       },
       hardware: {
-        summary: "OD CAD prototype and power architecture review.",
+        summary: "Optical-sensor housing printed; power architecture reviewed.",
         detail:
-          "• Claire completed initial OD CAD and sent first prototype for print; team moved task tracking to Jira.\n• Reviewed RRF protocol diagrams, motor driver vs transistor tradeoffs, and team power diagram (I2C limits, pull-up resistors).",
+          "• First 3D-printed housing for the optical density (growth) sensor sent for print; task tracking moved to Jira.\n• Reviewed wiring diagrams, motor-driver choices, and team power diagram.",
         link: "/hardware/notebook/#journal-2026-06-16",
       },
       humanPractices: {
@@ -251,8 +265,8 @@ const WEEK_CONTENT_OVERRIDES = {
         detail: "Ran enzyme demo station; collected feedback forms (n=28).",
       },
       venture: {
-        summary: "Competitor matrix update.",
-        detail: "Compared three enzymatic recycling startups on TRL and partnerships.",
+        summary: "Competitor comparison updated.",
+        detail: "Compared three enzyme-recycling startups on maturity and partnerships.",
       },
       web: {
         summary: "Contribution calendar scaffold.",
@@ -263,9 +277,9 @@ const WEEK_CONTENT_OVERRIDES = {
   "week-2026-06-21": {
     subteams: {
       hardware: {
-        summary: "Subsystem handout and build-session prep.",
+        summary: "Parts handed out; build-session prep.",
         detail:
-          "• Distributed subsystem components; reviewed pinout diagrams (OD needs voltage divider).\n• Planned extended build session: RRF finalization, KiCad pin diagram activity, and Arduino coding kickoff.",
+          "• Distributed subsystem components; reviewed wiring diagrams (growth sensor needs a voltage divider).\n• Planned an extended build session: circuit diagrams in KiCad and Arduino coding kickoff.",
         link: "/hardware/notebook/#journal-2026-06-23",
       },
     },
@@ -273,34 +287,34 @@ const WEEK_CONTENT_OVERRIDES = {
   "week-2026-07-05": {
     subteams: {
       hardware: {
-        summary: "GitHub repo live and build rhythm set.",
+        summary: "Code repository live; Thursday build nights set.",
         detail:
-          "• Created bioreactor GitHub repo; chose Thursday evenings as recurring in-person build nights.\n• Serial Studio wired to 8 devices; Lindsay soldered pumps, Claire advanced CAD/libraries, James testing thermocouple at 55 °C.",
+          "• Created the bioreactor GitHub repo; chose Thursday evenings as recurring in-person build nights.\n• Data-logging software wired to eight devices; pumps soldered, CAD libraries advanced, thermocouple tested near 55 °C.",
         link: "/hardware/notebook/#journal-2026-07-07",
       },
     },
     milestones: [
-      { date: "2026-07-07", label: "Bioreactor repo + build schedule", subteamId: "hardware" },
+      { date: "2026-07-07", label: "Bioreactor code repo and build nights", subteamId: "hardware" },
     ],
   },
   "week-2026-07-26": {
     overview:
-      "Summer crunch: hardware v2 iteration, scaled assays, and wiki content freeze targets for August review.",
+      "Summer crunch: hardware integration, scaled assays, and wiki content freeze targets for August review.",
     milestones: [],
     subteams: {
       wetLab: {
         summary: "Assay throughput doubled.",
-        detail: "Automated pipetting layout; QC on replicate CVs within target.",
+        detail: "Automated pipetting layout; quality checks on replicate consistency within target.",
         link: "/wet-lab/results/",
       },
       dryLab: {
-        summary: "Model generalization tests.",
-        detail: "Cross-validated scoring model on held-out metagenomes.",
+        summary: "Model checked on new data.",
+        detail: "Tested the scoring model on held-out environmental DNA datasets it had not seen.",
       },
       hardware: {
         summary: "In-person builds and subsystem integration.",
         detail:
-          "• Continued Thursday build evenings — wiring, subsystem code, and in-person test runs.\n• Validating heater, pump, and OD subsystems against design-of-experiment protocols.",
+          "• Continued Thursday build evenings — wiring, subsystem code, and test runs.\n• Validating heater, pump, and optical density (growth) sensors against design-of-experiment protocols.",
         link: "/hardware/notebook/#journal-2026-07-07",
       },
       humanPractices: {
@@ -308,16 +322,16 @@ const WEEK_CONTENT_OVERRIDES = {
         detail: "Reviewed environmental release and waste disposal with faculty advisor.",
       },
       outreach: {
-        summary: "Toolkit beta PDF.",
-        detail: "Released educator packet v0.9 for partner schools.",
+        summary: "Educator toolkit beta shared.",
+        detail: "Released educator packet draft for partner schools.",
       },
       venture: {
-        summary: "Pitch deck skeleton.",
-        detail: "Slides for Jamboree entrepreneurship track outlined.",
+        summary: "Pitch deck outline started.",
+        detail: "Slides for the Jamboree entrepreneurship track outlined.",
       },
       web: {
-        summary: "Performance pass on home mockup.",
-        detail: "Optimized scroll compositing and hardware notebook sandbox.",
+        summary: "Homepage mockup speed pass.",
+        detail: "Optimized scroll performance and the hardware notebook sandbox.",
       },
     },
   },
@@ -325,38 +339,38 @@ const WEEK_CONTENT_OVERRIDES = {
     overview:
       "Pre-Jamboree polish: documentation sprint, final characterization runs, and venture storytelling.",
     milestones: [
-      { date: "2026-09-10", label: "Wiki soft freeze", subteamId: "web" },
+      { date: "2026-09-10", label: "Wiki content soft freeze", subteamId: "web" },
       { date: "2026-09-12", label: "Final bioreactor demo", subteamId: "hardware" },
     ],
     subteams: {
       wetLab: {
         summary: "Final validation replicates.",
-        detail: "Ran triplicate on lead enzyme; preparing results figures.",
+        detail: "Ran triplicate tests on the lead enzyme; preparing results figures.",
       },
       dryLab: {
-        summary: "Software specs locked.",
-        detail: "API docs and install guide reviewed for judges.",
+        summary: "Software documentation locked.",
+        detail: "Install guide and API docs reviewed for judges.",
         link: "/dry-lab/software-specs/",
       },
       hardware: {
         summary: "Demo script rehearsed.",
-        detail: "Integrated sensing dashboard for live temperature/pH plot.",
+        detail: "Integrated sensing dashboard for live temperature and pH plots.",
       },
       humanPractices: {
-        summary: "Integrated HP narrative.",
+        summary: "Integrated human-practices narrative.",
         detail: "Linked interviews to design decisions in wiki prose.",
       },
       outreach: {
-        summary: "Toolkit v1.0 shipped.",
-        detail: "Final PDF and slide deck uploaded to education page.",
+        summary: "Educator toolkit v1.0 shipped.",
+        detail: "Final PDF and slide deck uploaded to the education page.",
       },
       venture: {
         summary: "Business model slide complete.",
-        detail: "Added TAM/SAM/SOM and partnership pipeline slide.",
+        detail: "Added market-size framing and partnership pipeline slide.",
       },
       web: {
         summary: "Site-wide link audit.",
-        detail: "Fixed nav order, meta titles, and contribution deep links.",
+        detail: "Fixed navigation order, page titles, and contribution deep links.",
       },
     },
   },
@@ -369,11 +383,11 @@ const WEEK_CONTENT_OVERRIDES = {
     subteams: {
       wetLab: {
         summary: "Lab wrap-down checklist.",
-        detail: "Glycerol stocks catalogued; equipment cleaned and signed off.",
+        detail: "Freezer stocks catalogued; equipment cleaned and signed off.",
       },
       dryLab: {
         summary: "Data archive prepared.",
-        detail: "Packaged PETadex snapshot and model weights for judges.",
+        detail: "Packaged a PETadex (enzyme database) snapshot and model files for judges.",
       },
       hardware: {
         summary: "Travel crate packed.",
@@ -381,7 +395,7 @@ const WEEK_CONTENT_OVERRIDES = {
       },
       humanPractices: {
         summary: "Reflection interviews scheduled.",
-        detail: "Booked team retro sessions for November.",
+        detail: "Booked team retrospective sessions for November.",
       },
       outreach: {
         summary: "Posters for school partners.",
@@ -392,21 +406,15 @@ const WEEK_CONTENT_OVERRIDES = {
         detail: "Recorded run-through; trimmed script to 8 minutes.",
       },
       web: {
-        summary: "Final deploy tag.",
-        detail: "Tagged release on GitLab; monitoring build pipeline.",
+        summary: "Final site release tagged.",
+        detail: "Tagged release on GitLab; monitoring the build pipeline.",
       },
     },
   },
 }
 
-/** Last date (inclusive) for quiet hardware placeholders instead of "coming soon". */
-const HARDWARE_QUIET_UNTIL = "2026-07-07"
-
-const HARDWARE_QUIET_PLACEHOLDER = {
-  summary: "Read more on Hardware",
-  detail: "Quiet week for hardware — continuing work from previous sessions.",
-  link: "/hardware/notebook/",
-}
+/** Weeks with start date before this get quiet placeholders instead of "coming soon". */
+const PAST_WEEK_QUIET_BEFORE = "2026-07-31"
 
 /**
  * Real outreach week copy from meeting minutes (Mar–Jul 2026).
@@ -414,24 +422,21 @@ const HARDWARE_QUIET_PLACEHOLDER = {
  */
 const OUTREACH_WEEK_PATCHES = {
   "week-2026-03-29": {
-    milestones: [
-      { date: "2026-04-05", label: "Character / mascot sketch deadline", subteamId: "outreach" },
-    ],
     outreach: {
-      summary: "Character sketches due; branding carryover from March kickoff.",
+      summary: "Branding and mascot sketches carry over from March kickoff.",
       detail:
-        "March sessions set whimsical hand-drawn branding, PETase characters, and wiki inspiration. Character design brief (trainers + PETamon partners) targeted Apr 5 sketches.",
+        "March sessions set a whimsical hand-drawn look, plastic-enzyme characters, and wiki art inspiration. Character design brief (trainers + PETamon partners) targeted April 5 sketches.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-04-05": {
     milestones: [
-      { date: "2026-04-05", label: "Character sketch deadline", subteamId: "outreach" },
+      { date: "2026-04-05", label: "Character / mascot sketch deadline", subteamId: "outreach" },
     ],
     outreach: {
       summary: "Character sheets and wiki design workshopping.",
       detail:
-        "Sketch deadline for trainers + PETamon partners. Wiki concepts voted in late March; logo competition still open. Subteam meeting coverage for Project Intro posts underway.",
+        "Sketch deadline for trainers and PETamon partners. Wiki look-and-feel ideas voted in late March; logo competition still open. Members gathering stories for a Project Intro social post.",
       link: "/beyond-the-bench/outreach/",
     },
   },
@@ -447,7 +452,7 @@ const OUTREACH_WEEK_PATCHES = {
     outreach: {
       summary: "Continuing branding and social prep.",
       detail:
-        "Quiet documentation week — character/logo work and May 9 social filming plans continue from March assignments.",
+        "Quiet documentation week — character and logo work continues, plus planning photo/video coverage for the May 9 team social.",
       link: "/beyond-the-bench/outreach/",
     },
   },
@@ -455,7 +460,7 @@ const OUTREACH_WEEK_PATCHES = {
     outreach: {
       summary: "Pre-May social and conference logistics.",
       detail:
-        "Preparing May 9 photo/video coverage and sustainability-office catering inquiry for the microplastics conference.",
+        "Preparing May 9 photo/video coverage and asking the sustainability office about catering for the microplastics conference.",
       link: "/beyond-the-bench/outreach/",
     },
   },
@@ -466,7 +471,7 @@ const OUTREACH_WEEK_PATCHES = {
     outreach: {
       summary: "May 9 social filming and photo capture.",
       detail:
-        "Outreach coverage at the team social for Instagram and wiki — upload photos to the shared Drive folder after the event.",
+        "Outreach covered the team social for Instagram and the wiki — photos go in the shared Drive folder after the event.",
       link: "/beyond-the-bench/outreach/",
     },
   },
@@ -476,34 +481,29 @@ const OUTREACH_WEEK_PATCHES = {
       { date: "2026-05-17", label: "Project Intro post + homepage design due", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Summer workflow: intro post, RTJ, newsletter, homepage.",
+      summary: "Summer plan: intro post, weekly reels, newsletter, homepage.",
       detail:
-        "Locked owners for Project Intro (due May 17), Road to Jamboree cadence, first newsletter (May 24), homepage finalize, and late-May picnic. Logo vote still open.",
+        "Locked owners for the Project Intro Instagram post (due May 17), Road to Jamboree weekly reels, first newsletter (~May 24), homepage art, and a late-May picnic. Logo vote still open.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-05-17": {
-    milestones: [
-      { date: "2026-05-17", label: "Project Intro post due", subteamId: "outreach" },
-      { date: "2026-05-17", label: "Homepage design handoff", subteamId: "outreach" },
-      { date: "2026-05-24", label: "First newsletter target", subteamId: "outreach" },
-    ],
     outreach: {
-      summary: "Ship Project Intro; start Road to Jamboree; logo finalize.",
+      summary: "Ship Project Intro; start Road to Jamboree reels; finalize logo.",
       detail:
-        "Project Intro drops Sunday morning; RTJ weekly filming/editing cadence begins. Homepage design to Abby/Dennis; logo redesign by May 24.",
+        "Project Intro posts Sunday morning; weekly Road to Jamboree filming/editing begins. Homepage design handed to Abby/Dennis; logo redesign targeted for May 24.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-05-24": {
     milestones: [
-      { date: "2026-05-26", label: "First newsletter send (Brevo)", subteamId: "outreach" },
+      { date: "2026-05-26", label: "First team newsletter sent", subteamId: "outreach" },
       { date: "2026-05-29", label: "Riverdale Park picnic social", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Project Intro live; newsletter + picnic; wiki mockup.",
+      summary: "Project Intro live; first newsletter and picnic.",
       detail:
-        "Project Intro completed. Newsletter transferred to Brevo for ~May 26 send (Web Summit, TFC, May 9 cleanup). Riverdale picnic May 29. Wiki asset mockup underway; promo video research assigned.",
+        "Project Intro completed. First newsletter sent via Brevo (~May 26) covering Web Summit, campus events, and the May 9 social. Riverdale Park picnic May 29. Wiki art mockup underway; promo-video research assigned.",
       link: "/beyond-the-bench/outreach/",
     },
   },
@@ -511,31 +511,29 @@ const OUTREACH_WEEK_PATCHES = {
     outreach: {
       summary: "Post-picnic wrap; promo research continues.",
       detail:
-        "Picnic social hosted May 29. Team reviewing prior promo videos and refining logo capitalization / animation.",
+        "Picnic social hosted May 29. Team reviewing prior years’ promo videos and refining logo capitalization and animation.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-06-07": {
     milestones: [
-      { date: "2026-06-14", label: "Logo redesign target (Cindy)", subteamId: "outreach" },
+      { date: "2026-06-14", label: "Logo redesign target", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Promo crew staffed; conference + logo redesign.",
+      summary: "Promo crew staffed; conference and logo redesign.",
       detail:
-        "Promo script/animation/editing/voiceover owners assigned after reviewing prior-year videos. Microplastics conference planning continues; hardware next for RTJ.",
+        "Script, animation, editing, and voiceover owners assigned after reviewing prior-year videos. Microplastics conference planning continues; next Road to Jamboree reel focuses on hardware.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-06-14": {
     milestones: [
       { date: "2026-06-21", label: "Newsletter draft (conference teaser)", subteamId: "outreach" },
-      { date: "2026-06-26", label: "Toronto Islands promo / social", subteamId: "outreach" },
-      { date: "2026-06-27", label: "Homepage section sketches due", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Promo storyboard draft; homepage sections; HW reels.",
+      summary: "Promo storyboard draft; homepage sections; hardware reels.",
       detail:
-        "Promo storyboard first draft out for comments. Homepage split into six sketched sections (render: Kathleen). Hardware RTJ reel filming mid-week. Newsletter conference announcement priority; Islands Jun 26.",
+        "Promo storyboard first draft out for comments. Homepage split into six sketched sections. Hardware Road to Jamboree reel filming mid-week. Newsletter prioritizes the conference announcement; Islands outing Jun 26.",
       link: "/beyond-the-bench/outreach/",
     },
   },
@@ -545,20 +543,20 @@ const OUTREACH_WEEK_PATCHES = {
       { date: "2026-06-27", label: "Homepage section sketches due", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Promo script polish; July shoot plan; Islands.",
+      summary: "Promo script polish; July shoot plan; Islands outing.",
       detail:
-        "One more session to cut promo wordcount and lock location/props; filming starts July. Hardware reel filming around hardware meeting. Homepage sketches due Jun 27.",
+        "One more session to shorten the promo script and lock location/props; filming starts in July. Hardware reel filmed around the hardware meeting. Homepage section sketches due Jun 27.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-06-28": {
     milestones: [
-      { date: "2026-06-28", label: "Web design section export check-in", subteamId: "outreach" },
+      { date: "2026-06-28", label: "Homepage art export check-in", subteamId: "outreach" },
     ],
     outreach: {
       summary: "Homepage section exports and bottle lifecycle art.",
       detail:
-        "Web design sync: section lineart exports, bottle lifecycle, animated logo, and placeholder animations for conditions / waterfall bottle. Kathleen rendering pass next.",
+        "Web design sync: line-art exports for each homepage section, bottle lifecycle art, animated logo, and placeholder motion for water/conditions scenes. Next step is rendering and stitching.",
       link: "/beyond-the-bench/outreach/#design",
     },
   },
@@ -567,63 +565,65 @@ const OUTREACH_WEEK_PATCHES = {
       { date: "2026-07-05", label: "Newsletter published", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Newsletter out; promo shot list; conference emails.",
+      summary: "Newsletter out; promo shot list; conference speaker emails.",
       detail:
-        "Newsletter live. Promo shot list started with filming this week. Conference outreach to Ryan Parmenter, Catherine McKenna, Christopher Aoun, Karen Wirsig. Interest/intro social posts scheduled.",
+        "Newsletter live. Promo filming shot list started this week. Conference invites sent to potential speakers; interest and intro social posts scheduled.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-07-12": {
     milestones: [
       { date: "2026-07-12", label: "Miriam Diamond + Karen Wirsig confirmed", subteamId: "outreach" },
-      { date: "2026-09-19", label: "Microplastics conference (save the date)", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Conference speakers confirmed; promo filming ramps.",
+      summary: "Conference speakers confirmed; promo filming ramps up.",
       detail:
-        "Miriam Diamond (seminar) and Karen Wirsig (panel) confirmed; conference Sep 19. Promo shot list revamped; animations started. RTJ on hold until promo done.",
+        "Miriam Diamond (seminar) and Karen Wirsig (panel) confirmed for the Sep 19 microplastics conference. Promo shot list updated; animation work started. Road to Jamboree reels on hold until the promo is done.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-07-19": {
     milestones: [
-      { date: "2026-08-03", label: "Promo animations target", subteamId: "outreach" },
-      { date: "2026-07-30", label: "July newsletter draft / send window", subteamId: "outreach" },
+      { date: "2026-07-19", label: "Promo animation planning meeting", subteamId: "outreach" },
+      { date: "2026-07-22", label: "Promo voiceover due", subteamId: "outreach" },
+      { date: "2026-07-23", label: "Promo storyboard simplified", subteamId: "outreach" },
+      { date: "2026-07-25", label: "First live promo filming", subteamId: "outreach" },
+      { date: "2026-07-30", label: "July newsletter draft window", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Promo ~25/35 shots; wiki stitch; merch + newsletter.",
+      summary: "Promo animation plan locked — educational short style, Aug 3 deadline.",
       detail:
-        "Filming mid-flight (Islands + hardware/wet-lab/VC windows). Animation workflow set (target Aug 3). Homepage sections stitching; July newsletter ~Jul 30/Aug 1; merch brainstorm.",
+        "Jul 19 meeting locked an animated mid-section (~25–30 seconds) plus a flowchart beat, in a simple educational-video style with textured brushes matching the PetaBite look. Voiceover for the animated section due Jul 22. Jul 23: cut a zooplankton beat to simplify the storyboard. Live filming of the opening scene Jul 25 before the animated splash transition. Hand-drawn art → render/rig in post; internal animation deadline Aug 3.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-07-26": {
+    milestones: [
+      { date: "2026-07-27", label: "Hand-drawn promo art due", subteamId: "outreach" },
+    ],
     outreach: {
-      summary: "Promo edit + July newsletter; conference marketing.",
+      summary: "Hand-drawn promo art sprint; opening scene filmed Jul 25.",
       detail:
-        "Continue remaining promo shots and edits. July newsletter send window. Start mailing conference marketing contacts; panel theme/questions.",
+        "Pipeline: storyboard (done) → hand-drawn assets (due Mon Jul 27) → render and rig in After Effects. Art covers nets, bottles, microplastics, fish, human/eating frames, and lake/table backgrounds, plus a flowchart animation beat.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-08-02": {
     milestones: [
-      { date: "2026-08-03", label: "Promo animations target", subteamId: "outreach" },
+      { date: "2026-08-03", label: "Promo animation deadline", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Promo animation delivery window.",
+      summary: "Promo animation delivery for the mid-section and flowchart.",
       detail:
-        "Animation team targeting Aug 3 delivery while filming/edit continue. Conference pamphlet and speaker logistics ongoing.",
+        "Internal deadline Aug 3 midnight for the animated promo mid-section (~25–30s educational style) and flowchart beat. Live-action edit continues around the animated middle.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-09-06": {
-    milestones: [
-      { date: "2026-09-19", label: "Microplastics conference", subteamId: "outreach" },
-    ],
     outreach: {
       summary: "Conference week approach — speakers, pamphlet, promo.",
       detail:
-        "September 19 microplastics conference with confirmed seminar/panel speakers. Final promo and presentation-video threads in parallel with wiki soft freeze.",
+        "September 19 microplastics conference with confirmed seminar and panel speakers. Final promo and presentation-video work runs in parallel with the wiki soft freeze.",
       link: "/beyond-the-bench/outreach/",
     },
   },
@@ -634,7 +634,7 @@ const OUTREACH_WEEK_PATCHES = {
     outreach: {
       summary: "Microplastics conference (Sep 19).",
       detail:
-        "Run conference programming with Miriam Diamond seminar and Karen Wirsig panel; capture photos/quotes for Impact.",
+        "Run conference programming with Miriam Diamond’s seminar and Karen Wirsig’s panel; capture photos and quotes for the Impact section.",
       link: "/beyond-the-bench/outreach/",
     },
   },
@@ -642,40 +642,237 @@ const OUTREACH_WEEK_PATCHES = {
     outreach: {
       summary: "Jamboree outreach wrap and partner thanks.",
       detail:
-        "Presentation dry-run support, partner thank-yous, and archival of socials/newsletter assets after conference.",
+        "Presentation dry-run support, partner thank-yous, and archival of social and newsletter assets after the conference.",
       link: "/beyond-the-bench/outreach/",
     },
   },
 }
 
-const OUTREACH_QUIET_UNTIL = "2026-07-26"
-
-const OUTREACH_QUIET_PLACEHOLDER = {
-  summary: "Read more on Outreach",
-  detail: "Quiet week for outreach — continuing work from previous sessions.",
-  link: "/beyond-the-bench/outreach/",
+/**
+ * Real human-practices week copy from HP meeting slides/notes (Mar–Jul 2026).
+ * Applied after base overrides so mock HP blurbs are replaced.
+ * Calendar skeleton starts week-2026-03-29 — March kickoff folds into that week.
+ */
+const HUMAN_PRACTICES_WEEK_PATCHES = {
+  "week-2026-03-29": {
+    humanPractices: {
+      summary: "March kickoff: what human practices is, winner case studies, stakeholder map.",
+      detail:
+        "Early meetings covered how human practices differs from outreach, award criteria, and assigned readings. Members presented past winning projects and began country stakeholder lists (India, Nigeria, Indonesia, China, Indigenous communities of Canada). Plastic-degrading enzyme (PETase) goals framed for HP — wastewater contacts and government/agency outreach.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-04-05": {
+    humanPractices: {
+      summary: "Stakeholder list growing; members sit in on other subteams.",
+      detail:
+        "Continuing literature review and adding contacts to the stakeholder sheet. Members attending wet lab, dry lab, hardware, and venture meetings so interviews stay grounded in project needs.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-04-12": {
+    humanPractices: {
+      summary: "Building the stakeholder contact list.",
+      detail:
+        "Country-assigned stakeholder research continues; preparing tailored outreach emails ahead of the May interview campaign.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-04-19": {
+    humanPractices: {
+      summary: "Stakeholder prep and subteam sync.",
+      detail:
+        "Quiet documentation week — expanding the contact sheet and liaison notes that feed May email templates and interview guides.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-04-26": {
+    humanPractices: {
+      summary: "Pre-May outreach and conference speaker search.",
+      detail:
+        "Finalizing stakeholder categories and email templates. Microplastics conference planning begins in parallel (venues and seminar/panel speakers).",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-05-03": {
+    milestones: [
+      { date: "2026-05-09", label: "Team social with Trash Team", subteamId: "humanPractices" },
+    ],
+    humanPractices: {
+      summary: "Accepted to Synbio conference; start stakeholder emails.",
+      detail:
+        "Accepted for a poster at Synbio (a synthetic biology conference at Waterloo, Jun 15–17). Email templates for stakeholder outreach; about ten tailored emails per member. Opened the search for microplastics-conference keynote and seminar speakers.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-05-10": {
+    humanPractices: {
+      summary: "First-wave stakeholder emails and interview scheduling.",
+      detail:
+        "Members send tailored outreach; formal interviews wait until the interview guide lands next meeting. Synbio registration (Waterloo, Jun 15–17) and conference venue search continue.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-05-17": {
+    milestones: [
+      { date: "2026-05-21", label: "Stakeholder interview process locked", subteamId: "humanPractices" },
+    ],
+    humanPractices: {
+      summary: "Interview guide ready; three season reports defined.",
+      detail:
+        "Interview workflow: background research → tailored questions → follow-up. Season deliverables set — a regulatory framework report, a sustainability report, and a socioeconomic report — toward a global deployment framing. Conference venue search (on- and off-campus). Wet/dry/hardware liaison updates continue.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-05-24": {
+    milestones: [
+      { date: "2026-05-28", label: "Stakeholder follow-ups and conference venues", subteamId: "humanPractices" },
+    ],
+    humanPractices: {
+      summary: "Low email response rate; push follow-ups and venues.",
+      detail:
+        "Hardware and dry-lab liaison briefings. Roughly one in ten outreach emails answered — push tailored questions and share booked interview links with the team. Conference venues added to the shared sheet.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-05-31": {
+    humanPractices: {
+      summary: "Ethics framing; stakeholder guide and pitch deck shared.",
+      detail:
+        "Discussed biosafety, environmental safety, regulation, public perception, and open science for enzyme use in wastewater treatment. Shared a stakeholder guide and short interview pitch deck. Continue emails or prep for booked interviews; ethics contacts added to the sheet.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-06-07": {
+    milestones: [
+      {
+        date: "2026-06-11",
+        label: "Launch three policy and impact reports",
+        subteamId: "humanPractices",
+      },
+    ],
+    humanPractices: {
+      summary: "Three written reports launched — regulation, society, sustainability.",
+      detail:
+        "New workstreams: regulatory frameworks, socioeconomic analysis, and sustainability (short report / infographic style). Stakeholder notes cleaned for the shared folder; sheet tracks email, response, and interview status. Policy contacts requested.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-06-14": {
+    milestones: [
+      { date: "2026-06-15", label: "Synbio poster presentation (Waterloo)", subteamId: "humanPractices" },
+      { date: "2026-06-17", label: "Synbio conference ends", subteamId: "humanPractices" },
+    ],
+    humanPractices: {
+      summary: "Report owners assigned; Synbio poster at Waterloo.",
+      detail:
+        "Synbio is a synthetic biology conference (Jun 15–17, Waterloo). Report owners assigned for regulatory, socioeconomic, and sustainability drafts. Outlines become 1–2 page drafts that fold in stakeholder feedback.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-06-21": {
+    humanPractices: {
+      summary: "Annotated sources for reports; Bioethics Symposium announced.",
+      detail:
+        "Add 2–3 reference links per outline point. Virtual Bioethics Symposium Jul 12 (2–4pm EST) — a 10–15 minute ethics presentation plus Q&A. Continue stakeholder emails; liaisons list preferred stakeholder types and questions.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-06-28": {
+    milestones: [
+      { date: "2026-07-02", label: "Human Practices weekly meeting", subteamId: "humanPractices" },
+    ],
+    humanPractices: {
+      summary: "Symposium prep and report outlines.",
+      detail:
+        "Weekly meeting Jul 2. Continuing annotated bibliographies, report outlines, and Bioethics Symposium slides ahead of Jul 12.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-07-05": {
+    humanPractices: {
+      summary: "Bioethics Symposium prep week.",
+      detail:
+        "Finalize slides on the four bioethics pillars (beneficence, non-maleficence, justice, autonomy) for enzyme-based wastewater remediation. Report drafts continue in parallel.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-07-12": {
+    milestones: [
+      { date: "2026-07-12", label: "Bioethics Symposium (virtual)", subteamId: "humanPractices" },
+    ],
+    humanPractices: {
+      summary: "Bioethics Symposium — present project ethics.",
+      detail:
+        "Virtual symposium Jul 12: team presents ethical principles behind enzymatic microplastic cleanup and discusses fair access, scale-up, and industry design changes.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-07-19": {
+    milestones: [
+      {
+        date: "2026-07-23",
+        label: "Stakeholder feedback on website and reports",
+        subteamId: "humanPractices",
+      },
+    ],
+    humanPractices: {
+      summary: "Symposium reflection; feedback on PETadex site and reports.",
+      detail:
+        "Two kinds of stakeholder meetings going forward: feedback on PETadex (our public enzyme database / website) and feedback on the regulatory, socioeconomic, and sustainability reports. Follow up with PETase scientists met earlier; choose final report formats and start rough drafts.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-07-26": {
+    humanPractices: {
+      summary: "Report drafts and PETadex follow-ups.",
+      detail:
+        "Rough drafts in chosen formats; email prior scientific contacts to meet about the PETadex website. Microplastics conference speaker work continues with outreach.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-09-06": {
+    humanPractices: {
+      summary: "Conference approach — narrative and speakers.",
+      detail:
+        "Finalize how regulatory, socioeconomic, and sustainability findings feed the Sep 19 microplastics conference and the wiki human-practices narrative.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-09-13": {
+    milestones: [
+      { date: "2026-09-19", label: "Microplastics conference", subteamId: "humanPractices" },
+    ],
+    humanPractices: {
+      summary: "Microplastics conference (Sep 19).",
+      detail:
+        "Public conference programming with outreach — capture stakeholder quotes and design-change evidence for Integrated Human Practices.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
+  "week-2026-10-18": {
+    humanPractices: {
+      summary: "Jamboree wrap and reflections.",
+      detail:
+        "Archive interview notes and report drafts; schedule post-competition reflection interviews for the wiki narrative.",
+      link: "/beyond-the-bench/human-practices/",
+    },
+  },
 }
 
-function applyHardwareQuietWeek(week) {
-  if (week.start > HARDWARE_QUIET_UNTIL) return week
-
-  const hw = week.subteams.hardware
-  if (hw.summary !== "Progress update coming soon.") return week
-
+function quietPlaceholderFor(subteamId) {
+  const track = SUBTEAM_BY_ID[subteamId]
+  const label = track?.label || "team"
   return {
-    ...week,
-    subteams: {
-      ...week.subteams,
-      hardware: { ...HARDWARE_QUIET_PLACEHOLDER },
-    },
+    summary: "Slow week",
+    detail: `Quiet week for ${label} — continuing work from previous sessions.`,
+    link: track?.href || "/",
   }
 }
 
 function applyOutreachWeekPatch(week) {
   const patch = OUTREACH_WEEK_PATCHES[week.id]
-  if (!patch) {
-    return applyOutreachQuietWeek(week)
-  }
+  if (!patch) return week
 
   const milestones = [...(week.milestones || [])]
   for (const milestone of patch.milestones || []) {
@@ -695,17 +892,41 @@ function applyOutreachWeekPatch(week) {
   }
 }
 
-function applyOutreachQuietWeek(week) {
-  if (week.start > OUTREACH_QUIET_UNTIL) return week
-  if (week.subteams.outreach.summary !== "Progress update coming soon.") return week
+function applyHumanPracticesWeekPatch(week) {
+  const patch = HUMAN_PRACTICES_WEEK_PATCHES[week.id]
+  if (!patch) return week
+
+  const milestones = [...(week.milestones || [])]
+  for (const milestone of patch.milestones || []) {
+    const exists = milestones.some(
+      (m) => m.date === milestone.date && m.label === milestone.label && m.subteamId === milestone.subteamId
+    )
+    if (!exists) milestones.push(milestone)
+  }
 
   return {
     ...week,
+    milestones,
     subteams: {
       ...week.subteams,
-      outreach: { ...OUTREACH_QUIET_PLACEHOLDER },
+      humanPractices: { ...patch.humanPractices },
     },
   }
+}
+
+/** Replace "Progress update coming soon." on past weeks for every subteam. */
+function applyPastWeekQuietPlaceholders(week) {
+  if (week.start >= PAST_WEEK_QUIET_BEFORE) return week
+
+  let changed = false
+  const subteams = { ...week.subteams }
+  for (const id of SUBTEAM_IDS) {
+    if (subteams[id]?.summary === "Progress update coming soon.") {
+      subteams[id] = quietPlaceholderFor(id)
+      changed = true
+    }
+  }
+  return changed ? { ...week, subteams } : week
 }
 
 function mergeWeek(skeleton, override = {}) {
@@ -723,8 +944,9 @@ function mergeWeek(skeleton, override = {}) {
 /** @type {ContributionWeek[]} */
 export const CONTRIBUTION_WEEKS = buildWeekSkeleton()
   .map((sk) => mergeWeek(sk, WEEK_CONTENT_OVERRIDES[sk.id]))
-  .map(applyHardwareQuietWeek)
   .map(applyOutreachWeekPatch)
+  .map(applyHumanPracticesWeekPatch)
+  .map(applyPastWeekQuietPlaceholders)
 
 /** @type {Record<string, ContributionWeek>} */
 export const CONTRIBUTION_WEEK_BY_ID = Object.fromEntries(

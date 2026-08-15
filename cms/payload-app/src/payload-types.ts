@@ -314,7 +314,12 @@ export interface WikiPage {
         /**
          * Which approved interactive component to render.
          */
-        gizmo: 'growthCurve' | 'hardwareNotebook' | 'contributionTimeline' | 'bioreactorRequirements';
+        gizmo:
+          | 'growthCurve'
+          | 'hardwareNotebook'
+          | 'hardwareJournal'
+          | 'contributionTimeline'
+          | 'bioreactorRequirements';
         /**
          * Optional heading shown above the gizmo.
          */

@@ -59,9 +59,11 @@ Most wiki pages live in `src/content/wiki/**/index.mdx`. Use `src/content/wiki/_
 | --- | --- |
 | `npm run develop` | Start local Gatsby dev server |
 | `npm run build` | Validate content, then build for production |
+| `npm run build:igem` | Build GitLab Pages output with the `/toronto` path prefix |
 | `npm run validate:content` | Check MDX frontmatter and route collisions |
 | `npm run serve` | Preview production build locally |
 | `npm run clean` | Clear Gatsby cache |
+| `npm run sync:igem` | Push GitHub `main` to a new iGEM GitLab merge-request branch |
 | `npm run payload:develop` | Payload admin at http://localhost:3000/admin |
 | `npm run payload:import-mdx` | Import existing MDX into Payload |
 | `npm run payload:export` | Export published Payload pages to MDX |
@@ -82,6 +84,36 @@ See `docs/payload-cms-workflow.md` (local) and **`docs/vercel-demo-deployment.md
 2. Create a branch for your work
 3. Run `npm run validate:content` and `npm run build`
 4. Open a pull request
+
+---
+
+## Sync GitHub main to iGEM GitLab
+
+GitHub is the source of truth. After changes are merged into GitHub `main`, sync
+them to the protected iGEM GitLab repository.
+Do not force-push either `main` branch.
+
+GitHub Actions automatically merges and pushes to GitLab `main` after each push
+to GitHub `main`. It requires the `IGEM_GITLAB_TOKEN` GitHub Actions secret and
+permission for that token's account to push to GitLab's protected `main` branch.
+
+Configure the iGEM remote once:
+
+```bash
+git remote get-url igem || \
+  git remote add igem https://gitlab.igem.org/2026/toronto.git
+```
+
+If the automatic workflow fails, run this manual fallback:
+
+```bash
+npm run sync:igem
+```
+
+Git prints a link for opening the GitLab merge request. Open it, confirm the
+target is `main`, and merge it. The iGEM GitLab Pages pipeline runs after that
+merge. If the merge command reports conflicts, resolve and test them before
+pushing the sync branch.
 
 ---
 

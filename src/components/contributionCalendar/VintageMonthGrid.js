@@ -25,6 +25,7 @@ function MilestoneLabel({ ms }) {
     >
       <MilestoneBadge
         $color={track?.color ?? "#6de4c0"}
+        $text={track?.textColor ?? "#06202b"}
         tabIndex={0}
         aria-label={aria}
       >
@@ -211,7 +212,7 @@ const MilestoneBadge = styled.span`
   padding: 3px 5px;
   border-radius: 3px;
   background: ${({ $color }) => $color};
-  color: #06202b;
+  color: ${({ $text }) => $text};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
