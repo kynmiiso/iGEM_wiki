@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useState } from "react"
 import styled, { keyframes, css } from "styled-components"
 
 const STEPS = [
@@ -22,50 +22,72 @@ const STEPS = [
   },
 ]
 
-const STEP_DURATION_MS = 1100
+const AUTO_ADVANCE_MS = 7000
+
+const FULL_CLIP = "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
+const NOTCHED_CLIP =
+  "polygon(0% 0%, 100% 0%, 100% 40%, 55% 50%, 100% 60%, 100% 100%, 0% 100%)"
 
 export const PetAssayAnimation = () => {
   const [step, setStep] = useState(0)
-  const [cycle, setCycle] = useState(0)
-  const timerRef = useRef(null)
 
   useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setStep((s) => {
-        const next = (s + 1) % STEPS.length
-        if (next === 0) setCycle((c) => c + 1)
-        return next
-      })
-    }, STEP_DURATION_MS)
-    return () => clearInterval(timerRef.current)
-  }, [])
+    const t = setTimeout(() => {
+      setStep((s) => (s + 1) % STEPS.length)
+    }, AUTO_ADVANCE_MS)
+    return () => clearTimeout(t)
+  }, [step])
+
+  const goTo = (delta) => setStep((s) => (s + delta + STEPS.length) % STEPS.length)
 
   const current = STEPS[step].key
 
   return (
     <Wrap>
-      <Stage role="img" aria-label={STEPS[step].label}>
-        <Scene>
-          <PetFilm $eaten={current === "digest"} />
+      <StageRow>
+        <ArrowButton type="button" aria-label="Previous step" onClick={() => goTo(-1)}>
+          ‹
+        </ArrowButton>
 
-          <Track>
-            <BoundComplex key={cycle} $phase={current}>
-              <Ta2Anchor />
-              <Bind />
-              <CellBody $tag="bound" />
-            </BoundComplex>
+        <Stage role="img" aria-label={STEPS[step].label}>
+          <Scene>
+            <PetFilm $eaten={current === "digest"} />
 
-            <StrayCell $visible={current === "bind"} />
+            <Track>
+              <BoundComplex $phase={current}>
+                <Ta2Anchor />
+                <Bind />
+                <CellBody $tag="bound" />
+              </BoundComplex>
 
-            <PetaseIcon $active={current === "digest"} />
-          </Track>
-        </Scene>
-      </Stage>
+              <StrayCell $visible={current === "bind"} />
+
+              <PetaseIcon $active={current === "digest"} />
+            </Track>
+          </Scene>
+        </Stage>
+
+        <ArrowButton type="button" aria-label="Next step" onClick={() => goTo(1)}>
+          ›
+        </ArrowButton>
+      </StageRow>
 
       <CaptionRow>
         <StepLabel>{STEPS[step].label}</StepLabel>
         <StepCaption>{STEPS[step].caption}</StepCaption>
       </CaptionRow>
+
+      <Dots>
+        {STEPS.map((s, idx) => (
+          <Dot
+            key={s.key}
+            type="button"
+            aria-label={`Skip to: ${s.label}`}
+            $active={idx === step}
+            onClick={() => setStep(idx)}
+          />
+        ))}
+      </Dots>
     </Wrap>
   )
 }
@@ -76,10 +98,6 @@ const bob = keyframes`
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-5px); }
 `
-const nibble = keyframes`
-  0%   { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%); }
-  100% { clip-path: polygon(0% 0%, 100% 0%, 100% 40%, 55% 50%, 100% 60%, 100% 100%, 0% 100%); }
-`
 
 const Wrap = styled.div`
   max-width: 54rem;
@@ -88,12 +106,72 @@ const Wrap = styled.div`
   border: 1px solid var(--color-border);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.24);
+
+  @media (max-width: 520px) {
+    padding: var(--space-md) var(--space-sm);
+  }
+`
+
+const StageRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+
+  @media (max-width: 520px) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+  }
 `
 
 const Stage = styled.div`
   position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
   height: 260px;
   overflow: hidden;
+
+  @media (max-width: 520px) {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+  }
+`
+
+const ArrowButton = styled.button`
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-text);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  @media (max-width: 520px) {
+    grid-row: 2;
+
+    &:first-child {
+      justify-self: end;
+    }
+
+    &:last-child {
+      justify-self: start;
+    }
+  }
 `
 
 const Scene = styled.div`
@@ -103,6 +181,15 @@ const Scene = styled.div`
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
+
+  @media (max-width: 520px) {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    flex: none;
+    margin: 0 auto;
+  }
 `
 
 const Track = styled.div`
@@ -112,18 +199,15 @@ const Track = styled.div`
 `
 
 const PetFilm = styled.div`
+  position: relative;
   width: 46px;
   height: 190px;
   flex: none;
   background: #e8c9c9;
   border: 1px solid var(--color-border);
   border-radius: 4px;
+  clip-path: ${({ $eaten }) => ($eaten ? NOTCHED_CLIP : FULL_CLIP)};
   transition: clip-path 0.4s ease-in-out;
-  ${({ $eaten }) =>
-    $eaten &&
-    css`
-      animation: ${nibble} 0.4s ease-in-out forwards;
-    `}
 
   &::after {
     content: "PET";
@@ -235,4 +319,21 @@ const StepLabel = styled.p`
 const StepCaption = styled.p`
   color: var(--color-muted);
   font-size: 1rem;
+`
+
+const Dots = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: var(--space-sm);
+`
+
+const Dot = styled.button`
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: ${({ $active }) => ($active ? "var(--color-accent)" : "var(--color-border)")};
 `
