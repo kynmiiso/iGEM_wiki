@@ -3,8 +3,6 @@ import { withPrefix } from "gatsby"
 import styled, { css, keyframes } from "styled-components"
 import { WikiTopBar, WIKI_TOP_BAR_Z_INDEX } from "./WikiTopBar.js"
 import { WaterfallSideText } from "./WaterfallSideText.js"
-import Petadex from "./Petadex.js"
-import PetadexBottlePath from "./PetadexBottlePath.js"
 import { SwipeInBox } from "./SwipeInBox.js"
 import { ExplainTerm } from "./ExplainTermPopover.js"
 
@@ -106,6 +104,9 @@ const SHORE_ASSETS = {
   waterDetails: "https://static.igem.wiki/teams/6187/wiki/homepage-components/4-water-details.avif",
   sand: "https://static.igem.wiki/teams/6187/wiki/homepage-components/3-sand.avif",
   grass: "https://static.igem.wiki/teams/6187/wiki/homepage-components/2-grass.avif",
+  /** Pre-cropped shore bottle + ripples (no CSS crop needed). */
+  bottleWithRipples:
+    "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/bottle-w-ripples.avif",
 }
 
 const CONDITION_CARD_IMAGES = [
@@ -284,7 +285,6 @@ export function HomeScrollPrototype() {
   const [shoreBottlePlaying, setShoreBottlePlaying] = useState(false)
   const [splashPlaying, setSplashPlaying] = useState(false)
   const reduceMotionParallaxRef = useRef(false)
-  const petadexRef = useRef(null)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
 
@@ -768,26 +768,12 @@ export function HomeScrollPrototype() {
                 }}
               >
                 <ShoreBottleSize>
-                  <ShoreBottleCrop>
-                    <ShoreBottleRock $playing={shoreBottlePlaying}>
-                      <ShoreBottleImg src={BOTTLE_STAGES.section1} alt="" />
-                    </ShoreBottleRock>
-                  </ShoreBottleCrop>
+                  <ShoreBottleRock $playing={shoreBottlePlaying}>
+                    <ShoreBottleImg src={SHORE_ASSETS.bottleWithRipples} alt="" />
+                  </ShoreBottleRock>
                 </ShoreBottleSize>
               </ShoreBottleMount>
             </ShoreBottleLayer>
-            <ShoreCardsLayer $z={5}>
-              <SwipeInBox stationary title="... we need 3 specific conditions:">
-                <ConditionImageRow>
-                  {CONDITION_CARD_IMAGES.map((image) => (
-                    <ConditionFigure key={image.alt}>
-                      <ConditionImage src={image.src} alt={image.alt} />
-                      <ConditionCaption>{image.alt}</ConditionCaption>
-                    </ConditionFigure>
-                  ))}
-                </ConditionImageRow>
-              </SwipeInBox>
-            </ShoreCardsLayer>
             <ShoreTextLayer $z={4}>
               <ShoreTextMount>
                 <ShoreBody>
@@ -808,6 +794,19 @@ export function HomeScrollPrototype() {
                 </ShoreBody>
               </ShoreTextMount>
             </ShoreTextLayer>
+            {/* Topmost shore layer so cards aren't covered by sand/grass or waterfall bleed. */}
+            <ShoreCardsLayer $z={20}>
+              <SwipeInBox stationary title="... we need 3 specific conditions:">
+                <ConditionImageRow>
+                  {CONDITION_CARD_IMAGES.map((image) => (
+                    <ConditionFigure key={image.alt}>
+                      <ConditionImage src={image.src} alt={image.alt} />
+                      <ConditionCaption>{image.alt}</ConditionCaption>
+                    </ConditionFigure>
+                  ))}
+                </ConditionImageRow>
+              </SwipeInBox>
+            </ShoreCardsLayer>
           </ShoreOverlayStack>
         </DrawnShoreSection>
 
@@ -815,12 +814,6 @@ export function HomeScrollPrototype() {
           <WikiTopBar />
         </HomeNavMount>
       </ScrollStack>
-
-      <PetadexBottlePath petadexRef={petadexRef}>
-        <div ref={petadexRef}>
-          <Petadex />
-        </div>
-      </PetadexBottlePath>
 
     </WikiFrontRoot>
   )
@@ -852,6 +845,7 @@ const HomeNavMount = styled.div`
 
 const CompositionRoot = styled.div`
   position: relative;
+  z-index: 1;
   width: 100%;
   min-width: 0;
   overflow: visible;
@@ -860,10 +854,10 @@ const CompositionRoot = styled.div`
 /** Full-bleed shore under the waterfall; height from water-bg art. */
 const DrawnShoreSection = styled.section`
   position: relative;
-  z-index: 0;
+  z-index: 2;
   width: 100%;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   background: #000;
 `
 
@@ -879,7 +873,7 @@ const ShoreOverlayStack = styled.div`
   width: 100%;
   height: 100%;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
 `
 
 const ShoreLayer = styled.div`
@@ -904,6 +898,10 @@ const ShoreCardsLayer = styled.div`
   inset: 0;
   z-index: ${({ $z }) => $z};
   pointer-events: none;
+
+  & > div > div {
+    width: min(1100px, 98vw);
+  }
 `
 
 /** Rematched section1 bottle: autonomous slow drift along the river, under shore copy. */
@@ -996,14 +994,6 @@ const ShoreBottleSize = styled.div`
   width: 100%;
 `
 
-/** Top-third crop via overflow so rock/drop-shadow stay natural. */
-const ShoreBottleCrop = styled.div`
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  line-height: 0;
-`
-
 const shoreBottleRock = keyframes`
   0%,
   100% {
@@ -1072,8 +1062,8 @@ const ShoreBody = styled.p`
 const ConditionImageRow = styled.div`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(1rem, 2.4vw, 1.75rem);
-  margin-top: clamp(1.1rem, 2.2vw, 1.75rem);
+  gap: clamp(0.55rem, 2.4vw, 1.75rem);
+  margin-top: clamp(0.7rem, 2.2vw, 1.75rem);
   align-items: start;
 `
 
@@ -1090,7 +1080,8 @@ const ConditionImage = styled.img`
   display: block;
   width: 100%;
   height: auto;
-  max-height: clamp(14rem, 36vw, 24rem);
+  /* Same desktop max as before; drop the 14rem floor so narrow windows can shrink. */
+  max-height: clamp(6rem, 36vw, 24rem);
   object-fit: contain;
   user-select: none;
   pointer-events: none;
@@ -1102,7 +1093,7 @@ const ConditionCaption = styled.figcaption`
   margin: 0;
   color: #fff;
   font-family: var(--font-body);
-  font-size: clamp(1.2rem, 2.8vw, 1.85rem);
+  font-size: clamp(0.85rem, 2.8vw, 1.85rem);
   font-weight: 800;
   line-height: 1.2;
   text-align: center;
@@ -1481,8 +1472,9 @@ const BottleShiftWrap = styled.div`
 
 const BottleFloatWrap = styled.div`
   position: relative;
-  width: 25%;
-  max-width: 12rem;
+  /* Desktop stays ~12rem; shrinks with the window below that. */
+  width: clamp(5.25rem, 18vw, 12rem);
+  max-width: 25%;
   animation: ${bottleIdleFloat} 1.5s ease-in-out infinite;
   animation-delay: -0.7s;
 

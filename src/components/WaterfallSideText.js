@@ -28,14 +28,14 @@ export const WATERFALL_TEXT_RIGHT_TOP_PCT = 74
 export const WATERFALL_TEXT_WIDTH_PCT = 30
 
 /**
- * Type scales with the full-bleed art (`vw`) so proportions track the waterfall.
- * Left copy is smaller (longer paragraphs); right stays larger (short line).
+ * Type scales with viewport width. Floors are low so mid/narrow windows shrink;
+ * maxes keep the current desktop look.
  */
-const WATERFALL_BODY_SIZE_LEFT = "clamp(0.95rem, 1.65vw, 1.85rem)"
-const WATERFALL_HEADING_SIZE = "clamp(1.15rem, 2.1vw, 2.35rem)"
-const WATERFALL_BODY_SIZE_RIGHT = "clamp(1.2rem, 2.4vw, 2.75rem)"
-const WATERFALL_HINT_SIZE = "clamp(0.85rem, 1.25vw, 1.15rem)"
-const WATERFALL_ARROW_WIDTH = "min(9rem, 12vw)"
+const WATERFALL_BODY_SIZE_LEFT = "clamp(0.7rem, 1.65vw, 1.85rem)"
+const WATERFALL_HEADING_SIZE = "clamp(0.85rem, 2.1vw, 2.35rem)"
+const WATERFALL_BODY_SIZE_RIGHT = "clamp(0.78rem, 2.4vw, 2.75rem)"
+const WATERFALL_HINT_SIZE = "clamp(0.65rem, 1.25vw, 1.15rem)"
+const WATERFALL_ARROW_WIDTH = "clamp(3.25rem, 12vw, 9rem)"
 
 /** Viewport px from top where faded copy reaches full opacity. */
 export const WATERFALL_TEXT_FADE_FULL_AT_PX = 150
@@ -184,12 +184,16 @@ const TextMount = styled.div`
           padding-right: 2%;
           padding-left: max(env(safe-area-inset-left, 0px), 2%);
 
+          @media (max-width: 900px) {
+            width: min(${WATERFALL_TEXT_WIDTH_PCT}%, 36vw);
+          }
+
           @media (max-width: 720px) {
-            width: min(${WATERFALL_TEXT_WIDTH_PCT}%, 42vw);
+            width: min(${WATERFALL_TEXT_WIDTH_PCT}%, 34vw);
           }
 
           @media (max-width: 480px) {
-            width: min(24%, 38vw);
+            width: min(28%, 40vw);
           }
         `
       : css`
