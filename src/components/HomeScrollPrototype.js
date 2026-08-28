@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
-import { withPrefix } from "gatsby"
 import styled, { css, keyframes } from "styled-components"
 import { WikiTopBar, WIKI_TOP_BAR_Z_INDEX } from "./WikiTopBar.js"
 import { WaterfallSideText } from "./WaterfallSideText.js"
@@ -19,16 +18,12 @@ export const BOTTLE_STAGES = {
   section5: "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section5.avif",
 }
 
-/**
- * Mockups live under /static/wiki-mockup/ so the browser loads predictable URLs
- * (avoids webpack + long filenames with spaces, and respects pathPrefix via withPrefix).
- */
 const ASSETS = {
   back: "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-back.avif",
-  front: withPrefix("/wiki-mockup/wiki-front-front.png"),
+  /** Unified front plate: plaza + waterfall + river + map + forest. */
+  front: "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-top.avif",
   /** Waterfall / sky section bottle (current homepage stage). */
   bottle: BOTTLE_STAGES.sky,
-  water: withPrefix("/wiki-mockup/wiki-front-water.png"),
 }
 
 /** Nine-frame PETABITE logo loop (same slot + idle float as the old static logo). */
@@ -90,24 +85,26 @@ const LOGO_FRAME_KEYFRAMES = LOGO_FRAME_TIMING.windows.map(({ start, end }) => {
 })
 
 /**
- * New back art is taller than the previous plate — extra canvas was added at the top.
- * Keep overlays/text in the legacy art band so they stay aligned with front/water/bottle.
+ * Unified front canvas (CDN `wiki-front-page-top.avif`).
+ * Overlay bands are fractions of this image so a same-composition re-export
+ * (e.g. 1440-wide) keeps placement. Measured on 563×4000:
+ *   0–395 transparent sky hole (Toronto shows through)
+ *   395–1380 plaza + waterfall (legacy 2440 plate)
+ *   1380–2440 river / first sand (legacy shore)
+ *   2440–2900 world map
+ *   2900–3503 forest
+ *   3503–4000 transparent pad
  */
-const BACK_ART_HEIGHT_PREV = 2440
-const BACK_ART_HEIGHT = 3239
-const BACK_TOP_EXTENSION_FRAC = (BACK_ART_HEIGHT - BACK_ART_HEIGHT_PREV) / BACK_ART_HEIGHT
-const BACK_LEGACY_BAND_FRAC = BACK_ART_HEIGHT_PREV / BACK_ART_HEIGHT
+const FRONT_ART_HEIGHT = 4000
+const WATERFALL_BAND_TOP = 395 / FRONT_ART_HEIGHT
+const WATERFALL_BAND_BOT = 1380 / FRONT_ART_HEIGHT
+const SHORE_BAND_BOT = 2440 / FRONT_ART_HEIGHT
+const WATERFALL_BAND_HEIGHT = WATERFALL_BAND_BOT - WATERFALL_BAND_TOP
+const SHORE_BAND_TOP = WATERFALL_BAND_BOT
+const SHORE_BAND_HEIGHT = SHORE_BAND_BOT - SHORE_BAND_TOP
 
-/** Full-bleed shore section layers (iGEM team static CDN). */
-const SHORE_ASSETS = {
-  waterBg: "https://static.igem.wiki/teams/6187/wiki/homepage-components/5-water-bg.avif",
-  waterDetails: "https://static.igem.wiki/teams/6187/wiki/homepage-components/4-water-details.avif",
-  sand: "https://static.igem.wiki/teams/6187/wiki/homepage-components/3-sand.avif",
-  grass: "https://static.igem.wiki/teams/6187/wiki/homepage-components/2-grass.avif",
-  /** Pre-cropped shore bottle + ripples (no CSS crop needed). */
-  bottleWithRipples:
-    "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/bottle-w-ripples.avif",
-}
+const SHORE_BOTTLE_IMG =
+  "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/bottle-w-ripples.avif"
 
 const CONDITION_CARD_IMAGES = [
   {
@@ -130,20 +127,24 @@ const RNALAB_TEXTBOX_IMG =
 const RNALAB_EXPLANATION =
   "RNAlab is our advisory lab partner that helped uncover 215.7 million high-quality plastic-degrading enzymes."
 
-/** Overlays above the in-flow back plate. Text/popover above water so the glossary box is visible. */
+/** Overlays inside a band (text above bottle). */
 const Z = {
-  front: 1,
   logo: 2,
   bottle: 3,
-  water: 4,
   text: 5,
 }
+
+/**
+ * Shift painting-locked overlays up within the waterfall band (logo + birds stay).
+ * Applied to copy, sky bottle, splash, and the sink lip so they stay in step.
+ */
+const LANDMARK_NUDGE_UP = 0.07
 
 /**
  * Where the bottle sits in the legacy art band (0 = top, 1 = bottom).
  * Anchors into the waterfall rather than the sky.
  */
-const BOTTLE_TOP_FRAC = 0.42
+const BOTTLE_TOP_FRAC = 0.42 - LANDMARK_NUDGE_UP
 
 /** Pixels scroll must move back above the captured TP1 scrollY before bottle unpins. */
 const BOTTLE_PIN_SCROLL_UP_LEAVE = 40
@@ -203,12 +204,10 @@ const BIRDS = [
 ]
 
 /**
- * Fraction of the composition (layer) height where the water surface / ripple sits.
- * Once this line rises above the anchored bottle, the bottle is treated as submerged.
- * Tune against wiki-front-water.png (ripple ≈ 0.92 down the 1440×2440 canvas).
- * Pushed to 0.98 so the bottle stays fully opaque until it's deep under the water.
+ * Fraction of the waterfall band height where the puddle / ripple sits.
+ * Tune against the unified front plate (lip ≈ 1380/4000).
  */
-const WATER_RIPPLE_FRAC = 0.98
+const WATER_RIPPLE_FRAC = 0.98 - LANDMARK_NUDGE_UP
 
 /**
  * Visible bottle band as a fraction of its layer height.
@@ -230,12 +229,12 @@ const BOTTLE_SPLASH_TRIGGER_OPACITY = 0.35
 const BOTTLE_SHORE_FADE_START_VH = 0.75
 const BOTTLE_SHORE_FADE_END_VH = 0.6
 /** Splash anchor on the first (waterfall) art band — puddle / river start. */
-const WATERFALL_SPLASH_TOP_PCT = 92
+const WATERFALL_SPLASH_TOP_PCT = 92 - LANDMARK_NUDGE_UP * 100
 const WATERFALL_SPLASH_LEFT_PCT = 50
 
 /**
  * Autonomous shore-bottle rematch (section1).
- * Triggers once when the shore crosses an early viewport threshold after the sky
+ * Triggers once when the river/sand band crosses an early viewport threshold after the sky
  * bottle sinks; then slowly drifts down and exits left on its own.
  */
 /** Shore top below this fraction of vh → start the drift (appear as shore peeks in). */
@@ -248,8 +247,7 @@ const SHORE_BOTTLE_DRIFT_MS = 15000
 const SHORE_BOTTLE_SUNK_OPACITY = 0.2
 
 /**
- * Full-page wiki front compositing: layered mockup PNGs plus a gentle idle float
- * on the 9-frame cycling logo.
+ * Full-page wiki front compositing: Toronto parallax behind one tall front plate.
  *
  * Site nav uses scroll-driven `position: fixed` while the mockup is on-screen.
  *
@@ -269,7 +267,6 @@ export function HomeScrollPrototype() {
   const parallaxBackRef = useRef(null)
   const birdParallaxRefs = useRef([])
   const waterRef = useRef(null)
-  const compositionRef = useRef(null)
   const shoreRef = useRef(null)
   const shoreBottlePlayedRef = useRef(false)
   /** True after the sky bottle finishes its waterfall sink (near-bottom unpin). */
@@ -628,57 +625,59 @@ export function HomeScrollPrototype() {
   return (
     <WikiFrontRoot>
       <ScrollStack ref={stackRef}>
-        <CompositionRoot ref={compositionRef}>
-          <FlowSizer>
-            <ParallaxBack
-              ref={parallaxBackRef}
-            >
+        <CompositionRoot>
+          <BackScene>
+            <ParallaxBack ref={parallaxBackRef}>
               <BackRailImg src={ASSETS.back} alt="Wiki front — background scenery" />
             </ParallaxBack>
-          </FlowSizer>
-          <BirdsStack aria-hidden="true">
-            {BIRDS.map((bird, i) => (
-              <BirdParallax
-                key={bird.id}
-                ref={(el) => {
-                  birdParallaxRefs.current[i] = el
-                }}
-              >
-                <BirdDrift
-                  $enabled={bird.depth === "back"}
-                  $durationMs={bird.driftMs || 36000}
-                  $delayMs={bird.driftDelayMs || 0}
+            <BirdsStack aria-hidden="true">
+              {BIRDS.map((bird, i) => (
+                <BirdParallax
+                  key={bird.id}
+                  ref={(el) => {
+                    birdParallaxRefs.current[i] = el
+                  }}
                 >
-                  <BirdHoverMotion $delayMs={bird.delayMs}>
-                    <BirdFlapper>
-                      <BirdFrame
-                        $phase="a"
-                        $durationMs={bird.flapMs}
-                        $delayMs={bird.delayMs}
-                        src={bird.a}
-                        alt=""
-                      />
-                      <BirdFrame
-                        $phase="b"
-                        $durationMs={bird.flapMs}
-                        $delayMs={bird.delayMs}
-                        src={bird.b}
-                        alt=""
-                      />
-                    </BirdFlapper>
-                  </BirdHoverMotion>
-                </BirdDrift>
-              </BirdParallax>
-            ))}
-          </BirdsStack>
-          <ForegroundBand
-            $topFrac={BACK_TOP_EXTENSION_FRAC}
-            $heightFrac={BACK_LEGACY_BAND_FRAC}
+                  <BirdDrift
+                    $enabled={bird.depth === "back"}
+                    $durationMs={bird.driftMs || 36000}
+                    $delayMs={bird.driftDelayMs || 0}
+                  >
+                    <BirdHoverMotion $delayMs={bird.delayMs}>
+                      <BirdFlapper>
+                        <BirdFrame
+                          $phase="a"
+                          $durationMs={bird.flapMs}
+                          $delayMs={bird.delayMs}
+                          src={bird.a}
+                          alt=""
+                        />
+                        <BirdFrame
+                          $phase="b"
+                          $durationMs={bird.flapMs}
+                          $delayMs={bird.delayMs}
+                          src={bird.b}
+                          alt=""
+                        />
+                      </BirdFlapper>
+                    </BirdHoverMotion>
+                  </BirdDrift>
+                </BirdParallax>
+              ))}
+            </BirdsStack>
+          </BackScene>
+
+          <FlowSizer>
+            <RailImg src={ASSETS.front} alt="" />
+          </FlowSizer>
+
+          <ArtBand
+            ref={waterRef}
+            $top={WATERFALL_BAND_TOP}
+            $height={WATERFALL_BAND_HEIGHT}
+            $z={2}
           >
             <OverlayStack>
-              <OverlaySlice $z={Z.front}>
-                <RailImg src={ASSETS.front} alt="" />
-              </OverlaySlice>
               <OverlaySlice $z={Z.text} $interactive>
                 <WaterfallSideText />
               </OverlaySlice>
@@ -716,10 +715,6 @@ export function HomeScrollPrototype() {
                   </BottleFlipSurface>
                 </BottlePinSpot>
               </OverlaySlice>
-              <OverlaySlice $z={Z.water}>
-                <RailImg ref={waterRef} src={ASSETS.water} alt="" />
-              </OverlaySlice>
-              {/* Splash lives on the waterfall band (river start), not the shore section. */}
               <OverlaySlice $z={Z.text}>
                 {splashPlaying ? (
                   <WaterfallSplashAnchor
@@ -744,77 +739,70 @@ export function HomeScrollPrototype() {
                 ) : null}
               </OverlaySlice>
             </OverlayStack>
-          </ForegroundBand>
-        </CompositionRoot>
+          </ArtBand>
 
-        <DrawnShoreSection ref={shoreRef}>
-          <ShoreFlowSizer>
-            <ShoreRailImg src={SHORE_ASSETS.waterBg} alt="" />
-          </ShoreFlowSizer>
-          <ShoreOverlayStack>
-            <ShoreLayer $z={1}>
-              <ShoreRailImg src={SHORE_ASSETS.waterDetails} alt="" />
-            </ShoreLayer>
-            <ShoreLayer $z={2}>
-              <ShoreStackImg src={SHORE_ASSETS.sand} alt="" />
-              <ShoreStackImg src={SHORE_ASSETS.grass} alt="" />
-            </ShoreLayer>
-            <ShoreBottleLayer $z={3}>
-              <ShoreBottleMount
-                $playing={shoreBottlePlaying}
-                onAnimationEnd={(e) => {
-                  if (e.target !== e.currentTarget) return
-                  setShoreBottlePlaying(false)
-                }}
-              >
-                <ShoreBottleSize>
-                  <ShoreBottleRock $playing={shoreBottlePlaying}>
-                    <ShoreBottleImg src={SHORE_ASSETS.bottleWithRipples} alt="" />
-                  </ShoreBottleRock>
-                </ShoreBottleSize>
-              </ShoreBottleMount>
-            </ShoreBottleLayer>
-            <ShoreTextLayer $z={4}>
-              <ShoreTextMount>
-                <ShoreBody>
-                  That&apos;s why our team has developed the LOGAN index: a planetary sequence
-                  search that discovers novel plastic-degrading enzymes.
-                </ShoreBody>
-                <ShoreBody $spaced>
-                  Before, the industry was using an enzyme dataset of roughly 200. With our
-                  advisory lab, the{" "}
-                  <ExplainTerm
-                    term="RNAlab"
-                    explanation={RNALAB_EXPLANATION}
-                    imageSrc={RNALAB_TEXTBOX_IMG}
-                    imageAlt="RNAlab"
-                  />
-                  , the team uncovered 215.7 million high-quality plastic‑degrading enzymes — a
-                  1,000,000‑fold increase from the enzyme landscape previously known.
-                </ShoreBody>
-              </ShoreTextMount>
-            </ShoreTextLayer>
-            {/* Topmost shore layer so cards aren't covered by sand/grass or waterfall bleed. */}
-            <ShoreCardsLayer $z={20}>
-              <SwipeInBox stationary title="... we need 3 specific conditions:">
-                <ConditionImageRow>
-                  {CONDITION_CARD_IMAGES.map((image) => (
-                    <ConditionFigure key={image.alt}>
-                      <ConditionImage src={image.src} alt={image.alt} />
-                      <ConditionCaption>{image.alt}</ConditionCaption>
-                    </ConditionFigure>
-                  ))}
-                </ConditionImageRow>
-              </SwipeInBox>
-            </ShoreCardsLayer>
-          </ShoreOverlayStack>
-        </DrawnShoreSection>
+          <ArtBand
+            ref={shoreRef}
+            $top={SHORE_BAND_TOP}
+            $height={SHORE_BAND_HEIGHT}
+            $z={3}
+          >
+            <ShoreOverlayStack>
+              <ShoreBottleLayer $z={3}>
+                <ShoreBottleMount
+                  $playing={shoreBottlePlaying}
+                  onAnimationEnd={(e) => {
+                    if (e.target !== e.currentTarget) return
+                    setShoreBottlePlaying(false)
+                  }}
+                >
+                  <ShoreBottleSize>
+                    <ShoreBottleRock $playing={shoreBottlePlaying}>
+                      <ShoreBottleImg src={SHORE_BOTTLE_IMG} alt="" />
+                    </ShoreBottleRock>
+                  </ShoreBottleSize>
+                </ShoreBottleMount>
+              </ShoreBottleLayer>
+              <ShoreTextLayer $z={4}>
+                <ShoreTextMount>
+                  <ShoreBody>
+                    That&apos;s why our team has developed the LOGAN index: a planetary sequence
+                    search that discovers novel plastic-degrading enzymes.
+                  </ShoreBody>
+                  <ShoreBody $spaced>
+                    Before, the industry was using an enzyme dataset of roughly 200. With our
+                    advisory lab, the{" "}
+                    <ExplainTerm
+                      term="RNAlab"
+                      explanation={RNALAB_EXPLANATION}
+                      imageSrc={RNALAB_TEXTBOX_IMG}
+                      imageAlt="RNAlab"
+                    />
+                    , the team uncovered 215.7 million high-quality plastic‑degrading enzymes — a
+                    1,000,000‑fold increase from the enzyme landscape previously known.
+                  </ShoreBody>
+                </ShoreTextMount>
+              </ShoreTextLayer>
+              <ShoreCardsLayer $z={20}>
+                <SwipeInBox stationary title="... we need 3 specific conditions:">
+                  <ConditionImageRow>
+                    {CONDITION_CARD_IMAGES.map((image) => (
+                      <ConditionFigure key={image.alt}>
+                        <ConditionImage src={image.src} alt={image.alt} />
+                        <ConditionCaption>{image.alt}</ConditionCaption>
+                      </ConditionFigure>
+                    ))}
+                  </ConditionImageRow>
+                </SwipeInBox>
+              </ShoreCardsLayer>
+            </ShoreOverlayStack>
+          </ArtBand>
+        </CompositionRoot>
 
         <HomeNavMount $pinned={navPinned}>
           <WikiTopBar />
         </HomeNavMount>
       </ScrollStack>
-
     </WikiFrontRoot>
   )
 }
@@ -851,19 +839,34 @@ const CompositionRoot = styled.div`
   overflow: visible;
 `
 
-/** Full-bleed shore under the waterfall; height from water-bg art. */
-const DrawnShoreSection = styled.section`
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  min-width: 0;
-  overflow: visible;
-  background: #000;
+/** Toronto + birds, height from the back plate — sits in the transparent sky hole. */
+const BackScene = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
 `
 
-const ShoreFlowSizer = styled.div`
+const FlowSizer = styled.div`
+  position: relative;
+  z-index: 1;
   width: 100%;
   pointer-events: none;
+`
+
+/** Overlay band as a fraction of the unified front canvas. */
+const ArtBand = styled.div`
+  position: absolute;
+  left: 0;
+  width: 100%;
+  top: ${({ $top }) => `${$top * 100}%`};
+  height: ${({ $height }) => `${$height * 100}%`};
+  z-index: ${({ $z }) => $z};
+  pointer-events: none;
+  overflow: visible;
 `
 
 const ShoreOverlayStack = styled.div`
@@ -874,15 +877,6 @@ const ShoreOverlayStack = styled.div`
   height: 100%;
   pointer-events: none;
   overflow: visible;
-`
-
-const ShoreLayer = styled.div`
-  position: absolute;
-  inset: 0;
-  z-index: ${({ $z }) => $z};
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
 `
 
 const ShoreTextLayer = styled.div`
@@ -1034,7 +1028,7 @@ const ShoreBottleImg = styled.img`
 /** Sits on the sand bank (left/center of the shore art). */
 const ShoreTextMount = styled.div`
   position: absolute;
-  top: 20%;
+  top: 13%;
   left: max(env(safe-area-inset-left, 0px), 5%);
   width: min(34%, 26rem);
   max-width: calc(100% - 14%);
@@ -1042,7 +1036,7 @@ const ShoreTextMount = styled.div`
   pointer-events: auto;
 
   @media (max-width: 720px) {
-    top: 20%;
+    top: 13%;
     left: max(env(safe-area-inset-left, 0px), 4%);
     width: min(42%, 40vw);
   }
@@ -1102,24 +1096,6 @@ const ConditionCaption = styled.figcaption`
     0 0 12px rgba(0, 0, 0, 0.35);
 `
 
-const ShoreRailImg = styled.img`
-  display: block;
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  user-select: none;
-  pointer-events: none;
-`
-
-/** Sand and grass share the foreground frame; stacked absolute. */
-const ShoreStackImg = styled(ShoreRailImg)`
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: auto;
-`
-
 const RailImg = styled.img`
   display: block;
   width: 100%;
@@ -1127,12 +1103,6 @@ const RailImg = styled.img`
   max-width: 100%;
   user-select: none;
   pointer-events: none;
-`
-
-const FlowSizer = styled.div`
-  width: 100%;
-  pointer-events: none;
-  overflow: hidden;
 `
 
 const ParallaxBack = styled.div`
@@ -1293,18 +1263,6 @@ const BirdFrame = styled.img`
   }
 `
 
-/** Positions legacy overlays in the lower band of the taller back art. */
-const ForegroundBand = styled.div`
-  position: absolute;
-  left: 0;
-  width: 100%;
-  top: ${({ $topFrac }) => `${$topFrac * 100}%`};
-  height: ${({ $heightFrac }) => `${$heightFrac * 100}%`};
-  z-index: 2;
-  pointer-events: none;
-  overflow: visible;
-`
-
 const OverlayStack = styled.div`
   position: absolute;
   left: 0;
@@ -1327,7 +1285,7 @@ const OverlaySlice = styled.div`
 `
 
 /** Nudge PETABITE title up within the legacy art band (negative = higher). */
-const LOGO_SHIFT_FRAC = -0.3
+const LOGO_SHIFT_FRAC = -0.38
 
 const logoIdleFloat = keyframes`
   0%,

@@ -15,11 +15,11 @@ export const WATERFALL_TEXT_LEFT_PCT = 2
 /** Horizontal start for right-side copy (% from left); box fills to the right edge. */
 export const WATERFALL_TEXT_RIGHT_LEFT_PCT = 75
 
-/** Vertical offset from the top of the mockup composition (%). */
-export const WATERFALL_TEXT_TOP_PCT = 55
+/** Vertical offset from the top of the waterfall band (%). */
+export const WATERFALL_TEXT_TOP_PCT = 48
 
 /** Vertical offset for right-side copy — sits below the left block (%). */
-export const WATERFALL_TEXT_RIGHT_TOP_PCT = 74
+export const WATERFALL_TEXT_RIGHT_TOP_PCT = 67
 
 /**
  * Preferred width as % of mockup composition (left column).
@@ -118,7 +118,7 @@ function useViewportTopFade(mountRef) {
 
 /**
  * Waterfall-band copy on the home scroll mockup (left + right of the fall).
- * Positioning is percentage-based so it tracks the full-bleed art on resize.
+ * Positioning is percentage-based so it tracks the waterfall ArtBand on resize.
  */
 export function WaterfallSideText() {
   const leftRef = useRef(null)
