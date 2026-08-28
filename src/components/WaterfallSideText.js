@@ -3,23 +3,24 @@ import styled, { css, keyframes } from "styled-components"
 import { ExplainTerm } from "./ExplainTermPopover.js"
 
 /** Used for popover accessibility; visible copy lives in the textbox image asset. */
-const PETASE_EXPLANATION =
+export const PETASE_EXPLANATION =
   "PETase breaks the chemical bonds in PET to free a compound called MHET. A second enzyme, MHETase, then cleaves this into environmentally friendly products (ethylene glycol and terephthalic acid)."
 
-const ARROW_SRC =
-  "https://static.igem.wiki/teams/6187/wiki/homepage-components/arrow.avif"
+/** Placeholder until the cancer-associated-mechanisms textbox asset is ready. */
+const CANCER_PLACEHOLDER_EXPLANATION =
+  "Placeholder — swap in the cancer-associated-mechanisms textbox when the asset is ready."
+
+const EXCLAMATION_SRC =
+  "https://static.igem.wiki/teams/6187/wiki/homepage-components/exclamation.avif"
 
 /** Horizontal offset from the left edge of the mockup composition (%). */
 export const WATERFALL_TEXT_LEFT_PCT = 2
 
-/** Horizontal start for right-side copy (% from left); box fills to the right edge. */
-export const WATERFALL_TEXT_RIGHT_LEFT_PCT = 75
-
 /** Vertical offset from the top of the waterfall band (%). */
-export const WATERFALL_TEXT_TOP_PCT = 48
+export const WATERFALL_TEXT_TOP_PCT = 58
 
-/** Vertical offset for right-side copy — sits below the left block (%). */
-export const WATERFALL_TEXT_RIGHT_TOP_PCT = 67
+/** Vertical offset for right-side copy (hint + bang sit above the sentence). */
+export const WATERFALL_TEXT_RIGHT_TOP_PCT = 60
 
 /**
  * Preferred width as % of mockup composition (left column).
@@ -31,11 +32,9 @@ export const WATERFALL_TEXT_WIDTH_PCT = 30
  * Type scales with viewport width. Floors are low so mid/narrow windows shrink;
  * maxes keep the current desktop look.
  */
-const WATERFALL_BODY_SIZE_LEFT = "clamp(0.7rem, 1.65vw, 1.85rem)"
-const WATERFALL_HEADING_SIZE = "clamp(0.85rem, 2.1vw, 2.35rem)"
-const WATERFALL_BODY_SIZE_RIGHT = "clamp(0.78rem, 2.4vw, 2.75rem)"
+export const WATERFALL_BODY_SIZE = "clamp(0.78rem, 2.05vw, 2.3rem)"
 const WATERFALL_HINT_SIZE = "clamp(0.65rem, 1.25vw, 1.15rem)"
-const WATERFALL_ARROW_WIDTH = "clamp(3.25rem, 12vw, 9rem)"
+const WATERFALL_BANG_WIDTH = "clamp(2.6rem, 5.5vw, 4.25rem)"
 
 /** Viewport px from top where faded copy reaches full opacity. */
 export const WATERFALL_TEXT_FADE_FULL_AT_PX = 150
@@ -129,30 +128,26 @@ export function WaterfallSideText() {
   return (
     <>
       <TextMount ref={leftRef} $side="left">
-        <Heading>The problem</Heading>
         <Body>
           The world produces over 400 million tonnes of plastic each year, and as they degrade, it
-          breaks down into microplastics that can infiltrate our bodies—where they damage cells and
-          cause cancer-associated mechanisms.
-        </Body>
-        <Body $spaced>
-          To combat this, we are engineering plastic-degrading enzymes or{" "}
-          <TermHintWrap>
-            <ExplainTerm term="PETases..." explanation={PETASE_EXPLANATION} />
-            <PopupHint>
-              <ArrowImg src={ARROW_SRC} alt="" aria-hidden />
-              <HintText>
-                Hover red underlined words for a quick popup — or click to pin it open / click again
-                to close.
-              </HintText>
-            </PopupHint>
-          </TermHintWrap>
+          breaks down into microplastics that can infiltrate our bodies.
         </Body>
       </TextMount>
 
       <TextMount ref={rightRef} $side="right">
+        <PopupHint>
+          <BangHover aria-hidden>
+            <BangImg src={EXCLAMATION_SRC} alt="" />
+          </BangHover>
+          <HintText>
+            Hover red underlined words for a quick popup — or click to pin it open / click again to
+            close.
+          </HintText>
+        </PopupHint>
         <Body $side="right">
-          However, PETases currently in industry have a major limitation...
+          These microplastics damage cells and cause{" "}
+          <ExplainTerm term="cancer-associated mechanisms" explanation={CANCER_PLACEHOLDER_EXPLANATION} />
+          .
         </Body>
       </TextMount>
     </>
@@ -197,86 +192,87 @@ const TextMount = styled.div`
           }
         `
       : css`
-          /* Pin to the right edge so the box shrinks with the window instead of clipping. */
-          left: ${WATERFALL_TEXT_RIGHT_LEFT_PCT}%;
-          right: max(env(safe-area-inset-right, 0px), 2%);
-          width: auto;
-          max-width: none;
+          /* Compact column on the right bank — not full remaining width. */
+          left: auto;
+          right: max(env(safe-area-inset-right, 0px), 3%);
+          width: min(32%, 26rem);
+          max-width: 26rem;
           padding-left: 2%;
           padding-right: 0;
+          text-align: center;
         `}
-`
-
-const Heading = styled.h2`
-  margin: 0 0 0.55em;
-  color: #fff;
-  font-family: var(--font-body);
-  font-size: ${WATERFALL_HEADING_SIZE};
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1.15;
-  text-transform: uppercase;
 `
 
 const Body = styled.p`
   margin: ${({ $spaced }) => ($spaced ? "0.75em 0 0" : "0")};
   color: rgba(255, 255, 255, 0.92);
   font-family: var(--font-body);
-  font-size: ${({ $side }) =>
-    $side === "right" ? WATERFALL_BODY_SIZE_RIGHT : WATERFALL_BODY_SIZE_LEFT};
+  font-size: ${WATERFALL_BODY_SIZE};
   font-weight: 400;
   line-height: 1.4;
   overflow-wrap: break-word;
   overflow: visible;
 `
 
-const arrowFloat = keyframes`
+const bangHover = keyframes`
   0%,
   100% {
     transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translate3d(0, -10px, 0);
+    transform: translate3d(0, -5px, 0);
   }
 `
 
-/** Keeps the arrow + hint tucked under the red-underlined term. */
-const TermHintWrap = styled.span`
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  vertical-align: baseline;
-  max-width: 100%;
+const bangHoverStrong = keyframes`
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
 `
 
 const PopupHint = styled.span`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.25em;
-  margin-top: 0.25em;
-  margin-left: -0.35em;
-  max-width: min(18rem, 28vw);
+  justify-content: center;
+  gap: 0.45em;
+  margin: 0 auto 0.55em;
+  width: 100%;
+  max-width: 100%;
 `
 
-const ArrowImg = styled.img`
+const BangHover = styled.span`
+  flex: 0 0 auto;
   display: block;
-  width: ${WATERFALL_ARROW_WIDTH};
-  height: auto;
-  user-select: none;
-  pointer-events: none;
-  transform-origin: center bottom;
-  animation: ${arrowFloat} 1.8s ease-in-out infinite;
+  animation: ${bangHover} 2.4s ease-in-out infinite;
+
+  ${PopupHint}:hover & {
+    animation-name: ${bangHoverStrong};
+    animation-duration: 1.6s;
+  }
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
 `
 
+const BangImg = styled.img`
+  display: block;
+  width: ${WATERFALL_BANG_WIDTH};
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+`
+
 const HintText = styled.span`
   display: block;
-  width: 100%;
-  text-align: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
   color: #e63946;
   font-family: var(--font-body);
   font-size: ${WATERFALL_HINT_SIZE};

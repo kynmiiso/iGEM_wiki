@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import styled, { css, keyframes } from "styled-components"
 import { WikiTopBar, WIKI_TOP_BAR_Z_INDEX } from "./WikiTopBar.js"
-import { WaterfallSideText } from "./WaterfallSideText.js"
+import { WaterfallSideText, PETASE_EXPLANATION } from "./WaterfallSideText.js"
 import { SwipeInBox } from "./SwipeInBox.js"
 import { ExplainTerm } from "./ExplainTermPopover.js"
 
@@ -22,6 +22,8 @@ const ASSETS = {
   back: "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-back.avif",
   /** Unified front plate: plaza + waterfall + river + map + forest. */
   front: "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-top.avif",
+  /** Foreground bushes — highest scenery layer (same 563×4000 canvas as front). */
+  bush: "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-bush.avif",
   /** Waterfall / sky section bottle (current homepage stage). */
   bottle: BOTTLE_STAGES.sky,
 }
@@ -102,6 +104,12 @@ const SHORE_BAND_BOT = 2440 / FRONT_ART_HEIGHT
 const WATERFALL_BAND_HEIGHT = WATERFALL_BAND_BOT - WATERFALL_BAND_TOP
 const SHORE_BAND_TOP = WATERFALL_BAND_BOT
 const SHORE_BAND_HEIGHT = SHORE_BAND_BOT - SHORE_BAND_TOP
+/** Under the world map, through the forest / just above the bushes. */
+const FOREST_BAND_TOP = 2660 / FRONT_ART_HEIGHT
+const FOREST_BAND_BOT = 3503 / FRONT_ART_HEIGHT
+const FOREST_BAND_HEIGHT = FOREST_BAND_BOT - FOREST_BAND_TOP
+const CREAM_PAD_TOP = FOREST_BAND_BOT
+const CREAM_PAD_HEIGHT = 1 - CREAM_PAD_TOP
 
 const SHORE_BOTTLE_IMG =
   "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/bottle-w-ripples.avif"
@@ -126,6 +134,9 @@ const RNALAB_TEXTBOX_IMG =
 
 const RNALAB_EXPLANATION =
   "RNAlab is our advisory lab partner that helped uncover 215.7 million high-quality plastic-degrading enzymes."
+
+/** Jump to the top on mount / HMR. Turn back on before shipping. */
+const RESET_SCROLL_ON_MOUNT = false
 
 /** Overlays inside a band (text above bottle). */
 const Z = {
@@ -180,6 +191,7 @@ const BIRDS = [
     flapMs: 480,
     delayMs: 140,
     depth: "front",
+    z: 4,
   },
   {
     id: 3,
@@ -207,7 +219,7 @@ const BIRDS = [
  * Fraction of the waterfall band height where the puddle / ripple sits.
  * Tune against the unified front plate (lip ≈ 1380/4000).
  */
-const WATER_RIPPLE_FRAC = 0.98 - LANDMARK_NUDGE_UP
+const WATER_RIPPLE_FRAC = 0.98 - LANDMARK_NUDGE_UP - 0.06
 
 /**
  * Visible bottle band as a fraction of its layer height.
@@ -229,7 +241,7 @@ const BOTTLE_SPLASH_TRIGGER_OPACITY = 0.35
 const BOTTLE_SHORE_FADE_START_VH = 0.75
 const BOTTLE_SHORE_FADE_END_VH = 0.6
 /** Splash anchor on the first (waterfall) art band — puddle / river start. */
-const WATERFALL_SPLASH_TOP_PCT = 92 - LANDMARK_NUDGE_UP * 100
+const WATERFALL_SPLASH_TOP_PCT = 92 - LANDMARK_NUDGE_UP * 100 - 6
 const WATERFALL_SPLASH_LEFT_PCT = 50
 
 /**
@@ -245,6 +257,174 @@ const SHORE_BOTTLE_RESET_FRAC = 1.08
 const SHORE_BOTTLE_DRIFT_MS = 15000
 /** Sky bottle treated as sunk once fade opacity drops below this. */
 const SHORE_BOTTLE_SUNK_OPACITY = 0.2
+
+const CRAB_CDN =
+  "https://static.igem.wiki/teams/6187/wiki/homepage-components/section-2-animals"
+
+/**
+ * Section-2 crabs (shore / sand). Each pair is a full transparent plate
+ * (2238×3132) with the crab painted in place — same flip idea as the birds.
+ * Overlay is full-bleed on the shore band from the top; `xPct` / `yPct` are
+ * extra translates (% of that plate) if you need to nudge one.
+ *
+ * Painted spots on the plate (left%, top% = bbox; also centroid):
+ *   a  left 64.4  top 6.9   (centroid 68.5, 10.4)  — upper-right sand
+ *   b  left 76.6  top 11.2  (centroid 79.5, 13.4)  — further right, a bit lower
+ *   c  left 30.4  top 81.4  (centroid 36.4, 86.1)  — lower-left sand
+ */
+const CRABS = [
+  {
+    id: "a",
+    a: `${CRAB_CDN}/crab-section-2-a.avif`,
+    b: `${CRAB_CDN}/crab-section-2-a-2.avif`,
+    xPct: -10,
+    yPct: 12,
+    flapMs: 860,
+    delayMs: 0,
+  },
+  {
+    id: "b",
+    a: `${CRAB_CDN}/crab-section-2-b.avif`,
+    b: `${CRAB_CDN}/crab-section-2-b-2.avif`,
+    xPct: -50,
+    yPct: 30,
+    flapMs: 640,
+    delayMs: 180,
+  },
+  {
+    id: "c",
+    a: `${CRAB_CDN}/crab-section-2-c.avif`,
+    b: `${CRAB_CDN}/crab-section-2-c-2.avif`,
+    xPct: 0,
+    yPct: 0,
+    flapMs: 980,
+    delayMs: 320,
+  },
+]
+
+const SECTION3_CDN =
+  "https://static.igem.wiki/teams/6187/wiki/homepage-components/section-3-animals"
+
+/**
+ * Section-3 animals (under the map, above the bushes). Same 2238×3132 plates
+ * and a↔a-2 flip as the shore crabs. Overlay is full-bleed from the forest
+ * band top; `xPct` / `yPct` nudge (% of the plate).
+ *
+ * Painted spots (bbox left%, top% / centroid):
+ *   background-axolotl  25.2, 67.0  (49.6, 71.3)  — wide mid-bottom, static
+ *   axolotl             80.3, 64.2  (87.2, 68.4)  — lower right
+ *   bird-a              69.1, 34.9  (72.7, 37.5)  — upper right
+ *   bird-b              33.3, 33.7  (35.9, 36.3)  — upper left
+ *   crab-a              24.5, 53.4  (26.5, 54.4)  — mid left
+ *   crab-b              17.9, 69.4  (20.1, 70.9)  — lower left
+ *   crab-c              77.3, 72.3  (79.5, 74.0)  — lower right
+ */
+const SECTION3_ANIMALS = [
+  {
+    id: "background-axolotl",
+    static: true,
+    src: `${SECTION3_CDN}/section-3-background-axolotl.avif`,
+    xPct: 0,
+    yPct: 10,
+  },
+  {
+    id: "axolotl",
+    a: `${SECTION3_CDN}/section-3-axolotl.avif`,
+    b: `${SECTION3_CDN}/section-3-axolotl-2.avif`,
+    xPct: 1,
+    yPct: 10,
+    flapMs: 1100,
+    delayMs: 80,
+  },
+  {
+    id: "bird-a",
+    a: `${SECTION3_CDN}/section-3-bird-a.avif`,
+    b: `${SECTION3_CDN}/section-3-bird-a-2.avif`,
+    xPct: 10,
+    yPct: 0,
+    scale: 1.32,
+    originX: 72.7,
+    originY: 37.5,
+    hover: true,
+    /** Empty transparent column on the right of the plate — drop it so scale doesn't widen the page. */
+    clipRightPct: 24,
+    flapMs: 480,
+    delayMs: 40,
+  },
+  {
+    id: "bird-b",
+    a: `${SECTION3_CDN}/section-3-bird-b.avif`,
+    b: `${SECTION3_CDN}/section-3-bird-b-2.avif`,
+    xPct: -15,
+    yPct: 10,
+    scale: 1.32,
+    originX: 35.9,
+    originY: 36.3,
+    hover: true,
+    flapMs: 720,
+    delayMs: 160,
+  },
+  {
+    id: "crab-a",
+    a: `${SECTION3_CDN}/section-3-crab-a.avif`,
+    b: `${SECTION3_CDN}/section-3-crab-a-2.avif`,
+    xPct: -23,
+    yPct: 25,
+    flapMs: 820,
+    delayMs: 0,
+  },
+  {
+    id: "crab-b",
+    a: `${SECTION3_CDN}/section-3-crab-b.avif`,
+    b: `${SECTION3_CDN}/section-3-crab-b-2.avif`,
+    xPct: -1,
+    yPct: -8,
+    flapMs: 700,
+    delayMs: 220,
+  },
+  {
+    id: "crab-c",
+    a: `${SECTION3_CDN}/section-3-crab-c.avif`,
+    b: `${SECTION3_CDN}/section-3-crab-c-2.avif`,
+    xPct: 0,
+    yPct: -10,
+    flapMs: 940,
+    delayMs: 360,
+  },
+]
+
+/**
+ * Section-3 human plate (2238×3132, same overlay as the forest animals).
+ * Above the painting + animals, under the bush layer. Tweak `xPct` / `yPct`.
+ * Painted bbox ≈ left 31.2% top 17% (centroid 61.5, 51.2).
+ */
+const HUMAN = {
+  src: "https://static.igem.wiki/teams/6187/wiki/homepage-components/human/human-1.avif",
+  srcArrived:
+    "https://static.igem.wiki/teams/6187/wiki/homepage-components/human/human-2.avif",
+  xPct: 20,
+  yPct: 33,
+  scale: 0.47,
+  originX: 61.5,
+  originY: 51.2,
+}
+
+/** Extra in-flow scroll while the forest frame is sticky; maps to walk progress. */
+const WALK_TRACK_VH = 120
+/** Extra freeze after pose 2 + bang, so the arrived art can be seen before unpin. */
+const WALK_HOLD_VH = 55
+/** Keep the figure centroid at this viewport Y while the forest is frozen. */
+const HUMAN_PIN_VIEW_Y = 0.68
+/** Human / animal overlay plates are 2238×3132. */
+const OVERLAY_PLATE_ASPECT = 3132 / 2238
+/** Head on the human plate (%), for placing the bang behind it. */
+const HUMAN_HEAD_X = 61.5
+const HUMAN_HEAD_Y = 22
+/** Bang centroid on the full-size exclamation plate (%). */
+const EXCLAMATION_MARK_X = 55
+const EXCLAMATION_MARK_Y = 30
+const EXCLAMATION_SRC =
+  "https://static.igem.wiki/teams/6187/wiki/homepage-components/human/exclamation.avif"
 
 /**
  * Full-page wiki front compositing: Toronto parallax behind one tall front plate.
@@ -268,6 +448,14 @@ export function HomeScrollPrototype() {
   const birdParallaxRefs = useRef([])
   const waterRef = useRef(null)
   const shoreRef = useRef(null)
+  const walkTrackRef = useRef(null)
+  const compositionRef = useRef(null)
+  const humanWalkRef = useRef(null)
+  const humanBobRef = useRef(null)
+  const forestDatasetRef = useRef(null)
+  const walkArrivedRef = useRef(false)
+  const walkLatchedRef = useRef(false)
+  const walkReleasedRef = useRef(false)
   const shoreBottlePlayedRef = useRef(false)
   /** True after the sky bottle finishes its waterfall sink (near-bottom unpin). */
   const skyBottleHasSunkRef = useRef(false)
@@ -281,6 +469,7 @@ export function HomeScrollPrototype() {
   const [bottleTouchPinned, setBottleTouchPinned] = useState(false)
   const [shoreBottlePlaying, setShoreBottlePlaying] = useState(false)
   const [splashPlaying, setSplashPlaying] = useState(false)
+  const [walkArrived, setWalkArrived] = useState(false)
   const reduceMotionParallaxRef = useRef(false)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
@@ -322,6 +511,7 @@ export function HomeScrollPrototype() {
   // Reset scroll before paint so a restored mid-page scroll cannot flash a pinned/sunk bottle.
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
+    if (!RESET_SCROLL_ON_MOUNT) return
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual"
     }
@@ -385,7 +575,99 @@ export function HomeScrollPrototype() {
       if (stack) {
         const rect = stack.getBoundingClientRect()
         setNavPinned(rect.top < 0 && rect.bottom > 0)
-        const scrolledInto = Math.max(0, -rect.top)
+      }
+
+      const painting = compositionRef.current
+      const track = walkTrackRef.current
+      const walker = humanWalkRef.current
+      const reduceWalk = reduceMotionParallaxRef.current
+      const walkPx = reduceWalk ? 0 : window.innerHeight * (WALK_TRACK_VH / 100)
+      const holdPx = reduceWalk || walkPx <= 0 ? 0 : window.innerHeight * (WALK_HOLD_VH / 100)
+      const freezePx = walkPx + holdPx
+      let walkProgress = 0
+
+      if (painting) {
+        const artH = painting.offsetHeight
+        const artW = painting.offsetWidth
+        const plateH = artW * OVERLAY_PLATE_ASPECT
+        const humanOriginY =
+          FOREST_BAND_TOP * artH + ((HUMAN.originY + HUMAN.yPct) / 100) * plateH
+        const forestPinY = Math.max(
+          0,
+          humanOriginY - window.innerHeight * HUMAN_PIN_VIEW_Y
+        )
+        if (reduceWalk || freezePx <= 0) {
+          if (track) {
+            track.style.height = ""
+            track.style.paddingBottom = "0px"
+          }
+          painting.style.position = "relative"
+          painting.style.top = "0px"
+          painting.style.left = ""
+          painting.style.width = ""
+        } else if (track) {
+          track.style.paddingBottom = "0px"
+          if (walkReleasedRef.current) {
+            track.style.height = `${artH}px`
+            painting.style.position = "relative"
+            painting.style.top = "0px"
+            painting.style.left = ""
+            painting.style.width = ""
+          } else {
+            track.style.height = `${artH + freezePx}px`
+            const trackDocTop = track.getBoundingClientRect().top + y
+            const pinAt = trackDocTop + forestPinY
+            walkProgress = Math.max(0, Math.min(1, (y - pinAt) / Math.max(1, walkPx)))
+            if (walkProgress >= 0.995) walkLatchedRef.current = true
+            painting.style.left = "0px"
+            painting.style.width = "100%"
+            if (walkLatchedRef.current && y > pinAt + freezePx) {
+              walkReleasedRef.current = true
+              window.scrollTo({ top: y - freezePx, left: 0, behavior: "instant" })
+              track.style.height = `${artH}px`
+              painting.style.position = "relative"
+              painting.style.top = "0px"
+              painting.style.left = ""
+              painting.style.width = ""
+            } else if (y < pinAt) {
+              painting.style.position = "absolute"
+              painting.style.top = "0px"
+            } else if (y <= pinAt + freezePx) {
+              painting.style.position = "fixed"
+              painting.style.top = `${-forestPinY}px`
+            } else {
+              painting.style.position = "absolute"
+              painting.style.top = `${freezePx}px`
+            }
+          }
+        }
+        if (walker) {
+          const latched = walkLatchedRef.current
+          const p = latched ? 1 : walkProgress
+          const paintingLeft = painting.getBoundingClientRect().left
+          const startX = ((HUMAN.originX + HUMAN.xPct) / 100) * painting.offsetWidth
+          const extraXMax = window.innerWidth / 2 - (paintingLeft + startX)
+          const extraX = extraXMax * p
+          walker.style.transform = extraX ? `translate3d(${extraX}px, 0, 0)` : ""
+          walker.style.willChange = !latched && p > 0 && p < 1 ? "transform" : "auto"
+          if (humanBobRef.current) {
+            humanBobRef.current.dataset.walking =
+              !latched && walkProgress > 0.02 && walkProgress < 0.995 ? "1" : ""
+          }
+          if (forestDatasetRef.current) {
+            forestDatasetRef.current.style.opacity =
+              reduceWalk || latched ? "1" : String(walkProgress)
+          }
+          if (latched !== walkArrivedRef.current) {
+            walkArrivedRef.current = latched
+            setWalkArrived(latched)
+          }
+        }
+      }
+
+      const paintingRect = painting ? painting.getBoundingClientRect() : null
+      if (painting && paintingRect) {
+        const scrolledInto = Math.max(0, -paintingRect.top)
         const offset = reduceMotionParallaxRef.current
           ? 0
           : scrolledInto * (1 - BACK_PARALLAX_SPEED)
@@ -516,9 +798,16 @@ export function HomeScrollPrototype() {
     tick()
     window.addEventListener("scroll", tick, { passive: true })
     window.addEventListener("resize", tick, { passive: true })
+    const paintingEl = compositionRef.current
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" && paintingEl
+        ? new ResizeObserver(() => tick())
+        : null
+    if (resizeObserver && paintingEl) resizeObserver.observe(paintingEl)
     return () => {
       window.removeEventListener("scroll", tick)
       window.removeEventListener("resize", tick)
+      if (resizeObserver) resizeObserver.disconnect()
     }
   }, [applyBottleSinkVisual, hideSkyBottle, restoreSkyBottle, triggerBottleSplash])
 
@@ -625,7 +914,8 @@ export function HomeScrollPrototype() {
   return (
     <WikiFrontRoot>
       <ScrollStack ref={stackRef}>
-        <CompositionRoot>
+        <WalkTrack ref={walkTrackRef}>
+          <CompositionRoot ref={compositionRef}>
           <BackScene>
             <ParallaxBack ref={parallaxBackRef}>
               <BackRailImg src={ASSETS.back} alt="Wiki front — background scenery" />
@@ -634,6 +924,7 @@ export function HomeScrollPrototype() {
               {BIRDS.map((bird, i) => (
                 <BirdParallax
                   key={bird.id}
+                  $z={bird.z ?? (bird.depth === "front" ? 2 : 1)}
                   ref={(el) => {
                     birdParallaxRefs.current[i] = el
                   }}
@@ -748,6 +1039,28 @@ export function HomeScrollPrototype() {
             $z={3}
           >
             <ShoreOverlayStack>
+              <CrabsStack aria-hidden="true">
+                {CRABS.map((crab) => (
+                  <CrabMount key={crab.id} $xPct={crab.xPct} $yPct={crab.yPct}>
+                    <CrabFlapper>
+                      <CrabFrame
+                        $phase="a"
+                        $durationMs={crab.flapMs}
+                        $delayMs={crab.delayMs}
+                        src={crab.a}
+                        alt=""
+                      />
+                      <CrabFrame
+                        $phase="b"
+                        $durationMs={crab.flapMs}
+                        $delayMs={crab.delayMs}
+                        src={crab.b}
+                        alt=""
+                      />
+                    </CrabFlapper>
+                  </CrabMount>
+                ))}
+              </CrabsStack>
               <ShoreBottleLayer $z={3}>
                 <ShoreBottleMount
                   $playing={shoreBottlePlaying}
@@ -764,40 +1077,148 @@ export function HomeScrollPrototype() {
                 </ShoreBottleMount>
               </ShoreBottleLayer>
               <ShoreTextLayer $z={4}>
+                <ShorePetaseMount>
+                  <ShorePetaseBody>
+                    To combat this, we are engineering plastic-degrading enzymes or{" "}
+                    <ExplainTerm term="PETases" explanation={PETASE_EXPLANATION} />.
+                  </ShorePetaseBody>
+                </ShorePetaseMount>
                 <ShoreTextMount>
                   <ShoreBody>
-                    That&apos;s why our team has developed the LOGAN index: a planetary sequence
-                    search that discovers novel plastic-degrading enzymes.
-                  </ShoreBody>
-                  <ShoreBody $spaced>
-                    Before, the industry was using an enzyme dataset of roughly 200. With our
-                    advisory lab, the{" "}
-                    <ExplainTerm
-                      term="RNAlab"
-                      explanation={RNALAB_EXPLANATION}
-                      imageSrc={RNALAB_TEXTBOX_IMG}
-                      imageAlt="RNAlab"
-                    />
-                    , the team uncovered 215.7 million high-quality plastic‑degrading enzymes — a
-                    1,000,000‑fold increase from the enzyme landscape previously known.
+                    However, PETases currently in industry have a major limitation...
                   </ShoreBody>
                 </ShoreTextMount>
+                <ShoreMidTextMount>
+                  <ShoreMidBody>
+                    ...the current enzymes only work under…
+                  </ShoreMidBody>
+                </ShoreMidTextMount>
+                <ShoreCardsMount>
+                  <SwipeInBox stationary title="...3 specific conditions">
+                    <ConditionImageRow>
+                      {CONDITION_CARD_IMAGES.map((image) => (
+                        <ConditionFigure key={image.alt}>
+                          <ConditionImage src={image.src} alt={image.alt} />
+                          <ConditionCaption>{image.alt}</ConditionCaption>
+                        </ConditionFigure>
+                      ))}
+                    </ConditionImageRow>
+                  </SwipeInBox>
+                </ShoreCardsMount>
+                <ShoreLoganMount>
+                  <ShoreLoganBody>
+                    That&apos;s why our team has developed the LOGAN index: a planetary sequence
+                    search that discovers novel plastic-degrading enzymes.
+                  </ShoreLoganBody>
+                </ShoreLoganMount>
               </ShoreTextLayer>
-              <ShoreCardsLayer $z={20}>
-                <SwipeInBox stationary title="... we need 3 specific conditions:">
-                  <ConditionImageRow>
-                    {CONDITION_CARD_IMAGES.map((image) => (
-                      <ConditionFigure key={image.alt}>
-                        <ConditionImage src={image.src} alt={image.alt} />
-                        <ConditionCaption>{image.alt}</ConditionCaption>
-                      </ConditionFigure>
-                    ))}
-                  </ConditionImageRow>
-                </SwipeInBox>
-              </ShoreCardsLayer>
             </ShoreOverlayStack>
           </ArtBand>
-        </CompositionRoot>
+
+          <ArtBand $top={FOREST_BAND_TOP} $height={FOREST_BAND_HEIGHT} $z={3}>
+            <ForestAnimalsStack aria-hidden="true">
+              {SECTION3_ANIMALS.map((animal) =>
+                animal.static ? (
+                  <CrabMount key={animal.id} $xPct={animal.xPct} $yPct={animal.yPct}>
+                    <CrabFlapper>
+                      <StaticPlateImg src={animal.src} alt="" />
+                    </CrabFlapper>
+                  </CrabMount>
+                ) : (
+                  <CrabMount key={animal.id} $xPct={animal.xPct} $yPct={animal.yPct}>
+                    <AnimalMotion
+                      $scale={animal.scale || 1}
+                      $ox={animal.originX}
+                      $oy={animal.originY}
+                      $hover={animal.hover}
+                      $delayMs={animal.delayMs}
+                      $clipRightPct={animal.clipRightPct || 0}
+                    >
+                      <CrabFlapper>
+                        <CrabFrame
+                          $phase="a"
+                          $durationMs={animal.flapMs}
+                          $delayMs={animal.delayMs}
+                          $hoverFlap={animal.hover}
+                          src={animal.a}
+                          alt=""
+                        />
+                        <CrabFrame
+                          $phase="b"
+                          $durationMs={animal.flapMs}
+                          $delayMs={animal.delayMs}
+                          $hoverFlap={animal.hover}
+                          src={animal.b}
+                          alt=""
+                        />
+                      </CrabFlapper>
+                    </AnimalMotion>
+                  </CrabMount>
+                )
+              )}
+            </ForestAnimalsStack>
+          </ArtBand>
+
+          <ArtBand $top={FOREST_BAND_TOP} $height={FOREST_BAND_HEIGHT} $z={20}>
+            <HumanWalkLayer ref={humanWalkRef} aria-hidden="true">
+              <HumanBob ref={humanBobRef} $arrived={walkArrived}>
+              <CrabMount $xPct={HUMAN.xPct} $yPct={HUMAN.yPct}>
+                <AnimalMotion
+                  $scale={HUMAN.scale}
+                  $ox={HUMAN.originX}
+                  $oy={HUMAN.originY}
+                >
+                  <CrabFlapper>
+                    <ExclamationMark
+                      $dx={HUMAN_HEAD_X - EXCLAMATION_MARK_X}
+                      $dy={HUMAN_HEAD_Y - EXCLAMATION_MARK_Y}
+                    >
+                      <ExclamationPop $show={walkArrived}>
+                        <StaticPlateImg src={EXCLAMATION_SRC} alt="" />
+                      </ExclamationPop>
+                    </ExclamationMark>
+                    <HumanPose $show={!walkArrived}>
+                      <StaticPlateImg src={HUMAN.src} alt="" />
+                    </HumanPose>
+                    <HumanPose $show={walkArrived} $fill>
+                      <StaticPlateImg src={HUMAN.srcArrived} alt="" />
+                    </HumanPose>
+                  </CrabFlapper>
+                </AnimalMotion>
+              </CrabMount>
+              </HumanBob>
+            </HumanWalkLayer>
+          </ArtBand>
+
+          <ArtBand $top={FOREST_BAND_TOP} $height={FOREST_BAND_HEIGHT} $z={21}>
+            <ForestDatasetMount ref={forestDatasetRef}>
+              <ForestDatasetBody>
+                Before, the industry was using an enzyme dataset of roughly 200.
+              </ForestDatasetBody>
+            </ForestDatasetMount>
+          </ArtBand>
+
+          <BushLayer>
+            <RailImg src={ASSETS.bush} alt="" />
+          </BushLayer>
+
+          <ArtBand $top={CREAM_PAD_TOP} $height={CREAM_PAD_HEIGHT} $z={4}>
+            <CreamPadTextMount>
+              <CreamPadBody>
+                With our advisory lab, the{" "}
+                <ExplainTerm
+                  term="RNAlab"
+                  explanation={RNALAB_EXPLANATION}
+                  imageSrc={RNALAB_TEXTBOX_IMG}
+                  imageAlt="RNAlab"
+                />
+                , the team uncovered 215.7 million high-quality plastic‑degrading enzymes — a
+                1,000,000‑fold increase from the enzyme landscape previously known.
+              </CreamPadBody>
+            </CreamPadTextMount>
+          </ArtBand>
+          </CompositionRoot>
+        </WalkTrack>
 
         <HomeNavMount $pinned={navPinned}>
           <WikiTopBar />
@@ -813,7 +1234,6 @@ const WikiFrontRoot = styled.div`
   width: 100%;
   min-width: 0;
   background: var(--color-bg);
-  overflow: visible;
 `
 
 const ScrollStack = styled.div`
@@ -831,12 +1251,145 @@ const HomeNavMount = styled.div`
   z-index: ${WIKI_TOP_BAR_Z_INDEX};
 `
 
+const WalkTrack = styled.div`
+  position: relative;
+  width: 100%;
+  min-width: 0;
+`
+
 const CompositionRoot = styled.div`
   position: relative;
   z-index: 1;
   width: 100%;
   min-width: 0;
-  overflow: visible;
+  overflow: hidden;
+`
+
+const HumanWalkLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+`
+
+const humanWalkBob = keyframes`
+  0%,
+  49.9% {
+    transform: translate3d(0, 0, 0);
+  }
+  50%,
+  100% {
+    transform: translate3d(0, -12px, 0);
+  }
+`
+
+const humanArriveJump = keyframes`
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  32% {
+    transform: translate3d(0, -26px, 0);
+  }
+  52% {
+    transform: translate3d(0, 5px, 0);
+  }
+  72% {
+    transform: translate3d(0, -11px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+`
+
+const HumanBob = styled.div`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  &[data-walking="1"] {
+    animation: ${humanWalkBob} 0.4s steps(1, end) infinite;
+  }
+
+  ${({ $arrived }) =>
+    $arrived &&
+    css`
+      animation: ${humanArriveJump} 0.64s cubic-bezier(0.22, 1.35, 0.32, 1) 1;
+    `}
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`
+
+const bangPopIn = keyframes`
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(-8deg);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.14) rotate(4deg);
+  }
+  70% {
+    transform: scale(0.94) rotate(-3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-2deg);
+  }
+`
+
+const bangIdleSway = keyframes`
+  0%,
+  49.9% {
+    transform: rotate(-8deg);
+  }
+  50%,
+  100% {
+    transform: rotate(8deg);
+  }
+`
+
+const ExclamationMark = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  z-index: 1;
+  transform: translate3d(${({ $dx }) => $dx || 0}%, ${({ $dy }) => $dy || 0}%, 0);
+  pointer-events: none;
+`
+
+const ExclamationPop = styled.div`
+  width: 100%;
+  transform-origin: ${EXCLAMATION_MARK_X}% ${EXCLAMATION_MARK_Y}%;
+  opacity: ${({ $show }) => ($show ? 1 : 0)};
+
+  ${({ $show }) =>
+    $show
+      ? css`
+          animation:
+            ${bangPopIn} 420ms cubic-bezier(0.34, 1.45, 0.64, 1) both,
+            ${bangIdleSway} 1.4s steps(1, end) 420ms infinite;
+        `
+      : css`
+          animation: none;
+        `}
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: ${({ $show }) => ($show ? 1 : 0)};
+    transform: none;
+  }
+`
+
+const HumanPose = styled.div`
+  position: ${({ $fill }) => ($fill ? "absolute" : "relative")};
+  left: 0;
+  top: 0;
+  width: 100%;
+  z-index: 2;
+  opacity: ${({ $show }) => ($show ? 1 : 0)};
+  pointer-events: none;
 `
 
 /** Toronto + birds, height from the back plate — sits in the transparent sky hole. */
@@ -857,6 +1410,16 @@ const FlowSizer = styled.div`
   pointer-events: none;
 `
 
+/** Frontmost scenery (bushes). Above Toronto, painting, and animals; below site nav. */
+const BushLayer = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  z-index: 30;
+  pointer-events: none;
+`
+
 /** Overlay band as a fraction of the unified front canvas. */
 const ArtBand = styled.div`
   position: absolute;
@@ -867,6 +1430,144 @@ const ArtBand = styled.div`
   z-index: ${({ $z }) => $z};
   pointer-events: none;
   overflow: visible;
+`
+
+const CrabsStack = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+`
+
+const ForestAnimalsStack = styled(CrabsStack)`
+  pointer-events: auto;
+`
+
+const animalHoverBob = keyframes`
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(var(--animal-scale, 1));
+  }
+  50% {
+    transform: translate3d(0, -10px, 0) scale(var(--animal-scale, 1));
+  }
+`
+
+const animalHoverBobStrong = keyframes`
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(var(--animal-scale, 1));
+  }
+  50% {
+    transform: translate3d(0, -18px, 0) scale(calc(var(--animal-scale, 1) * 1.08));
+  }
+`
+
+const AnimalMotion = styled.div`
+  width: 100%;
+  transform-origin: ${({ $ox, $oy }) =>
+    `${$ox != null ? $ox : 50}% ${$oy != null ? $oy : 50}%`};
+  --animal-scale: ${({ $scale }) => $scale || 1};
+  transform: scale(var(--animal-scale));
+  clip-path: ${({ $clipRightPct }) =>
+    $clipRightPct > 0 ? `inset(0 ${$clipRightPct}% 0 0)` : "none"};
+
+  ${({ $hover, $delayMs }) =>
+    $hover &&
+    css`
+      animation: ${animalHoverBob} 3.6s ease-in-out infinite;
+      animation-delay: ${($delayMs || 0) * 0.5}ms;
+
+      ${ForestAnimalsStack}:hover & {
+        animation-name: ${animalHoverBobStrong};
+        animation-duration: 2.4s;
+      }
+    `}
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`
+
+const CrabMount = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  transform: translate3d(${({ $xPct }) => $xPct || 0}%, ${({ $yPct }) => $yPct || 0}%, 0);
+  pointer-events: none;
+`
+
+const CrabFlapper = styled.div`
+  position: relative;
+  width: 100%;
+`
+
+const crabFlapA = keyframes`
+  0%,
+  49.9% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+`
+
+const crabFlapB = keyframes`
+  0%,
+  49.9% {
+    opacity: 0;
+  }
+  50%,
+  100% {
+    opacity: 1;
+  }
+`
+
+const CrabFrame = styled.img`
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  user-select: none;
+  pointer-events: none;
+  opacity: ${({ $phase }) => ($phase === "a" ? 1 : 0)};
+  animation-name: ${({ $phase }) => ($phase === "a" ? crabFlapA : crabFlapB)};
+  animation-duration: ${({ $durationMs }) => `${$durationMs || 720}ms`};
+  animation-delay: ${({ $delayMs }) => `${$delayMs || 0}ms`};
+  animation-timing-function: steps(1, end);
+  animation-iteration-count: infinite;
+
+  &:first-child {
+    position: relative;
+  }
+
+  ${({ $hoverFlap, $durationMs }) =>
+    $hoverFlap &&
+    css`
+      ${ForestAnimalsStack}:hover & {
+        animation-duration: ${Math.round(($durationMs || 720) * 0.72)}ms;
+      }
+    `}
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: ${({ $phase }) => ($phase === "a" ? 1 : 0)};
+  }
+`
+
+const StaticPlateImg = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  user-select: none;
+  pointer-events: none;
 `
 
 const ShoreOverlayStack = styled.div`
@@ -884,18 +1585,6 @@ const ShoreTextLayer = styled.div`
   inset: 0;
   z-index: ${({ $z }) => $z};
   pointer-events: none;
-`
-
-/** Conditions cards anchored on the shore art (scroll with the page, no blank section). */
-const ShoreCardsLayer = styled.div`
-  position: absolute;
-  inset: 0;
-  z-index: ${({ $z }) => $z};
-  pointer-events: none;
-
-  & > div > div {
-    width: min(1100px, 98vw);
-  }
 `
 
 /** Rematched section1 bottle: autonomous slow drift along the river, under shore copy. */
@@ -1025,31 +1714,189 @@ const ShoreBottleImg = styled.img`
   pointer-events: none;
 `
 
+/** Centered PETases line where the condition cards used to sit (top of shore). */
+const ShorePetaseMount = styled.div`
+  position: absolute;
+  top: -16%;
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  width: min(72%, 48rem);
+  max-width: calc(100% - 10%);
+  box-sizing: border-box;
+  pointer-events: auto;
+  text-align: center;
+
+  @media (max-width: 720px) {
+    top: -20%;
+    width: min(86%, 92vw);
+  }
+`
+
+const ShorePetaseBody = styled.p`
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: clamp(1.25rem, 2.5vw, 2.55rem);
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 14px rgba(0, 0, 0, 0.35);
+`
+
 /** Sits on the sand bank (left/center of the shore art). */
 const ShoreTextMount = styled.div`
   position: absolute;
-  top: 13%;
+  top: 14%;
   left: max(env(safe-area-inset-left, 0px), 5%);
-  width: min(34%, 26rem);
+  width: min(38%, 28rem);
   max-width: calc(100% - 14%);
   box-sizing: border-box;
-  pointer-events: auto;
+  pointer-events: none;
 
   @media (max-width: 720px) {
-    top: 13%;
+    top: 12%;
     left: max(env(safe-area-inset-left, 0px), 4%);
-    width: min(42%, 40vw);
+    width: min(46%, 44vw);
   }
 `
 
 const ShoreBody = styled.p`
-  margin: ${({ $spaced }) => ($spaced ? "0.75em 0 0" : "0")};
-  color: #51594a;
+  margin: 0;
+  color: #0a0a0a;
   font-family: var(--font-body);
-  /* Scale with page width (vw), not the capped textbox, so type grows as the art widens. */
-  font-size: clamp(1.05rem, 2vw, 2.1rem);
+  font-size: clamp(1.15rem, 2.2vw, 2.3rem);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+`
+
+/** Short line on the right, along the bottle’s downward path (between LOGAN and RNAlab). */
+const ShoreMidTextMount = styled.div`
+  position: absolute;
+  top: 42%;
+  right: max(env(safe-area-inset-right, 0px), 5%);
+  left: auto;
+  width: min(36%, 28rem);
+  box-sizing: border-box;
+  pointer-events: none;
+  text-align: center;
+
+  @media (max-width: 720px) {
+    top: 40%;
+    width: min(44%, 42vw);
+    right: max(env(safe-area-inset-right, 0px), 4%);
+  }
+`
+
+const ShoreMidBody = styled.p`
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: clamp(1.2rem, 2.3vw, 2.4rem);
   font-weight: 600;
   line-height: 1.35;
+  overflow-wrap: break-word;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 14px rgba(0, 0, 0, 0.35);
+`
+
+/** Condition cards + “...3 specific conditions” on the lower sand. */
+const ShoreCardsMount = styled.div`
+  pointer-events: none;
+
+  /* SwipeInBox AnchoredStage defaults to top: -16% (old card slot). */
+  & > div {
+    top: 70%;
+  }
+
+  @media (max-width: 720px) {
+    & > div {
+      top: 67%;
+    }
+  }
+`
+
+/** Centered LOGAN line just above the world map. */
+const ShoreLoganMount = styled.div`
+  position: absolute;
+  top: auto;
+  bottom: -14%;
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  width: min(70%, 46rem);
+  max-width: calc(100% - 10%);
+  box-sizing: border-box;
+  pointer-events: none;
+  text-align: center;
+
+  @media (max-width: 720px) {
+    bottom: -11%;
+    width: min(84%, 92vw);
+  }
+`
+
+const ShoreLoganBody = styled.p`
+  margin: 0;
+  color: #0a0a0a;
+  font-family: var(--font-body);
+  font-size: clamp(1.15rem, 2.2vw, 2.3rem);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+`
+
+/** Dataset line left of the walker; opacity driven by walk progress. */
+const ForestDatasetMount = styled.div`
+  position: absolute;
+  top: 70%;
+  left: max(env(safe-area-inset-left, 0px), 11%);
+  width: min(28%, 20rem);
+  max-width: calc(42% - 8%);
+  box-sizing: border-box;
+  pointer-events: none;
+  text-align: left;
+  opacity: 0;
+
+  @media (max-width: 720px) {
+    top: 68%;
+    left: max(env(safe-area-inset-left, 0px), 8%);
+    width: min(38%, 34vw);
+  }
+`
+
+const ForestDatasetBody = styled.p`
+  margin: 0;
+  color: #0a0a0a;
+  font-family: var(--font-body);
+  font-size: clamp(1.15rem, 2.2vw, 2.3rem);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+`
+
+/** RNAlab copy on the cream pad below the bushes. */
+const CreamPadTextMount = styled.div`
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  width: min(72%, 48rem);
+  max-width: calc(100% - 10%);
+  box-sizing: border-box;
+  pointer-events: auto;
+  text-align: center;
+`
+
+const CreamPadBody = styled.p`
+  margin: 0;
+  color: #0a0a0a;
+  font-family: var(--font-body);
+  font-size: clamp(1.15rem, 2.2vw, 2.3rem);
+  font-weight: 600;
+  line-height: 1.4;
   overflow-wrap: break-word;
 `
 
@@ -1131,6 +1978,7 @@ const BirdsStack = styled.div`
 const BirdParallax = styled.div`
   position: absolute;
   inset: 0;
+  z-index: ${({ $z }) => $z ?? 1};
   will-change: auto;
   pointer-events: none;
 

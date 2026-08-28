@@ -176,7 +176,7 @@ const AnchoredStage = styled.div`
   position: absolute;
   left: 0;
   right: 0;
-  top: -11%;
+  top: -16%;
   bottom: auto;
   display: flex;
   align-items: flex-start;
