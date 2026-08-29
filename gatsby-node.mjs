@@ -18,6 +18,7 @@ export async function createPages({ actions, graphql, reporter }) {
           id
           frontmatter {
             path
+            preferLocal
           }
           internal {
             contentFilePath
@@ -42,6 +43,15 @@ export async function createPages({ actions, graphql, reporter }) {
     const existing = selectedRoutes.get(pagePath)
 
     if (existing) {
+      const preferredLocal = [existing, node].find(
+        (candidate) => !isPayloadExport(candidate) && candidate.frontmatter.preferLocal === true
+      )
+
+      if (preferredLocal) {
+        selectedRoutes.set(pagePath, preferredLocal)
+        continue
+      }
+
       if (isPayloadExport(existing) && !isPayloadExport(node)) {
         continue
       }

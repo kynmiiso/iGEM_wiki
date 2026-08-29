@@ -585,26 +585,32 @@ const OUTREACH_WEEK_PATCHES = {
   "week-2026-07-19": {
     milestones: [
       { date: "2026-07-19", label: "Promo animation planning meeting", subteamId: "outreach" },
+      { date: "2026-07-20", label: "Outreach meeting #15", subteamId: "outreach" },
+      { date: "2026-07-21", label: "Hardware promo filming window", subteamId: "outreach" },
       { date: "2026-07-22", label: "Promo voiceover due", subteamId: "outreach" },
+      { date: "2026-07-22", label: "Anthony VC promo interview", subteamId: "outreach" },
       { date: "2026-07-23", label: "Promo storyboard simplified", subteamId: "outreach" },
+      { date: "2026-07-23", label: "Sania VC promo interview", subteamId: "outreach" },
+      { date: "2026-07-24", label: "Wet lab promo filming", subteamId: "outreach" },
       { date: "2026-07-25", label: "First live promo filming", subteamId: "outreach" },
-      { date: "2026-07-30", label: "July newsletter draft window", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Promo animation plan locked — educational short style, Aug 3 deadline.",
+      summary: "Meet #15 — promo filming ramp + animation plan; Aug 3 animation deadline.",
       detail:
-        "Jul 19 meeting locked an animated mid-section (~25–30 seconds) plus a flowchart beat, in a simple educational-video style with textured brushes matching the PetaBite look. Voiceover for the animated section due Jul 22. Jul 23: cut a zooplankton beat to simplify the storyboard. Live filming of the opening scene Jul 25 before the animated splash transition. Hand-drawn art → render/rig in post; internal animation deadline Aug 3.",
+        "Jul 20 Meet #15: ~15 of 35 promo filming shots done (8 more from Islands); CapCut + DaVinci Resolve editing; animation meeting 1 done with style refs. Shoot windows — hardware Tue 5:30–7:30, wet lab Fri, Victoria Park wastewater B-roll, VC interviews (Clara done; Anthony Wed, Sania Thu); animations due Aug 3. Jul 19 animation meeting locked TED-Ed mid-section shots 2.1–2.9 + flowchart 3.12; VO Jul 22; zooplankton cut Jul 23; scene 1 film Jul 25. Presentation video (15 min, Oct) staffed separately; July newsletter draft targeted for Jul 30 / Aug 1; merch (hoodies, tees, quarter-zips, stickers) exploration started; RTJ still on hold.",
       link: "/beyond-the-bench/outreach/",
     },
   },
   "week-2026-07-26": {
     milestones: [
       { date: "2026-07-27", label: "Hand-drawn promo art due", subteamId: "outreach" },
+      { date: "2026-07-30", label: "July newsletter target post", subteamId: "outreach" },
+      { date: "2026-08-01", label: "July newsletter backup post window", subteamId: "outreach" },
     ],
     outreach: {
-      summary: "Hand-drawn promo art sprint; opening scene filmed Jul 25.",
+      summary: "Hand-drawn promo art sprint; July newsletter draft → Jul 30 / Aug 1.",
       detail:
-        "Pipeline: storyboard (done) → hand-drawn assets (due Mon Jul 27) → render and rig in After Effects. Art covers nets, bottles, microplastics, fish, human/eating frames, and lake/table backgrounds, plus a flowchart animation beat.",
+        "Pipeline: storyboard (done) → hand-drawn assets (due Mon Jul 27) → render and rig in After Effects. Art covers nets, bottles, microplastics, fish, human/eating frames, and lake/table backgrounds, plus a flowchart animation beat. July newsletter draft due this window for a Jul 30 or Aug 1 send (possible Mailchimp switch next month). Merch supplier scouting continues alongside wiki homepage stitch.",
       link: "/beyond-the-bench/outreach/",
     },
   },
