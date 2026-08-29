@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react"
 import { withPrefix } from "gatsby"
 import styled, { css, keyframes } from "styled-components"
 import { WikiTopBar, WIKI_TOP_BAR_Z_INDEX } from "./WikiTopBar.js"
@@ -12,17 +18,23 @@ import { ExplainTerm } from "./ExplainTermPopover.js"
  */
 export const BOTTLE_STAGES = {
   sky: "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/sky.avif",
-  section1: "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section1.avif",
-  section2: "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section2.avif",
-  section3: "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section3.avif",
-  section4: "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section4.avif",
-  section5: "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section5.avif",
+  section1:
+    "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section1.avif",
+  section2:
+    "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section2.avif",
+  section3:
+    "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section3.avif",
+  section4:
+    "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section4.avif",
+  section5:
+    "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/section5.avif",
 }
 
 const ASSETS = {
   back: "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-back.avif",
   /** Unified front plate: plaza + waterfall + river + map + forest. */
-  front: "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-top.avif",
+  front:
+    "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-top.avif",
   /** Foreground bushes — highest scenery layer (same 563×4000 canvas as front). */
   bush: "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-bush.avif",
   /** Waterfall / sky section bottle (current homepage stage). */
@@ -40,17 +52,17 @@ const LOGO_LAST_FRAME_MS = 450
 const LOGO_FRAMES = Array.from(
   { length: LOGO_FRAME_COUNT },
   (_, i) =>
-    `https://static.igem.wiki/teams/6187/wiki/homepage-components/logo-animation-files/untitled-artwork-${i + 1}.avif`
+    `https://static.igem.wiki/teams/6187/wiki/homepage-components/logo-animation-files/untitled-artwork-${i + 1}.avif`,
 )
 
 /** Per-frame visibility windows so the last two frames linger longer. */
 const LOGO_FRAME_TIMING = (() => {
   const durations = Array.from({ length: LOGO_FRAME_COUNT }, (_, i) =>
-    i >= LOGO_FRAME_COUNT - 2 ? LOGO_LAST_FRAME_MS : LOGO_FRAME_MS
+    i >= LOGO_FRAME_COUNT - 2 ? LOGO_LAST_FRAME_MS : LOGO_FRAME_MS,
   )
   const cycleMs = durations.reduce((sum, ms) => sum + ms, 0)
   let acc = 0
-  const windows = durations.map((ms) => {
+  const windows = durations.map(ms => {
     const start = acc / cycleMs
     acc += ms
     return { start, end: acc / cycleMs }
@@ -114,6 +126,105 @@ const FOREST_BAND_HEIGHT = FOREST_BAND_BOT - FOREST_BAND_TOP
 const CREAM_PAD_TOP = FOREST_BAND_BOT
 const CREAM_PAD_HEIGHT = 1 - CREAM_PAD_TOP
 
+/**
+ * Scroll-driven bottle: enter from left after shore float, descend the map→forest
+ * band, swap+shrink at the topmost section-3 bird, park at the second-topmost crab
+ * (above the industry line) during walk-sticky, then fall behind the bushes once
+ * non-sticky scrolling resumes. Scroll-up reverses the same path.
+ *
+ * Landmark tops are % of this band, derived from section-3 painted centroids:
+ *   bird-b (topmost bird) ≈ 36.3% of forest → ~49.5% of bottle band
+ *   crab-b (2nd-top crab) ≈ 70.9% of forest → ~76.9% of bottle band
+ */
+const MAP_BOTTLE_BAND_TOP = SHORE_BAND_BOT
+const MAP_BOTTLE_BAND_HEIGHT = FOREST_BAND_BOT - SHORE_BAND_BOT
+/** Horizontal: slide in from off-left, then hold this % while descending. */
+const MAP_BOTTLE_LEFT_ENTER = -16
+const MAP_BOTTLE_LEFT_REST = 12
+/** Progress (0–1) by which the left-enter finishes and downward travel dominates. */
+const MAP_BOTTLE_ENTER_END = 0.12
+/** Vertical keyframes within the bottle band (%). */
+const MAP_BOTTLE_TOP_START = 8
+/** Same Y as topmost section-3 bird — swap to section3 + begin shrink here. */
+const MAP_BOTTLE_TOP_SWAP = 49.5
+/** Park during walk-sticky (higher = smaller %). Above industry copy. */
+const MAP_BOTTLE_TOP_HOLD = 73
+/** Tuck behind bushes after walk sticky releases. */
+const MAP_BOTTLE_TOP_EXIT = 98
+/** Final scale once fully into the section3 stage (lerps SWAP → HOLD). */
+const MAP_BOTTLE_FOREST_SCALE = 0.62
+
+/** Map a band-top % onto 0–1 scroll progress along START → EXIT. */
+function mapBottleProgressForTop(topPct) {
+  return (
+    (topPct - MAP_BOTTLE_TOP_START) /
+    Math.max(1e-6, MAP_BOTTLE_TOP_EXIT - MAP_BOTTLE_TOP_START)
+  )
+}
+const MAP_BOTTLE_HOLD_P = mapBottleProgressForTop(MAP_BOTTLE_TOP_HOLD)
+const MAP_BOTTLE_FADE_P = mapBottleProgressForTop(92)
+
+/**
+ * Section4 bottle (after bushes): barrel-rolls in from the right as the cream-pad
+ * “advisory lab” copy enters, sticks at viewport center, parks under “Some
+ * applications include…”, then after a short hold tilts onto the WWTP ramp and
+ * slides off down-left.
+ */
+const CREAM_BOTTLE_LEFT_ENTER = 120
+const CREAM_BOTTLE_LEFT_CENTER = 50
+/** Full Z rotations during the right→center approach. */
+const CREAM_BOTTLE_ROLLS = 4
+/** Gap from the apps lead bottom to the bottle top while parked (px). */
+const CREAM_BOTTLE_PARK_GAP_PX = 28
+/**
+ * Cream-text top vs viewport height: roll starts / reaches center.
+ * Wider gap (lower end frac) = slower approach to center.
+ */
+const CREAM_BOTTLE_ROLL_START_FRAC = 0.95
+const CREAM_BOTTLE_ROLL_END_FRAC = 0.05
+/**
+ * Entry Y as a fraction down the cream-text box (1 = bottom edge).
+ * Higher = farther below the advisory-lab copy.
+ */
+const CREAM_BOTTLE_ENTER_TEXT_FRAC = 1.55
+/** Ease on horizontal travel — >1 keeps it right longer, then eases into center. */
+const CREAM_BOTTLE_CENTER_EASE = 1.45
+/** Extra scroll (vh) after park before the ramp exit begins. */
+const CREAM_BOTTLE_RAMP_HOLD_VH = 0.08
+/** Scroll span (vh) for tilt + slide off the WWTP ramp. */
+const CREAM_BOTTLE_RAMP_SLIDE_VH = 0.9
+/** Final lean onto the ramp (deg, CCW = negative). */
+const CREAM_BOTTLE_RAMP_TILT_DEG = -45
+/** Ramp slope from horizontal (deg) — down-left toward the tank. */
+const CREAM_BOTTLE_RAMP_SLOPE_DEG = 20
+/** Fraction of exit progress used to ease into the tilt (rest is slide). */
+const CREAM_BOTTLE_RAMP_TILT_FRAC = 0.5
+/** Travel distance as a fraction of viewport diagonal. */
+const CREAM_BOTTLE_RAMP_DIST_FRAC = 1.05
+/**
+ * Shift the locked / ramp path up (px, negative = higher on screen) so the
+ * bottle rides on top of the WWTP ramp instead of under it.
+ */
+const CREAM_BOTTLE_RAMP_Y_NUDGE_PX = -56
+/** Scroll back above park capture (vh) before sticky/center can run again. */
+const CREAM_BOTTLE_UNPARK_VH = 0.2
+
+/**
+ * Second section4 bottle: starts when the first finishes the WWTP exit, enters
+ * from the right and rolls down the next ramp. Progress is pure scroll delta
+ * (not element location) mapped onto a path in % of the section-5 plate.
+ */
+const RAMP2_SLIDE_VH = 1.15
+/** Path on the section-5 plate (%). Tune to sit on the second WWTP ramp. */
+const RAMP2_START_X_PCT = 108
+const RAMP2_START_Y_PCT = 11
+const RAMP2_END_X_PCT = -12
+const RAMP2_END_Y_PCT = 26
+/** Barrel rolls over the full ramp-2 traversal. */
+const RAMP2_ROLLS = 2.5
+/** Resting lean while on the ramp (deg). */
+const RAMP2_TILT_DEG = -38
+
 const SECTION5_CDN =
   "https://static.igem.wiki/teams/6187/wiki/homepage-components/noorine-section-5-layers"
 
@@ -123,19 +234,19 @@ const SECTION5_LAYERS = [
   { id: 2, file: "2-mid-trench.avif", z: 2 },
   { id: 3, file: "3-fore-trench.avif", z: 3 },
   { id: 4, file: "4-coral-texture.avif", z: 4 },
+  { id: 5, file: "5-coral-blend.avif", z: 5 },
   { id: 7, file: "7-wwtp.avif", z: 7 },
 ]
 
 /**
- * Layer 6 slot (no `6-*.avif` on the CDN yet). `5-coral-blend` is a sparse
- * full-bleed sprite plate — same idea as the sky birds — so it drifts RTL
- * with a slow hover bob between coral (4) and the WWTP (7).
+ * Layer 8 — sparse fish sprites near the bottom of the plate. Drift + bob on
+ * top of the scenery (below apps copy). Not layer 5 (coral-blend is static).
  */
 const SECTION5_FISHES = [
   {
-    id: "blend",
-    src: `${SECTION5_CDN}/5-coral-blend.avif`,
-    z: 5,
+    id: "fishes",
+    src: `${SECTION5_CDN}/8-fishes-that-can-move-around.avif`,
+    z: 9,
     driftMs: 52000,
     driftDelayMs: 1200,
     hoverDelayMs: 0,
@@ -277,7 +388,8 @@ const WATERFALL_SPLASH_TOP_PCT = 92 - LANDMARK_NUDGE_UP * 100 - 6
 const WATERFALL_SPLASH_LEFT_PCT = 50
 /** Opaque blob top in wiki-front-water.png (px 2235 / 2440). Shift so it sits on the splash lip. */
 const PUDDLE_ART_TOP_FRAC = 2235 / 2440
-const PUDDLE_SHIFT_Y_PCT = (PUDDLE_ART_TOP_FRAC - WATERFALL_SPLASH_TOP_PCT / 100) * -100
+const PUDDLE_SHIFT_Y_PCT =
+  (PUDDLE_ART_TOP_FRAC - WATERFALL_SPLASH_TOP_PCT / 100) * -100
 /** Second puddle copy, extra % of the waterfall band downward so the bottle cannot peek under the lip. */
 const PUDDLE_UNDER_SHIFT_PCT = 4.5
 
@@ -485,6 +597,24 @@ export function HomeScrollPrototype() {
   const birdParallaxRefs = useRef([])
   const waterRef = useRef(null)
   const shoreRef = useRef(null)
+  const mapBottleBandRef = useRef(null)
+  const mapBottleMountRef = useRef(null)
+  const mapBottleImgRef = useRef(null)
+  const mapBottleInForestRef = useRef(false)
+  /** Band progress when forest walk begins — ease from here to the crab hold. */
+  const mapBottleWalkStartPRef = useRef(null)
+  const creamPadTextRef = useRef(null)
+  const section5RootRef = useRef(null)
+  const section5LeadRef = useRef(null)
+  const creamBottleMountRef = useRef(null)
+  const creamBottleParkedRef = useRef(false)
+  /** scrollY when the bottle first parks under the apps lead. */
+  const creamBottleParkScrollYRef = useRef(null)
+  /** Document Y (scrollY + viewport top) frozen at lock — scrolls with the art. */
+  const creamBottleParkDocYRef = useRef(null)
+  const ramp2BottleMountRef = useRef(null)
+  /** scrollY when ramp-2 bottle activates (first bottle fully exited). */
+  const ramp2StartScrollYRef = useRef(null)
   const walkTrackRef = useRef(null)
   const compositionRef = useRef(null)
   const humanWalkRef = useRef(null)
@@ -511,7 +641,7 @@ export function HomeScrollPrototype() {
 
   bottleTouchPinnedRef.current = bottleTouchPinned
 
-  const applyBottleSinkVisual = useCallback((opacity) => {
+  const applyBottleSinkVisual = useCallback(opacity => {
     const visual = bottleVisualRef.current
     const sink = bottleSinkMotionRef.current
     const op = Math.max(0, Math.min(1, opacity))
@@ -562,7 +692,10 @@ export function HomeScrollPrototype() {
   }, [applyBottleSinkVisual])
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
       return undefined
     }
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -573,7 +706,7 @@ export function HomeScrollPrototype() {
           parallaxBackRef.current.style.transform = "translate3d(0, 0, 0)"
           parallaxBackRef.current.style.willChange = "auto"
         }
-        birdParallaxRefs.current.forEach((el) => {
+        birdParallaxRefs.current.forEach(el => {
           if (!el) return
           el.style.transform = "translate3d(0, 0, 0)"
           el.style.willChange = "auto"
@@ -592,7 +725,9 @@ export function HomeScrollPrototype() {
       const y = window.scrollY
 
       // Use ScrollStack bottom to know where the mockup section is in the viewport
-      const stackBottom = stack ? stack.getBoundingClientRect().bottom : window.innerHeight
+      const stackBottom = stack
+        ? stack.getBoundingClientRect().bottom
+        : window.innerHeight
 
       // Release the bottle when the ScrollStack bottom crosses 45% of viewport height
       const UNPIN_THRESHOLD = window.innerHeight * 0.45
@@ -619,7 +754,10 @@ export function HomeScrollPrototype() {
       const walker = humanWalkRef.current
       const reduceWalk = reduceMotionParallaxRef.current
       const walkPx = reduceWalk ? 0 : window.innerHeight * (WALK_TRACK_VH / 100)
-      const holdPx = reduceWalk || walkPx <= 0 ? 0 : window.innerHeight * (WALK_HOLD_VH / 100)
+      const holdPx =
+        reduceWalk || walkPx <= 0
+          ? 0
+          : window.innerHeight * (WALK_HOLD_VH / 100)
       const freezePx = walkPx + holdPx
       let walkProgress = 0
 
@@ -631,7 +769,7 @@ export function HomeScrollPrototype() {
           FOREST_BAND_TOP * artH + ((HUMAN.originY + HUMAN.yPct) / 100) * plateH
         const forestPinY = Math.max(
           0,
-          humanOriginY - window.innerHeight * HUMAN_PIN_VIEW_Y
+          humanOriginY - window.innerHeight * HUMAN_PIN_VIEW_Y,
         )
         if (reduceWalk || freezePx <= 0) {
           if (track) {
@@ -654,13 +792,20 @@ export function HomeScrollPrototype() {
             track.style.height = `${artH + freezePx}px`
             const trackDocTop = track.getBoundingClientRect().top + y
             const pinAt = trackDocTop + forestPinY
-            walkProgress = Math.max(0, Math.min(1, (y - pinAt) / Math.max(1, walkPx)))
+            walkProgress = Math.max(
+              0,
+              Math.min(1, (y - pinAt) / Math.max(1, walkPx)),
+            )
             if (walkProgress >= 0.995) walkLatchedRef.current = true
             painting.style.left = "0px"
             painting.style.width = "100%"
             if (walkLatchedRef.current && y > pinAt + freezePx) {
               walkReleasedRef.current = true
-              window.scrollTo({ top: y - freezePx, left: 0, behavior: "instant" })
+              window.scrollTo({
+                top: y - freezePx,
+                left: 0,
+                behavior: "instant",
+              })
               track.style.height = `${artH}px`
               painting.style.position = "relative"
               painting.style.top = "0px"
@@ -682,11 +827,15 @@ export function HomeScrollPrototype() {
           const latched = walkLatchedRef.current
           const p = latched ? 1 : walkProgress
           const paintingLeft = painting.getBoundingClientRect().left
-          const startX = ((HUMAN.originX + HUMAN.xPct) / 100) * painting.offsetWidth
+          const startX =
+            ((HUMAN.originX + HUMAN.xPct) / 100) * painting.offsetWidth
           const extraXMax = window.innerWidth / 2 - (paintingLeft + startX)
           const extraX = extraXMax * p
-          walker.style.transform = extraX ? `translate3d(${extraX}px, 0, 0)` : ""
-          walker.style.willChange = !latched && p > 0 && p < 1 ? "transform" : "auto"
+          walker.style.transform = extraX
+            ? `translate3d(${extraX}px, 0, 0)`
+            : ""
+          walker.style.willChange =
+            !latched && p > 0 && p < 1 ? "transform" : "auto"
           if (humanBobRef.current) {
             humanBobRef.current.dataset.walking =
               !latched && walkProgress > 0.02 && walkProgress < 0.995 ? "1" : ""
@@ -710,7 +859,8 @@ export function HomeScrollPrototype() {
           : scrolledInto * (1 - BACK_PARALLAX_SPEED)
         if (parallaxBackRef.current) {
           parallaxBackRef.current.style.transform = `translate3d(0, ${offset}px, 0)`
-          parallaxBackRef.current.style.willChange = offset > 0 ? "transform" : "auto"
+          parallaxBackRef.current.style.willChange =
+            offset > 0 ? "transform" : "auto"
         }
         BIRDS.forEach((bird, i) => {
           const el = birdParallaxRefs.current[i]
@@ -741,7 +891,7 @@ export function HomeScrollPrototype() {
         const fadeEnd = vh * BOTTLE_SHORE_FADE_END_VH
         shoreApproachOp = Math.max(
           0,
-          Math.min(1, (shoreTop - fadeEnd) / Math.max(1, fadeStart - fadeEnd))
+          Math.min(1, (shoreTop - fadeEnd) / Math.max(1, fadeStart - fadeEnd)),
         )
       }
 
@@ -792,7 +942,11 @@ export function HomeScrollPrototype() {
         if (skyBottleHiddenRef.current) {
           // Stay hidden after sink. Restore only once scrolled back up past the pin zone.
           applyBottleSinkVisual(0)
-          if (!nearBottom && shoreApproachOp >= 0.98 && (bottleMidY > viewMidY + 24 || y < 64)) {
+          if (
+            !nearBottom &&
+            shoreApproachOp >= 0.98 &&
+            (bottleMidY > viewMidY + 24 || y < 64)
+          ) {
             restoreSkyBottle()
           }
         } else {
@@ -830,23 +984,311 @@ export function HomeScrollPrototype() {
           setShoreBottlePlaying(true)
         }
       }
+
+      // Map→forest bottle: enter left → descend → swap/shrink at bird → park at
+      // crab/industry during walk-sticky → fall behind bushes after release.
+      // Scroll-up reverses the same progress (no latch freeze).
+      const mapBand = mapBottleBandRef.current
+      const mapMount = mapBottleMountRef.current
+      if (mapBand && mapMount) {
+        const rect = mapBand.getBoundingClientRect()
+        const vh = window.innerHeight
+        const span = Math.max(1, rect.height * 0.92)
+        let p = Math.max(0, Math.min(1, (vh * 0.5 - rect.top) / span))
+
+        // Until walk sticky releases: cap at the crab/industry hold. While the
+        // walk runs, ease from the frozen band progress up to that hold (and
+        // ease back if the user scrolls up), then stay parked until unpin.
+        if (!walkReleasedRef.current) {
+          if (walkProgress > 0.02) {
+            if (mapBottleWalkStartPRef.current == null) {
+              mapBottleWalkStartPRef.current = Math.min(p, MAP_BOTTLE_HOLD_P)
+            }
+            const startP = mapBottleWalkStartPRef.current
+            const walkT = Math.min(1, Math.max(0, (walkProgress - 0.02) / 0.28))
+            p = startP + (MAP_BOTTLE_HOLD_P - startP) * walkT
+          } else {
+            mapBottleWalkStartPRef.current = null
+            p = Math.min(p, MAP_BOTTLE_HOLD_P)
+          }
+        } else {
+          mapBottleWalkStartPRef.current = null
+        }
+
+        let left = MAP_BOTTLE_LEFT_REST
+        if (p < MAP_BOTTLE_ENTER_END) {
+          const t = p / MAP_BOTTLE_ENTER_END
+          left =
+            MAP_BOTTLE_LEFT_ENTER +
+            (MAP_BOTTLE_LEFT_REST - MAP_BOTTLE_LEFT_ENTER) * t
+        }
+
+        const top =
+          MAP_BOTTLE_TOP_START +
+          (MAP_BOTTLE_TOP_EXIT - MAP_BOTTLE_TOP_START) * p
+
+        const inForest = top >= MAP_BOTTLE_TOP_SWAP
+        if (inForest !== mapBottleInForestRef.current) {
+          mapBottleInForestRef.current = inForest
+          const img = mapBottleImgRef.current
+          if (img) {
+            img.src = inForest ? BOTTLE_STAGES.section3 : BOTTLE_STAGES.section2
+          }
+        }
+
+        let scale = 1
+        if (top >= MAP_BOTTLE_TOP_HOLD) {
+          scale = MAP_BOTTLE_FOREST_SCALE
+        } else if (top > MAP_BOTTLE_TOP_SWAP) {
+          const t =
+            (top - MAP_BOTTLE_TOP_SWAP) /
+            Math.max(1e-6, MAP_BOTTLE_TOP_HOLD - MAP_BOTTLE_TOP_SWAP)
+          scale = 1 + (MAP_BOTTLE_FOREST_SCALE - 1) * t
+        }
+
+        let opacity = 0
+        if (p > 0.01) {
+          if (p >= MAP_BOTTLE_FADE_P) {
+            opacity = Math.max(
+              0,
+              1 - (p - MAP_BOTTLE_FADE_P) / Math.max(1e-6, 1 - MAP_BOTTLE_FADE_P),
+            )
+          } else {
+            opacity = 1
+          }
+        }
+
+        mapMount.style.left = `${left}%`
+        mapMount.style.top = `${top}%`
+        mapMount.style.transform = `translate3d(-50%, -50%, 0) scale(${scale})`
+        mapMount.style.opacity = String(opacity)
+        mapMount.style.visibility = opacity > 0.02 ? "visible" : "hidden"
+      }
+
+      // Section4 bottle: barrel-roll in over advisory-lab copy → sticky center →
+      // park under “Some applications include…” → hold → tilt + slide down WWTP ramp.
+      const creamBottle = creamBottleMountRef.current
+      const creamText = creamPadTextRef.current
+      const appsLead = section5LeadRef.current
+      if (creamBottle && creamText) {
+        const vh = window.innerHeight
+        const vw = window.innerWidth
+        const cream = creamText.getBoundingClientRect()
+        const startY = vh * CREAM_BOTTLE_ROLL_START_FRAC
+        const endY = vh * CREAM_BOTTLE_ROLL_END_FRAC
+        let rollP = (startY - cream.top) / Math.max(1, startY - endY)
+        rollP = Math.max(0, Math.min(1, rollP))
+
+        const lead = appsLead ? appsLead.getBoundingClientRect() : null
+        const liveParkTop =
+          lead != null ? lead.bottom + CREAM_BOTTLE_PARK_GAP_PX : null
+        const parkLeft = vw * 0.5
+        const baseRotate = CREAM_BOTTLE_ROLLS * 360
+
+        // Once locked under the apps lead, freeze in document space (moves with
+        // the WWTP art — no viewport sticky follow) until scroll-back unpark.
+        if (creamBottleParkedRef.current) {
+          const parkAt = creamBottleParkScrollYRef.current
+          if (
+            parkAt != null &&
+            y < parkAt - vh * CREAM_BOTTLE_UNPARK_VH
+          ) {
+            creamBottleParkedRef.current = false
+            creamBottleParkScrollYRef.current = null
+            creamBottleParkDocYRef.current = null
+            ramp2StartScrollYRef.current = null
+          }
+        } else if (
+          rollP >= 1 &&
+          liveParkTop != null &&
+          liveParkTop <= vh * 0.5
+        ) {
+          creamBottleParkedRef.current = true
+          creamBottleParkScrollYRef.current = y
+          creamBottleParkDocYRef.current =
+            y + liveParkTop + CREAM_BOTTLE_RAMP_Y_NUDGE_PX
+        }
+
+        let leftPx
+        let topPx
+        let rotateDeg = 0
+        let opacity = 0
+        let transformOrigin = "50% 50%"
+        let firstExitP = 0
+
+        if (creamBottleParkedRef.current) {
+          if (creamBottleParkScrollYRef.current == null) {
+            creamBottleParkScrollYRef.current = y
+          }
+          if (creamBottleParkDocYRef.current == null && liveParkTop != null) {
+            creamBottleParkDocYRef.current =
+              y + liveParkTop + CREAM_BOTTLE_RAMP_Y_NUDGE_PX
+          }
+          // Document-locked anchor → viewport. Stays put on the art as you scroll.
+          const anchorTop =
+            creamBottleParkDocYRef.current != null
+              ? creamBottleParkDocYRef.current - y
+              : liveParkTop != null
+                ? liveParkTop + CREAM_BOTTLE_RAMP_Y_NUDGE_PX
+                : vh * 0.22
+          const holdPx = vh * CREAM_BOTTLE_RAMP_HOLD_VH
+          const slidePx = Math.max(1, vh * CREAM_BOTTLE_RAMP_SLIDE_VH)
+          const past = y - creamBottleParkScrollYRef.current
+          firstExitP = Math.max(
+            0,
+            Math.min(1, (past - holdPx) / slidePx),
+          )
+          // Smoothstep for slide travel.
+          const slideEase = firstExitP * firstExitP * (3 - 2 * firstExitP)
+          const tiltP = Math.max(
+            0,
+            Math.min(
+              1,
+              firstExitP / Math.max(1e-6, CREAM_BOTTLE_RAMP_TILT_FRAC),
+            ),
+          )
+          const tiltEase = tiltP * tiltP * (3 - 2 * tiltP)
+
+          const slopeRad = (CREAM_BOTTLE_RAMP_SLOPE_DEG * Math.PI) / 180
+          const dist =
+            slideEase *
+            Math.hypot(vw, vh) *
+            CREAM_BOTTLE_RAMP_DIST_FRAC
+          // Along the ramp: left (+ a little down from slope). Y stays art-locked.
+          leftPx = parkLeft - Math.cos(slopeRad) * dist
+          topPx = anchorTop + Math.sin(slopeRad) * dist
+          rotateDeg = baseRotate + CREAM_BOTTLE_RAMP_TILT_DEG * tiltEase
+          opacity =
+            firstExitP >= 1
+              ? 0
+              : firstExitP > 0.88
+                ? Math.max(0, 1 - (firstExitP - 0.88) / 0.12)
+                : 1
+          transformOrigin = "50% 40%"
+          creamBottle.style.transform = `translate3d(-50%, 0, 0) rotate(${rotateDeg}deg)`
+        } else if (rollP <= 0.001) {
+          leftPx = (CREAM_BOTTLE_LEFT_ENTER / 100) * vw
+          topPx = Math.min(
+            vh * 0.82,
+            cream.top + cream.height * CREAM_BOTTLE_ENTER_TEXT_FRAC,
+          )
+          opacity = 0
+          creamBottle.style.transform = `translate3d(-50%, -50%, 0) rotate(0deg)`
+        } else if (rollP < 1) {
+          const easeP = Math.pow(rollP, CREAM_BOTTLE_CENTER_EASE)
+          const leftPct =
+            CREAM_BOTTLE_LEFT_ENTER +
+            (CREAM_BOTTLE_LEFT_CENTER - CREAM_BOTTLE_LEFT_ENTER) * easeP
+          leftPx = (leftPct / 100) * vw
+          const fromTop = Math.min(
+            vh * 0.82,
+            cream.top + cream.height * CREAM_BOTTLE_ENTER_TEXT_FRAC,
+          )
+          topPx = fromTop + (vh * 0.5 - fromTop) * rollP
+          rotateDeg = rollP * baseRotate
+          opacity = Math.min(1, rollP / 0.1)
+          creamBottle.style.transform = `translate3d(-50%, -50%, 0) rotate(${rotateDeg}deg)`
+        } else {
+          // Sticky at viewport center — only before the apps-lead lock.
+          leftPx = (CREAM_BOTTLE_LEFT_CENTER / 100) * vw
+          topPx = vh * 0.5
+          rotateDeg = baseRotate
+          opacity = 1
+          creamBottle.style.transform = `translate3d(-50%, -50%, 0) rotate(${rotateDeg}deg)`
+        }
+
+        creamBottle.style.left = `${leftPx}px`
+        creamBottle.style.top = `${topPx}px`
+        creamBottle.style.opacity = String(opacity)
+        creamBottle.style.visibility = opacity > 0.02 ? "visible" : "hidden"
+        creamBottle.style.transformOrigin = transformOrigin
+
+        // Ramp-2 bottle: same stage, starts when bottle 1 is gone. Progress =
+        // scroll delta only; path is % of the section-5 plate (stays on the ramp).
+        const ramp2 = ramp2BottleMountRef.current
+        const section5 = section5RootRef.current
+        if (ramp2 && section5) {
+          if (
+            creamBottleParkedRef.current &&
+            firstExitP >= 1 &&
+            ramp2StartScrollYRef.current == null
+          ) {
+            ramp2StartScrollYRef.current = y
+          }
+          if (
+            !creamBottleParkedRef.current ||
+            (creamBottleParkedRef.current && firstExitP < 0.98)
+          ) {
+            // First bottle still visible / reversed — keep ramp-2 dormant unless
+            // we already started and are only scrubbing mid-path on scroll-up.
+            if (
+              ramp2StartScrollYRef.current != null &&
+              !(creamBottleParkedRef.current && firstExitP >= 1)
+            ) {
+              // Allow reverse: if first bottle comes back, clear ramp-2.
+              if (firstExitP < 0.98) ramp2StartScrollYRef.current = null
+            }
+          }
+
+          const ramp2Start = ramp2StartScrollYRef.current
+          if (ramp2Start == null) {
+            ramp2.style.opacity = "0"
+            ramp2.style.visibility = "hidden"
+          } else {
+            const ramp2Span = Math.max(1, vh * RAMP2_SLIDE_VH)
+            let ramp2P = (y - ramp2Start) / ramp2Span
+            ramp2P = Math.max(0, Math.min(1, ramp2P))
+            const ease =
+              ramp2P * ramp2P * (3 - 2 * ramp2P)
+            const s5 = section5.getBoundingClientRect()
+            const xPct =
+              RAMP2_START_X_PCT +
+              (RAMP2_END_X_PCT - RAMP2_START_X_PCT) * ease
+            const yPct =
+              RAMP2_START_Y_PCT +
+              (RAMP2_END_Y_PCT - RAMP2_START_Y_PCT) * ease
+            const r2Left = s5.left + (xPct / 100) * s5.width
+            const r2Top = s5.top + (yPct / 100) * s5.height
+            const r2Rot =
+              RAMP2_TILT_DEG * Math.min(1, ramp2P / 0.18) +
+              ramp2P * RAMP2_ROLLS * 360
+            let r2Op = 1
+            if (ramp2P <= 0.04) r2Op = ramp2P / 0.04
+            else if (ramp2P >= 0.92) r2Op = Math.max(0, (1 - ramp2P) / 0.08)
+
+            ramp2.style.left = `${r2Left}px`
+            ramp2.style.top = `${r2Top}px`
+            ramp2.style.transform = `translate3d(-50%, -50%, 0) rotate(${r2Rot}deg)`
+            ramp2.style.opacity = String(r2Op)
+            ramp2.style.visibility = r2Op > 0.02 ? "visible" : "hidden"
+            ramp2.style.transformOrigin = "50% 50%"
+          }
+        }
+      }
     }
 
     tick()
     window.addEventListener("scroll", tick, { passive: true })
     window.addEventListener("resize", tick, { passive: true })
     const paintingEl = compositionRef.current
+    const section5El = section5RootRef.current
     const resizeObserver =
-      typeof ResizeObserver !== "undefined" && paintingEl
+      typeof ResizeObserver !== "undefined" && (paintingEl || section5El)
         ? new ResizeObserver(() => tick())
         : null
     if (resizeObserver && paintingEl) resizeObserver.observe(paintingEl)
+    if (resizeObserver && section5El) resizeObserver.observe(section5El)
     return () => {
       window.removeEventListener("scroll", tick)
       window.removeEventListener("resize", tick)
       if (resizeObserver) resizeObserver.disconnect()
     }
-  }, [applyBottleSinkVisual, hideSkyBottle, restoreSkyBottle, triggerBottleSplash])
+  }, [
+    applyBottleSinkVisual,
+    hideSkyBottle,
+    restoreSkyBottle,
+    triggerBottleSplash,
+  ])
 
   // Reduced-motion path has no CSS animationend — clear the quiet mid-pose after a beat.
   useEffect(() => {
@@ -953,319 +1395,373 @@ export function HomeScrollPrototype() {
       <ScrollStack ref={stackRef}>
         <WalkTrack ref={walkTrackRef}>
           <CompositionRoot ref={compositionRef}>
-          <BackScene>
-            <ParallaxBack ref={parallaxBackRef}>
-              <BackRailImg src={ASSETS.back} alt="Wiki front — background scenery" />
-            </ParallaxBack>
-            <BirdsStack aria-hidden="true">
-              {BIRDS.map((bird, i) => (
-                <BirdParallax
-                  key={bird.id}
-                  $z={bird.z ?? (bird.depth === "front" ? 2 : 1)}
-                  ref={(el) => {
-                    birdParallaxRefs.current[i] = el
-                  }}
-                >
-                  <BirdDrift
-                    $enabled={bird.depth === "back"}
-                    $durationMs={bird.driftMs || 36000}
-                    $delayMs={bird.driftDelayMs || 0}
-                  >
-                    <BirdHoverMotion $delayMs={bird.delayMs}>
-                      <BirdFlapper>
-                        <BirdFrame
-                          $phase="a"
-                          $durationMs={bird.flapMs}
-                          $delayMs={bird.delayMs}
-                          src={bird.a}
-                          alt=""
-                        />
-                        <BirdFrame
-                          $phase="b"
-                          $durationMs={bird.flapMs}
-                          $delayMs={bird.delayMs}
-                          src={bird.b}
-                          alt=""
-                        />
-                      </BirdFlapper>
-                    </BirdHoverMotion>
-                  </BirdDrift>
-                </BirdParallax>
-              ))}
-            </BirdsStack>
-          </BackScene>
-
-          <FlowSizer>
-            <RailImg src={ASSETS.front} alt="" />
-          </FlowSizer>
-
-          <ArtBand
-            ref={waterRef}
-            $top={WATERFALL_BAND_TOP}
-            $height={WATERFALL_BAND_HEIGHT}
-            $z={2}
-          >
-            <OverlayStack>
-              <OverlaySlice $z={Z.text} $interactive>
-                <WaterfallSideText />
-              </OverlaySlice>
-              <OverlaySlice $z={Z.logo}>
-                <LogoShiftWrap>
-                  <LogoFloatWrap>
-                    <LogoFlapper aria-label="PETABITE">
-                      {LOGO_FRAMES.map((src, i) => (
-                        <LogoFrame
-                          key={src}
-                          src={src}
-                          alt={i === 0 ? "PETABITE" : ""}
-                          aria-hidden={i !== 0}
-                          $index={i}
-                        />
-                      ))}
-                    </LogoFlapper>
-                  </LogoFloatWrap>
-                </LogoShiftWrap>
-              </OverlaySlice>
-              <OverlaySlice $z={Z.bottle}>
-                <BottlePinSpot ref={bottleTouchRef} $touchPinned={bottleTouchPinned}>
-                  <BottleFlipSurface ref={bottleFlipRef}>
-                    <BottleStickyRock $active={bottleTouchPinned}>
-                      <BottleShiftWrap>
-                        <BottleSinkMotion ref={bottleSinkMotionRef}>
-                          <BottleFloatWrap>
-                            <BottleVisual ref={bottleVisualRef}>
-                              <RailImg src={ASSETS.bottle} alt="" />
-                            </BottleVisual>
-                          </BottleFloatWrap>
-                        </BottleSinkMotion>
-                      </BottleShiftWrap>
-                    </BottleStickyRock>
-                  </BottleFlipSurface>
-                </BottlePinSpot>
-              </OverlaySlice>
-              <OverlaySlice $z={Z.water}>
-                <PuddleImg src={ASSETS.water} alt="" />
-                <PuddleImg $under src={ASSETS.water} alt="" />
-              </OverlaySlice>
-              <OverlaySlice $z={Z.text}>
-                {splashPlaying ? (
-                  <WaterfallSplashAnchor
-                    key="bottle-splash"
-                    aria-hidden="true"
-                    onAnimationEnd={(e) => {
-                      if (e.target !== e.currentTarget) return
-                      setSplashPlaying(false)
+            <BackScene>
+              <ParallaxBack ref={parallaxBackRef}>
+                <BackRailImg
+                  src={ASSETS.back}
+                  alt="Wiki front — background scenery"
+                />
+              </ParallaxBack>
+              <BirdsStack aria-hidden="true">
+                {BIRDS.map((bird, i) => (
+                  <BirdParallax
+                    key={bird.id}
+                    $z={bird.z ?? (bird.depth === "front" ? 2 : 1)}
+                    ref={el => {
+                      birdParallaxRefs.current[i] = el
                     }}
                   >
-                    <SplashRipple $delay={0} />
-                    <SplashRipple $delay={120} $large />
-                    <SplashDrop $n={0} />
-                    <SplashDrop $n={1} />
-                    <SplashDrop $n={2} />
-                    <SplashDrop $n={3} />
-                    <SplashDrop $n={4} />
-                    <SplashDrop $n={5} />
-                    <SplashDrop $n={6} />
-                    <SplashFoam />
-                  </WaterfallSplashAnchor>
-                ) : null}
-              </OverlaySlice>
-            </OverlayStack>
-          </ArtBand>
-
-          <ArtBand
-            ref={shoreRef}
-            $top={SHORE_BAND_TOP}
-            $height={SHORE_BAND_HEIGHT}
-            $z={3}
-          >
-            <ShoreOverlayStack>
-              <CrabsStack aria-hidden="true">
-                {CRABS.map((crab) => (
-                  <CrabMount key={crab.id} $xPct={crab.xPct} $yPct={crab.yPct}>
-                    <CrabFlapper>
-                      <CrabFrame
-                        $phase="a"
-                        $durationMs={crab.flapMs}
-                        $delayMs={crab.delayMs}
-                        src={crab.a}
-                        alt=""
-                      />
-                      <CrabFrame
-                        $phase="b"
-                        $durationMs={crab.flapMs}
-                        $delayMs={crab.delayMs}
-                        src={crab.b}
-                        alt=""
-                      />
-                    </CrabFlapper>
-                  </CrabMount>
+                    <BirdDrift
+                      $enabled={bird.depth === "back"}
+                      $durationMs={bird.driftMs || 36000}
+                      $delayMs={bird.driftDelayMs || 0}
+                    >
+                      <BirdHoverMotion $delayMs={bird.delayMs}>
+                        <BirdFlapper>
+                          <BirdFrame
+                            $phase="a"
+                            $durationMs={bird.flapMs}
+                            $delayMs={bird.delayMs}
+                            src={bird.a}
+                            alt=""
+                          />
+                          <BirdFrame
+                            $phase="b"
+                            $durationMs={bird.flapMs}
+                            $delayMs={bird.delayMs}
+                            src={bird.b}
+                            alt=""
+                          />
+                        </BirdFlapper>
+                      </BirdHoverMotion>
+                    </BirdDrift>
+                  </BirdParallax>
                 ))}
-              </CrabsStack>
-              <ShoreBottleLayer $z={3}>
-                <ShoreBottleMount
-                  $playing={shoreBottlePlaying}
-                  onAnimationEnd={(e) => {
-                    if (e.target !== e.currentTarget) return
-                    setShoreBottlePlaying(false)
-                  }}
-                >
-                  <ShoreBottleSize>
-                    <ShoreBottleRock $playing={shoreBottlePlaying}>
-                      <ShoreBottleImg src={SHORE_BOTTLE_IMG} alt="" />
-                    </ShoreBottleRock>
-                  </ShoreBottleSize>
-                </ShoreBottleMount>
-              </ShoreBottleLayer>
-              <ShoreTextLayer $z={4}>
-                <ShorePetaseMount>
-                  <ShorePetaseBody>
-                    To combat this, we are engineering plastic-degrading enzymes or{" "}
-                    <ExplainTerm term="PETases" explanation={PETASE_EXPLANATION} />.
-                  </ShorePetaseBody>
-                </ShorePetaseMount>
-                <ShoreTextMount>
-                  <ShoreBody>
-                    However, PETases currently in industry have a major limitation...
-                  </ShoreBody>
-                </ShoreTextMount>
-                <ShoreMidTextMount>
-                  <ShoreMidBody>
-                    ...the current enzymes only work under…
-                  </ShoreMidBody>
-                </ShoreMidTextMount>
-                <ShoreCardsMount>
-                  <SwipeInBox stationary title="...3 specific conditions">
-                    <ConditionImageRow>
-                      {CONDITION_CARD_IMAGES.map((image) => (
-                        <ConditionFigure key={image.alt}>
-                          <ConditionImage src={image.src} alt={image.alt} />
-                          <ConditionCaption>{image.alt}</ConditionCaption>
-                        </ConditionFigure>
-                      ))}
-                    </ConditionImageRow>
-                  </SwipeInBox>
-                </ShoreCardsMount>
-                <ShoreLoganMount>
-                  <ShoreLoganBody>
-                    That&apos;s why our team has developed the LOGAN index: a planetary sequence
-                    search that discovers novel plastic-degrading enzymes.
-                  </ShoreLoganBody>
-                </ShoreLoganMount>
-              </ShoreTextLayer>
-            </ShoreOverlayStack>
-          </ArtBand>
+              </BirdsStack>
+            </BackScene>
 
-          <ArtBand $top={FOREST_BAND_TOP} $height={FOREST_BAND_HEIGHT} $z={3}>
-            <ForestAnimalsStack aria-hidden="true">
-              {SECTION3_ANIMALS.map((animal) =>
-                animal.static ? (
-                  <CrabMount key={animal.id} $xPct={animal.xPct} $yPct={animal.yPct}>
-                    <CrabFlapper>
-                      <StaticPlateImg src={animal.src} alt="" />
-                    </CrabFlapper>
-                  </CrabMount>
-                ) : (
-                  <CrabMount key={animal.id} $xPct={animal.xPct} $yPct={animal.yPct}>
-                    <AnimalMotion
-                      $scale={animal.scale || 1}
-                      $ox={animal.originX}
-                      $oy={animal.originY}
-                      $hover={animal.hover}
-                      $delayMs={animal.delayMs}
-                      $clipRightPct={animal.clipRightPct || 0}
+            <FlowSizer>
+              <RailImg src={ASSETS.front} alt="" />
+            </FlowSizer>
+
+            <ArtBand
+              ref={waterRef}
+              $top={WATERFALL_BAND_TOP}
+              $height={WATERFALL_BAND_HEIGHT}
+              $z={2}
+            >
+              <OverlayStack>
+                <OverlaySlice $z={Z.text} $interactive>
+                  <WaterfallSideText />
+                </OverlaySlice>
+                <OverlaySlice $z={Z.logo}>
+                  <LogoShiftWrap>
+                    <LogoFloatWrap>
+                      <LogoFlapper aria-label="PETABITE">
+                        {LOGO_FRAMES.map((src, i) => (
+                          <LogoFrame
+                            key={src}
+                            src={src}
+                            alt={i === 0 ? "PETABITE" : ""}
+                            aria-hidden={i !== 0}
+                            $index={i}
+                          />
+                        ))}
+                      </LogoFlapper>
+                    </LogoFloatWrap>
+                  </LogoShiftWrap>
+                </OverlaySlice>
+                <OverlaySlice $z={Z.bottle}>
+                  <BottlePinSpot
+                    ref={bottleTouchRef}
+                    $touchPinned={bottleTouchPinned}
+                  >
+                    <BottleFlipSurface ref={bottleFlipRef}>
+                      <BottleStickyRock $active={bottleTouchPinned}>
+                        <BottleShiftWrap>
+                          <BottleSinkMotion ref={bottleSinkMotionRef}>
+                            <BottleFloatWrap>
+                              <BottleVisual ref={bottleVisualRef}>
+                                <RailImg src={ASSETS.bottle} alt="" />
+                              </BottleVisual>
+                            </BottleFloatWrap>
+                          </BottleSinkMotion>
+                        </BottleShiftWrap>
+                      </BottleStickyRock>
+                    </BottleFlipSurface>
+                  </BottlePinSpot>
+                </OverlaySlice>
+                <OverlaySlice $z={Z.water}>
+                  <PuddleImg src={ASSETS.water} alt="" />
+                  <PuddleImg $under src={ASSETS.water} alt="" />
+                </OverlaySlice>
+                <OverlaySlice $z={Z.text}>
+                  {splashPlaying ? (
+                    <WaterfallSplashAnchor
+                      key="bottle-splash"
+                      aria-hidden="true"
+                      onAnimationEnd={e => {
+                        if (e.target !== e.currentTarget) return
+                        setSplashPlaying(false)
+                      }}
+                    >
+                      <SplashRipple $delay={0} />
+                      <SplashRipple $delay={120} $large />
+                      <SplashDrop $n={0} />
+                      <SplashDrop $n={1} />
+                      <SplashDrop $n={2} />
+                      <SplashDrop $n={3} />
+                      <SplashDrop $n={4} />
+                      <SplashDrop $n={5} />
+                      <SplashDrop $n={6} />
+                      <SplashFoam />
+                    </WaterfallSplashAnchor>
+                  ) : null}
+                </OverlaySlice>
+              </OverlayStack>
+            </ArtBand>
+
+            <ArtBand
+              ref={shoreRef}
+              $top={SHORE_BAND_TOP}
+              $height={SHORE_BAND_HEIGHT}
+              $z={3}
+            >
+              <ShoreOverlayStack>
+                <CrabsStack aria-hidden="true">
+                  {CRABS.map(crab => (
+                    <CrabMount
+                      key={crab.id}
+                      $xPct={crab.xPct}
+                      $yPct={crab.yPct}
                     >
                       <CrabFlapper>
                         <CrabFrame
                           $phase="a"
-                          $durationMs={animal.flapMs}
-                          $delayMs={animal.delayMs}
-                          $hoverFlap={animal.hover}
-                          src={animal.a}
+                          $durationMs={crab.flapMs}
+                          $delayMs={crab.delayMs}
+                          src={crab.a}
                           alt=""
                         />
                         <CrabFrame
                           $phase="b"
-                          $durationMs={animal.flapMs}
-                          $delayMs={animal.delayMs}
-                          $hoverFlap={animal.hover}
-                          src={animal.b}
+                          $durationMs={crab.flapMs}
+                          $delayMs={crab.delayMs}
+                          src={crab.b}
                           alt=""
                         />
                       </CrabFlapper>
+                    </CrabMount>
+                  ))}
+                </CrabsStack>
+                <ShoreBottleLayer $z={3}>
+                  <ShoreBottleMount
+                    $playing={shoreBottlePlaying}
+                    onAnimationEnd={e => {
+                      if (e.target !== e.currentTarget) return
+                      setShoreBottlePlaying(false)
+                    }}
+                  >
+                    <ShoreBottleSize>
+                      <ShoreBottleRock $playing={shoreBottlePlaying}>
+                        <ShoreBottleImg src={SHORE_BOTTLE_IMG} alt="" />
+                      </ShoreBottleRock>
+                    </ShoreBottleSize>
+                  </ShoreBottleMount>
+                </ShoreBottleLayer>
+                <ShoreTextLayer $z={4}>
+                  <ShorePetaseMount>
+                    <ShorePetaseBody>
+                      To combat this, we are engineering plastic-degrading
+                      enzymes or{" "}
+                      <ExplainTerm
+                        term="PETases"
+                        explanation={PETASE_EXPLANATION}
+                      />
+                      .
+                    </ShorePetaseBody>
+                  </ShorePetaseMount>
+                  <ShoreTextMount>
+                    <ShoreBody>
+                      However, PETases currently in industry have a major
+                      limitation...
+                    </ShoreBody>
+                  </ShoreTextMount>
+                  <ShoreMidTextMount>
+                    <ShoreMidBody>
+                      ...the current enzymes only work under…
+                    </ShoreMidBody>
+                  </ShoreMidTextMount>
+                  <ShoreCardsMount>
+                    <SwipeInBox stationary title="...3 specific conditions">
+                      <ConditionImageRow>
+                        {CONDITION_CARD_IMAGES.map(image => (
+                          <ConditionFigure key={image.alt}>
+                            <ConditionImage src={image.src} alt={image.alt} />
+                            <ConditionCaption>{image.alt}</ConditionCaption>
+                          </ConditionFigure>
+                        ))}
+                      </ConditionImageRow>
+                    </SwipeInBox>
+                  </ShoreCardsMount>
+                  <ShoreLoganMount>
+                    <ShoreLoganBody>
+                      That&apos;s why our team has developed the LOGAN index: a
+                      planetary sequence search that discovers novel
+                      plastic-degrading enzymes.
+                    </ShoreLoganBody>
+                  </ShoreLoganMount>
+                </ShoreTextLayer>
+              </ShoreOverlayStack>
+            </ArtBand>
+
+            <ArtBand
+              ref={mapBottleBandRef}
+              $top={MAP_BOTTLE_BAND_TOP}
+              $height={MAP_BOTTLE_BAND_HEIGHT}
+              $z={2}
+            >
+              <MapBottleLayer aria-hidden="true">
+                <MapBottleMount ref={mapBottleMountRef}>
+                  <MapBottleRock>
+                    <MapBottleImg
+                      ref={mapBottleImgRef}
+                      src={BOTTLE_STAGES.section2}
+                      alt=""
+                    />
+                  </MapBottleRock>
+                </MapBottleMount>
+              </MapBottleLayer>
+            </ArtBand>
+
+            <ArtBand $top={FOREST_BAND_TOP} $height={FOREST_BAND_HEIGHT} $z={3}>
+              <ForestAnimalsStack aria-hidden="true">
+                {SECTION3_ANIMALS.map(animal =>
+                  animal.static ? (
+                    <CrabMount
+                      key={animal.id}
+                      $xPct={animal.xPct}
+                      $yPct={animal.yPct}
+                    >
+                      <CrabFlapper>
+                        <StaticPlateImg src={animal.src} alt="" />
+                      </CrabFlapper>
+                    </CrabMount>
+                  ) : (
+                    <CrabMount
+                      key={animal.id}
+                      $xPct={animal.xPct}
+                      $yPct={animal.yPct}
+                    >
+                      <AnimalMotion
+                        $scale={animal.scale || 1}
+                        $ox={animal.originX}
+                        $oy={animal.originY}
+                        $hover={animal.hover}
+                        $delayMs={animal.delayMs}
+                        $clipRightPct={animal.clipRightPct || 0}
+                      >
+                        <CrabFlapper>
+                          <CrabFrame
+                            $phase="a"
+                            $durationMs={animal.flapMs}
+                            $delayMs={animal.delayMs}
+                            $hoverFlap={animal.hover}
+                            src={animal.a}
+                            alt=""
+                          />
+                          <CrabFrame
+                            $phase="b"
+                            $durationMs={animal.flapMs}
+                            $delayMs={animal.delayMs}
+                            $hoverFlap={animal.hover}
+                            src={animal.b}
+                            alt=""
+                          />
+                        </CrabFlapper>
+                      </AnimalMotion>
+                    </CrabMount>
+                  ),
+                )}
+              </ForestAnimalsStack>
+            </ArtBand>
+
+            <ArtBand
+              $top={FOREST_BAND_TOP}
+              $height={FOREST_BAND_HEIGHT}
+              $z={20}
+            >
+              <HumanWalkLayer ref={humanWalkRef} aria-hidden="true">
+                <HumanBob ref={humanBobRef} $arrived={walkArrived}>
+                  <CrabMount $xPct={HUMAN.xPct} $yPct={HUMAN.yPct}>
+                    <AnimalMotion
+                      $scale={HUMAN.scale}
+                      $ox={HUMAN.originX}
+                      $oy={HUMAN.originY}
+                    >
+                      <CrabFlapper>
+                        <ExclamationMark
+                          $dx={HUMAN_HEAD_X - EXCLAMATION_MARK_X}
+                          $dy={HUMAN_HEAD_Y - EXCLAMATION_MARK_Y}
+                        >
+                          <ExclamationPop $show={walkArrived}>
+                            <StaticPlateImg src={EXCLAMATION_SRC} alt="" />
+                          </ExclamationPop>
+                        </ExclamationMark>
+                        <HumanPose $show={!walkArrived}>
+                          <StaticPlateImg src={HUMAN.src} alt="" />
+                        </HumanPose>
+                        <HumanPose $show={walkArrived} $fill>
+                          <StaticPlateImg src={HUMAN.srcArrived} alt="" />
+                        </HumanPose>
+                      </CrabFlapper>
                     </AnimalMotion>
                   </CrabMount>
-                )
-              )}
-            </ForestAnimalsStack>
-          </ArtBand>
+                </HumanBob>
+              </HumanWalkLayer>
+            </ArtBand>
 
-          <ArtBand $top={FOREST_BAND_TOP} $height={FOREST_BAND_HEIGHT} $z={20}>
-            <HumanWalkLayer ref={humanWalkRef} aria-hidden="true">
-              <HumanBob ref={humanBobRef} $arrived={walkArrived}>
-              <CrabMount $xPct={HUMAN.xPct} $yPct={HUMAN.yPct}>
-                <AnimalMotion
-                  $scale={HUMAN.scale}
-                  $ox={HUMAN.originX}
-                  $oy={HUMAN.originY}
-                >
-                  <CrabFlapper>
-                    <ExclamationMark
-                      $dx={HUMAN_HEAD_X - EXCLAMATION_MARK_X}
-                      $dy={HUMAN_HEAD_Y - EXCLAMATION_MARK_Y}
-                    >
-                      <ExclamationPop $show={walkArrived}>
-                        <StaticPlateImg src={EXCLAMATION_SRC} alt="" />
-                      </ExclamationPop>
-                    </ExclamationMark>
-                    <HumanPose $show={!walkArrived}>
-                      <StaticPlateImg src={HUMAN.src} alt="" />
-                    </HumanPose>
-                    <HumanPose $show={walkArrived} $fill>
-                      <StaticPlateImg src={HUMAN.srcArrived} alt="" />
-                    </HumanPose>
-                  </CrabFlapper>
-                </AnimalMotion>
-              </CrabMount>
-              </HumanBob>
-            </HumanWalkLayer>
-          </ArtBand>
+            <ArtBand
+              $top={FOREST_BAND_TOP}
+              $height={FOREST_BAND_HEIGHT}
+              $z={21}
+            >
+              <ForestDatasetMount ref={forestDatasetRef}>
+                <ForestDatasetBody>
+                  Before, the industry was using an enzyme dataset of roughly
+                  200.
+                </ForestDatasetBody>
+              </ForestDatasetMount>
+            </ArtBand>
 
-          <ArtBand $top={FOREST_BAND_TOP} $height={FOREST_BAND_HEIGHT} $z={21}>
-            <ForestDatasetMount ref={forestDatasetRef}>
-              <ForestDatasetBody>
-                Before, the industry was using an enzyme dataset of roughly 200.
-              </ForestDatasetBody>
-            </ForestDatasetMount>
-          </ArtBand>
+            <BushLayer>
+              <RailImg src={ASSETS.bush} alt="" />
+            </BushLayer>
 
-          <BushLayer>
-            <RailImg src={ASSETS.bush} alt="" />
-          </BushLayer>
-
-          <ArtBand $top={CREAM_PAD_TOP} $height={CREAM_PAD_HEIGHT} $z={4}>
-            <CreamPadTextMount>
-              <CreamPadBody>
-                With our advisory lab, the{" "}
-                <ExplainTerm
-                  term="RNAlab"
-                  explanation={RNALAB_EXPLANATION}
-                  imageSrc={RNALAB_TEXTBOX_IMG}
-                  imageAlt="RNAlab"
-                />
-                , the team uncovered 215.7 million high-quality plastic‑degrading enzymes — a
-                1,000,000‑fold increase from the enzyme landscape previously known.
-              </CreamPadBody>
-            </CreamPadTextMount>
-          </ArtBand>
+            <ArtBand $top={CREAM_PAD_TOP} $height={CREAM_PAD_HEIGHT} $z={4}>
+              <CreamPadTextMount ref={creamPadTextRef}>
+                <CreamPadBody>
+                  With our advisory lab, the{" "}
+                  <ExplainTerm
+                    term="RNAlab"
+                    explanation={RNALAB_EXPLANATION}
+                    imageSrc={RNALAB_TEXTBOX_IMG}
+                    imageAlt="RNAlab"
+                  />
+                  , the team uncovered 215.7 million high-quality
+                  plastic‑degrading enzymes — a 1,000,000‑fold increase from the
+                  enzyme landscape previously known.
+                </CreamPadBody>
+              </CreamPadTextMount>
+            </ArtBand>
           </CompositionRoot>
         </WalkTrack>
 
-        <Section5Root>
+        <Section5Root ref={section5RootRef}>
           <Section5Sizer>
             <RailImg src={`${SECTION5_CDN}/1-bg.avif`} alt="" />
           </Section5Sizer>
-          {SECTION5_LAYERS.filter((layer) => !layer.sizer).map((layer) => (
+          {SECTION5_LAYERS.filter(layer => !layer.sizer).map(layer => (
             <Section5Layer
               key={layer.id}
               $z={layer.z}
@@ -1274,7 +1770,7 @@ export function HomeScrollPrototype() {
             />
           ))}
           <Section5FishStack aria-hidden="true">
-            {SECTION5_FISHES.map((fish) => (
+            {SECTION5_FISHES.map(fish => (
               <Section5FishPlane key={fish.id} $z={fish.z}>
                 <BirdDrift
                   $enabled
@@ -1288,6 +1784,33 @@ export function HomeScrollPrototype() {
               </Section5FishPlane>
             ))}
           </Section5FishStack>
+          <Section5AppsBottleLayer aria-hidden="true">
+            <Section5AppsBottleMount ref={creamBottleMountRef}>
+              <Section5AppsBottleImg
+                src={BOTTLE_STAGES.section4}
+                alt=""
+              />
+            </Section5AppsBottleMount>
+            <Section5AppsBottleMount ref={ramp2BottleMountRef}>
+              <Section5AppsBottleImg
+                src={BOTTLE_STAGES.section4}
+                alt=""
+              />
+            </Section5AppsBottleMount>
+          </Section5AppsBottleLayer>
+          <Section5TextStack aria-hidden="false">
+            <Section5Lead ref={section5LeadRef}>
+              Some applications include...
+            </Section5Lead>
+            <Section5WwtpLine>
+              PETases in wastewater treatment,...
+            </Section5WwtpLine>
+            <Section5RecyclingLine>
+              ..., Breaking down plastics in trash and recycling bins,...
+            </Section5RecyclingLine>
+            <Section5AndMoreLine>...and more.</Section5AndMoreLine>
+            <Section5Cta>Discover more about Petabite.</Section5Cta>
+          </Section5TextStack>
         </Section5Root>
 
         <HomeNavMount $pinned={navPinned}>
@@ -1332,7 +1855,7 @@ const Section5Root = styled.div`
   z-index: 1;
   width: 100%;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   background: var(--color-bg);
 `
 
@@ -1359,7 +1882,7 @@ const Section5Layer = styled.img`
 const Section5FishStack = styled.div`
   position: absolute;
   inset: 0;
-  z-index: 5;
+  z-index: 9;
   pointer-events: auto;
   overflow: hidden;
 `
@@ -1405,6 +1928,120 @@ const Section5FishHover = styled.div`
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
+`
+
+/** Copy locked to % of the tall section-5 plate (946×4000). Above apps bottle. */
+const Section5TextStack = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+`
+
+/**
+ * Section4 bottle slot: in front of underwater art, behind apps copy.
+ * Mount is `position: fixed` and driven by scroll in the tick handler.
+ */
+const Section5AppsBottleLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+`
+
+const Section5AppsBottleMount = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 118%;
+  width: clamp(3.25rem, 12vw, 9.5rem);
+  transform: translate3d(-50%, -50%, 0);
+  transform-origin: 50% 50%;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  will-change: left, top, opacity, transform;
+  z-index: 8;
+`
+
+const Section5AppsBottleImg = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+`
+
+const Section5Lead = styled.p`
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  width: min(78%, 42rem);
+  margin: 0;
+  color: #0a0a0a;
+  font-family: var(--font-body);
+  font-size: clamp(1.35rem, 2.8vw, 2.85rem);
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: break-word;
+`
+
+const section5AppLineBase = `
+  position: absolute;
+  transform: translate3d(-50%, 0, 0);
+  width: min(72%, 40rem);
+  margin: 0;
+  color: #0a0a0a;
+  font-family: var(--font-body);
+  font-size: clamp(1.35rem, 2.8vw, 2.85rem);
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: break-word;
+`
+
+/** WWTP callout — edit top/left here. */
+const Section5WwtpLine = styled.p`
+  ${section5AppLineBase}
+  top: 16%;
+  left: 55%;
+`
+
+/** Trash / recycling bins callout — edit top/left independently. */
+const Section5RecyclingLine = styled.p`
+  ${section5AppLineBase}
+  top: 33%;
+  left: 45%;
+`
+
+/** “...and more.” — edit top/left independently. */
+const Section5AndMoreLine = styled.p`
+  ${section5AppLineBase}
+  top: 47%;
+  left: 65%;
+`
+
+const Section5Cta = styled.p`
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  width: min(86%, 48rem);
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: clamp(1.65rem, 3.6vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: break-word;
+  text-shadow:
+    0 0 12px rgba(255, 255, 255, 0.85),
+    0 0 28px rgba(170, 230, 255, 0.75),
+    0 0 48px rgba(90, 190, 255, 0.45),
+    0 2px 4px rgba(0, 0, 0, 0.35);
 `
 
 const CompositionRoot = styled.div`
@@ -1505,7 +2142,11 @@ const ExclamationMark = styled.div`
   top: 0;
   width: 100%;
   z-index: 1;
-  transform: translate3d(${({ $dx }) => $dx || 0}%, ${({ $dy }) => $dy || 0}%, 0);
+  transform: translate3d(
+    ${({ $dx }) => $dx || 0}%,
+    ${({ $dy }) => $dy || 0}%,
+    0
+  );
   pointer-events: none;
 `
 
@@ -1645,7 +2286,11 @@ const CrabMount = styled.div`
   left: 0;
   top: 0;
   width: 100%;
-  transform: translate3d(${({ $xPct }) => $xPct || 0}%, ${({ $yPct }) => $yPct || 0}%, 0);
+  transform: translate3d(
+    ${({ $xPct }) => $xPct || 0}%,
+    ${({ $yPct }) => $yPct || 0}%,
+    0
+  );
   pointer-events: none;
 `
 
@@ -1799,7 +2444,8 @@ const ShoreBottleMount = styled.div`
     $playing
       ? css`
           visibility: visible;
-          animation: ${shoreBottleDrift} ${SHORE_BOTTLE_DRIFT_MS}ms linear forwards;
+          animation: ${shoreBottleDrift} ${SHORE_BOTTLE_DRIFT_MS}ms linear
+            forwards;
         `
       : css`
           animation: none;
@@ -1857,6 +2503,57 @@ const ShoreBottleRock = styled.div`
 `
 
 const ShoreBottleImg = styled.img`
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+`
+
+/** Scroll-scrubbed bottle: behind forest animals (z:2), under bushes (z:30). */
+const MapBottleLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+`
+
+const MapBottleMount = styled.div`
+  position: absolute;
+  top: ${MAP_BOTTLE_TOP_START}%;
+  left: ${MAP_BOTTLE_LEFT_ENTER}%;
+  width: 22%;
+  max-width: 11rem;
+  transform: translate3d(-50%, -50%, 0) scale(1);
+  transform-origin: 50% 50%;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  will-change: left, top, opacity, transform;
+`
+
+const mapBottleRock = keyframes`
+  0%,
+  100% {
+    transform: rotate(-4deg) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: rotate(4deg) translate3d(0, -3px, 0);
+  }
+`
+
+const MapBottleRock = styled.div`
+  width: 100%;
+  transform-origin: 50% 70%;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
+  animation: ${mapBottleRock} 2.2s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`
+
+const MapBottleImg = styled.img`
   display: block;
   width: 100%;
   height: auto;
@@ -2252,7 +2949,8 @@ const BirdFrame = styled.img`
   animation-iteration-count: infinite;
 
   ${BirdsStack}:hover & {
-    animation-duration: ${({ $durationMs }) => `${Math.round(($durationMs || 520) * 0.72)}ms`};
+    animation-duration: ${({ $durationMs }) =>
+      `${Math.round(($durationMs || 520) * 0.72)}ms`};
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -2379,7 +3077,8 @@ const LogoFrame = styled.img`
   user-select: none;
   pointer-events: none;
   opacity: 0;
-  animation-name: ${({ $index }) => LOGO_FRAME_KEYFRAMES[$index] || LOGO_FRAME_KEYFRAMES[0]};
+  animation-name: ${({ $index }) =>
+    LOGO_FRAME_KEYFRAMES[$index] || LOGO_FRAME_KEYFRAMES[0]};
   animation-duration: ${LOGO_FRAME_TIMING.cycleMs}ms;
   animation-timing-function: steps(1, end);
   animation-iteration-count: infinite;
@@ -2565,7 +3264,12 @@ const SplashDrop = styled.span`
   width: 14px;
   height: 20px;
   border-radius: 50% 50% 45% 45%;
-  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #b7e6f8 50%, #4a9fc4 100%);
+  background: radial-gradient(
+    circle at 35% 30%,
+    #ffffff 0%,
+    #b7e6f8 50%,
+    #4a9fc4 100%
+  );
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
   --dx: ${({ $n }) => SPLASH_DROP_OFFSETS[$n]?.dx || "0px"};
   --dy: ${({ $n }) => SPLASH_DROP_OFFSETS[$n]?.dy || "-36px"};

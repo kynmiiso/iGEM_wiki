@@ -17,13 +17,13 @@ const EXCLAMATION_SRC =
   "https://static.igem.wiki/teams/6187/wiki/homepage-components/exclamation.avif"
 
 /** Horizontal offset from the left edge of the mockup composition (%). */
-export const WATERFALL_TEXT_LEFT_PCT = 2
+export const WATERFALL_TEXT_LEFT_PCT = 5
 
 /** Vertical offset from the top of the waterfall band (%). */
-export const WATERFALL_TEXT_TOP_PCT = 56
+export const WATERFALL_TEXT_TOP_PCT = 52
 
 /** Vertical offset for right-side copy (hint + bang sit above the sentence). */
-export const WATERFALL_TEXT_RIGHT_TOP_PCT = 60
+export const WATERFALL_TEXT_RIGHT_TOP_PCT = 61
 
 /**
  * Preferred width as % of mockup composition (left column).
@@ -143,7 +143,7 @@ export function WaterfallSideText() {
             <BangImg src={EXCLAMATION_SRC} alt="" />
           </BangHover>
           <HintText>
-            Hover red underlined words for a quick popup — or click to pin it open / click again to
+            Hover red underlined words for a popup, click to pin it open / 
             close.
           </HintText>
         </PopupHint>
