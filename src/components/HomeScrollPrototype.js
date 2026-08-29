@@ -11,6 +11,7 @@ import { WikiTopBar, WIKI_TOP_BAR_Z_INDEX } from "./WikiTopBar.js"
 import { WaterfallSideText, PETASE_EXPLANATION } from "./WaterfallSideText.js"
 import { SwipeInBox } from "./SwipeInBox.js"
 import { ExplainTerm } from "./ExplainTermPopover.js"
+import EnzymeBattle from "./EnzymeBattle.js"
 
 /**
  * Homepage bottle stages (degradation journey).
@@ -637,6 +638,7 @@ export function HomeScrollPrototype() {
   const [shoreBottlePlaying, setShoreBottlePlaying] = useState(false)
   const [splashPlaying, setSplashPlaying] = useState(false)
   const [walkArrived, setWalkArrived] = useState(false)
+  const [battleOpen, setBattleOpen] = useState(false)
   const reduceMotionParallaxRef = useRef(false)
 
   bottleTouchPinnedRef.current = bottleTouchPinned
@@ -1580,6 +1582,9 @@ export function HomeScrollPrototype() {
                       />
                       .
                     </ShorePetaseBody>
+                    <BattleButton type="button" onClick={() => setBattleOpen(true)}>
+                      Battle PET
+                    </BattleButton>
                   </ShorePetaseMount>
                   <ShoreTextMount>
                     <ShoreBody>
@@ -1817,6 +1822,7 @@ export function HomeScrollPrototype() {
           <WikiTopBar />
         </HomeNavMount>
       </ScrollStack>
+      <EnzymeBattle isOpen={battleOpen} onClose={() => setBattleOpen(false)} />
     </WikiFrontRoot>
   )
 }
@@ -2590,6 +2596,32 @@ const ShorePetaseBody = styled.p`
   text-shadow:
     0 1px 2px rgba(0, 0, 0, 0.55),
     0 0 14px rgba(0, 0, 0, 0.35);
+`
+
+const BattleButton = styled.button`
+  margin-top: 1rem;
+  padding: 0.65rem 1.1rem;
+  border: 2px solid #081f2c;
+  border-radius: 4px;
+  background: #f4d35e;
+  color: #081f2c;
+  font: 700 1rem/1 var(--font-body);
+  cursor: pointer;
+  box-shadow: 0 3px 0 #081f2c;
+
+  &:hover {
+    background: #ffe27d;
+  }
+
+  &:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 3px;
+  }
+
+  &:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #081f2c;
+  }
 `
 
 /** Sits on the sand bank (left/center of the shore art). */
