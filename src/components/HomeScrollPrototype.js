@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { withPrefix } from "gatsby"
 import styled, { css, keyframes } from "styled-components"
 import { WikiTopBar, WIKI_TOP_BAR_Z_INDEX } from "./WikiTopBar.js"
 import { WaterfallSideText, PETASE_EXPLANATION } from "./WaterfallSideText.js"
@@ -26,6 +27,8 @@ const ASSETS = {
   bush: "https://static.igem.wiki/teams/6187/wiki/homepage-components/wiki-front-page-bush.avif",
   /** Waterfall / sky section bottle (current homepage stage). */
   bottle: BOTTLE_STAGES.sky,
+  /** Opaque puddle lip — sits over the bottle so it can tuck behind the water. */
+  water: withPrefix("/wiki-mockup/wiki-front-water.png"),
 }
 
 /** Nine-frame PETABITE logo loop (same slot + idle float as the old static logo). */
@@ -111,6 +114,34 @@ const FOREST_BAND_HEIGHT = FOREST_BAND_BOT - FOREST_BAND_TOP
 const CREAM_PAD_TOP = FOREST_BAND_BOT
 const CREAM_PAD_HEIGHT = 1 - CREAM_PAD_TOP
 
+const SECTION5_CDN =
+  "https://static.igem.wiki/teams/6187/wiki/homepage-components/noorine-section-5-layers"
+
+/** Tall underwater plate (946×4000), stacked back → front. */
+const SECTION5_LAYERS = [
+  { id: 1, file: "1-bg.avif", z: 1, sizer: true },
+  { id: 2, file: "2-mid-trench.avif", z: 2 },
+  { id: 3, file: "3-fore-trench.avif", z: 3 },
+  { id: 4, file: "4-coral-texture.avif", z: 4 },
+  { id: 7, file: "7-wwtp.avif", z: 7 },
+]
+
+/**
+ * Layer 6 slot (no `6-*.avif` on the CDN yet). `5-coral-blend` is a sparse
+ * full-bleed sprite plate — same idea as the sky birds — so it drifts RTL
+ * with a slow hover bob between coral (4) and the WWTP (7).
+ */
+const SECTION5_FISHES = [
+  {
+    id: "blend",
+    src: `${SECTION5_CDN}/5-coral-blend.avif`,
+    z: 5,
+    driftMs: 52000,
+    driftDelayMs: 1200,
+    hoverDelayMs: 0,
+  },
+]
+
 const SHORE_BOTTLE_IMG =
   "https://static.igem.wiki/teams/6187/wiki/homepage-components/bottle-stages/bottle-w-ripples.avif"
 
@@ -142,6 +173,7 @@ const RESET_SCROLL_ON_MOUNT = false
 const Z = {
   logo: 2,
   bottle: 3,
+  water: 4,
   text: 5,
 }
 
@@ -225,8 +257,8 @@ const WATER_RIPPLE_FRAC = 0.98 - LANDMARK_NUDGE_UP - 0.06
  * Visible bottle band as a fraction of its layer height.
  * Higher fracs = fade finishes sooner (before deep water / shore overlap).
  */
-const BOTTLE_SUBMERGE_TOP_FRAC = 0.42
-const BOTTLE_SUBMERGE_BOT_FRAC = 0.72
+const BOTTLE_SUBMERGE_TOP_FRAC = 0.45
+const BOTTLE_SUBMERGE_BOT_FRAC = 0.5
 /** Extra downward slide (px) as the bottle fades under the water. */
 const BOTTLE_SINK_SLIDE_PX = 36
 /** CSS splash duration (ms) when the bottle hits the water. */
@@ -239,10 +271,15 @@ const BOTTLE_SPLASH_TRIGGER_OPACITY = 0.35
  * Values are shore-top as a fraction of viewport height.
  */
 const BOTTLE_SHORE_FADE_START_VH = 0.75
-const BOTTLE_SHORE_FADE_END_VH = 0.6
+const BOTTLE_SHORE_FADE_END_VH = 0.73
 /** Splash anchor on the first (waterfall) art band — puddle / river start. */
 const WATERFALL_SPLASH_TOP_PCT = 92 - LANDMARK_NUDGE_UP * 100 - 6
 const WATERFALL_SPLASH_LEFT_PCT = 50
+/** Opaque blob top in wiki-front-water.png (px 2235 / 2440). Shift so it sits on the splash lip. */
+const PUDDLE_ART_TOP_FRAC = 2235 / 2440
+const PUDDLE_SHIFT_Y_PCT = (PUDDLE_ART_TOP_FRAC - WATERFALL_SPLASH_TOP_PCT / 100) * -100
+/** Second puddle copy, extra % of the waterfall band downward so the bottle cannot peek under the lip. */
+const PUDDLE_UNDER_SHIFT_PCT = 4.5
 
 /**
  * Autonomous shore-bottle rematch (section1).
@@ -1006,6 +1043,10 @@ export function HomeScrollPrototype() {
                   </BottleFlipSurface>
                 </BottlePinSpot>
               </OverlaySlice>
+              <OverlaySlice $z={Z.water}>
+                <PuddleImg src={ASSETS.water} alt="" />
+                <PuddleImg $under src={ASSETS.water} alt="" />
+              </OverlaySlice>
               <OverlaySlice $z={Z.text}>
                 {splashPlaying ? (
                   <WaterfallSplashAnchor
@@ -1220,6 +1261,35 @@ export function HomeScrollPrototype() {
           </CompositionRoot>
         </WalkTrack>
 
+        <Section5Root>
+          <Section5Sizer>
+            <RailImg src={`${SECTION5_CDN}/1-bg.avif`} alt="" />
+          </Section5Sizer>
+          {SECTION5_LAYERS.filter((layer) => !layer.sizer).map((layer) => (
+            <Section5Layer
+              key={layer.id}
+              $z={layer.z}
+              src={`${SECTION5_CDN}/${layer.file}`}
+              alt=""
+            />
+          ))}
+          <Section5FishStack aria-hidden="true">
+            {SECTION5_FISHES.map((fish) => (
+              <Section5FishPlane key={fish.id} $z={fish.z}>
+                <BirdDrift
+                  $enabled
+                  $durationMs={fish.driftMs}
+                  $delayMs={fish.driftDelayMs}
+                >
+                  <Section5FishHover $delayMs={fish.hoverDelayMs}>
+                    <RailImg src={fish.src} alt="" />
+                  </Section5FishHover>
+                </BirdDrift>
+              </Section5FishPlane>
+            ))}
+          </Section5FishStack>
+        </Section5Root>
+
         <HomeNavMount $pinned={navPinned}>
           <WikiTopBar />
         </HomeNavMount>
@@ -1255,6 +1325,86 @@ const WalkTrack = styled.div`
   position: relative;
   width: 100%;
   min-width: 0;
+`
+
+const Section5Root = styled.div`
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--color-bg);
+`
+
+const Section5Sizer = styled.div`
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  pointer-events: none;
+`
+
+const Section5Layer = styled.img`
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: ${({ $z }) => $z};
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  pointer-events: none;
+  user-select: none;
+`
+
+const Section5FishStack = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: auto;
+  overflow: hidden;
+`
+
+const Section5FishPlane = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: ${({ $z }) => $z ?? 5};
+  pointer-events: none;
+`
+
+const fishHoverBob = keyframes`
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+`
+
+const fishHoverBobStrong = keyframes`
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0);
+  }
+`
+
+const Section5FishHover = styled.div`
+  position: absolute;
+  inset: 0;
+  animation: ${fishHoverBob} 4.8s ease-in-out infinite;
+  animation-delay: ${({ $delayMs }) => `${($delayMs || 0) * 0.5}ms`};
+
+  ${Section5FishStack}:hover & {
+    animation-name: ${fishHoverBobStrong};
+    animation-duration: 3.2s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `
 
 const CompositionRoot = styled.div`
@@ -2130,6 +2280,21 @@ const OverlaySlice = styled.div`
   justify-content: center;
   pointer-events: ${({ $interactive }) => ($interactive ? "auto" : "none")};
   overflow: visible;
+`
+
+/** Legacy water plate, shifted so the puddle blob covers the waterfall basin. */
+const PuddleImg = styled.img`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  transform: translateY(
+    ${({ $under }) =>
+      PUDDLE_SHIFT_Y_PCT + ($under ? PUDDLE_UNDER_SHIFT_PCT : 0)}%
+  );
+  user-select: none;
+  pointer-events: none;
 `
 
 /** Nudge PETABITE title up within the legacy art band (negative = higher). */

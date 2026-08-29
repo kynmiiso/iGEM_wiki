@@ -6,9 +6,12 @@ import { ExplainTerm } from "./ExplainTermPopover.js"
 export const PETASE_EXPLANATION =
   "PETase breaks the chemical bonds in PET to free a compound called MHET. A second enzyme, MHETase, then cleaves this into environmentally friendly products (ethylene glycol and terephthalic acid)."
 
-/** Placeholder until the cancer-associated-mechanisms textbox asset is ready. */
-const CANCER_PLACEHOLDER_EXPLANATION =
-  "Placeholder — swap in the cancer-associated-mechanisms textbox when the asset is ready."
+/** Used for popover accessibility; visible copy lives in the textbox image asset. */
+const CANCER_TEXTBOX_IMG =
+  "https://static.igem.wiki/teams/6187/wiki/homepage-components/text-boxes/text-box-3-1.avif"
+
+const CANCER_EXPLANATION =
+  "Microplastics can damage cells and trigger cancer-associated mechanisms."
 
 const EXCLAMATION_SRC =
   "https://static.igem.wiki/teams/6187/wiki/homepage-components/exclamation.avif"
@@ -17,7 +20,7 @@ const EXCLAMATION_SRC =
 export const WATERFALL_TEXT_LEFT_PCT = 2
 
 /** Vertical offset from the top of the waterfall band (%). */
-export const WATERFALL_TEXT_TOP_PCT = 58
+export const WATERFALL_TEXT_TOP_PCT = 56
 
 /** Vertical offset for right-side copy (hint + bang sit above the sentence). */
 export const WATERFALL_TEXT_RIGHT_TOP_PCT = 60
@@ -146,7 +149,12 @@ export function WaterfallSideText() {
         </PopupHint>
         <Body $side="right">
           These microplastics damage cells and cause{" "}
-          <ExplainTerm term="cancer-associated mechanisms" explanation={CANCER_PLACEHOLDER_EXPLANATION} />
+          <ExplainTerm
+            term="cancer-associated mechanisms"
+            explanation={CANCER_EXPLANATION}
+            imageSrc={CANCER_TEXTBOX_IMG}
+            imageAlt="cancer-associated mechanisms"
+          />
           .
         </Body>
       </TextMount>
