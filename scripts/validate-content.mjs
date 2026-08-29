@@ -141,28 +141,37 @@ for (const filePath of mdxFiles) {
   validateFrontmatter(filePath, frontmatter)
 
   if (frontmatter.path) {
-    const existingFilePath = mdxRoutes.get(frontmatter.path)
+    const existing = mdxRoutes.get(frontmatter.path)
 
-    if (existingFilePath) {
-      const existingIsPayloadExport = isPayloadExport(existingFilePath)
+    if (existing) {
+      const existingIsPayloadExport = isPayloadExport(existing.filePath)
       const currentIsPayloadExport = isPayloadExport(filePath)
+      const preferredLocal = [existing, { filePath, frontmatter }].find(
+        (candidate) =>
+          !isPayloadExport(candidate.filePath) && candidate.frontmatter.preferLocal === true
+      )
+
+      if (preferredLocal) {
+        mdxRoutes.set(frontmatter.path, preferredLocal)
+        continue
+      }
 
       if (existingIsPayloadExport && !currentIsPayloadExport) {
         continue
       }
 
       if (!existingIsPayloadExport && currentIsPayloadExport) {
-        mdxRoutes.set(frontmatter.path, filePath)
+        mdxRoutes.set(frontmatter.path, { filePath, frontmatter })
         continue
       }
 
       errors.push(
         `Duplicate MDX path "${frontmatter.path}" in ${relative(filePath)} and ${relative(
-          existingFilePath
+          existing.filePath
         )}.`
       )
     } else {
-      mdxRoutes.set(frontmatter.path, filePath)
+      mdxRoutes.set(frontmatter.path, { filePath, frontmatter })
     }
   }
 }
